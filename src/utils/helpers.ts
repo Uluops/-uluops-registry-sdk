@@ -83,9 +83,9 @@ export function filterUndefined<T extends Record<string, unknown>>(
 ): Partial<T> {
   const result: Partial<T> = {};
 
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      (result as Record<string, unknown>)[key] = value;
+  for (const key of Object.keys(obj) as Array<keyof T>) {
+    if (obj[key] !== undefined) {
+      result[key] = obj[key];
     }
   }
 
@@ -110,15 +110,15 @@ export function deepClone<T>(obj: T, depth = 0): T {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => deepClone(item, depth + 1)) as T;
+    return obj.map((item: unknown) => deepClone(item, depth + 1)) as unknown as T;
   }
 
   const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     result[key] = deepClone(value, depth + 1);
   }
 
-  return result as T;
+  return result as unknown as T;
 }
 
 /**
@@ -141,11 +141,21 @@ export function parseRateLimitHeaders(headers: Headers): RateLimitInfo | null {
     return null;
   }
 
+  const parsedLimit = parseInt(limit, 10);
+  const parsedRemaining = parseInt(remaining, 10);
+  const parsedReset = parseInt(reset, 10);
+
+  if (isNaN(parsedLimit) || isNaN(parsedRemaining) || isNaN(parsedReset)) {
+    return null;
+  }
+
+  const parsedRetryAfter = retryAfter ? parseInt(retryAfter, 10) : undefined;
+
   return {
-    limit: parseInt(limit, 10),
-    remaining: parseInt(remaining, 10),
-    reset: new Date(parseInt(reset, 10) * 1000),
-    retryAfter: retryAfter ? parseInt(retryAfter, 10) : undefined,
+    limit: parsedLimit,
+    remaining: parsedRemaining,
+    reset: new Date(parsedReset * 1000),
+    retryAfter: parsedRetryAfter !== undefined && isNaN(parsedRetryAfter) ? undefined : parsedRetryAfter,
   };
 }
 

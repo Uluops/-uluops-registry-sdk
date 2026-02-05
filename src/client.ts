@@ -26,7 +26,7 @@
  * ```
  */
 
-import { RegistryHttpClient, type HttpClientConfig } from './http/http-client.js';
+import { RegistryHttpClient } from './http/http-client.js';
 import { loadConfig } from './config/loaders.js';
 import * as definitionsOps from './operations/definitions.js';
 import * as versionsOps from './operations/versions.js';
@@ -202,7 +202,20 @@ export class RegistryClient {
   };
 
   constructor(config: RegistryClientConfig = {}) {
-    // Load configuration with priority chain
+    this.http = this.createHttpClient(config);
+    this.definitions = this.bindDefinitions();
+    this.versions = this.bindVersions();
+    this.validation = this.bindValidation();
+    this.dependencies = this.bindDependencies();
+    this.forks = this.bindForks();
+    this.executions = this.bindExecutions();
+    this.translation = this.bindTranslation();
+    this.models = this.bindModels();
+    this.users = this.bindUsers();
+    this.render = this.bindRender();
+  }
+
+  private createHttpClient(config: RegistryClientConfig): RegistryHttpClient {
     const sdkConfig = loadConfig({
       apiKey: config.apiKey,
       sessionToken: config.sessionToken,
@@ -212,8 +225,7 @@ export class RegistryClient {
       retries: config.retries,
     });
 
-    // Create HTTP client
-    const httpConfig: HttpClientConfig = {
+    return new RegistryHttpClient({
       baseUrl: sdkConfig.baseUrl,
       timeout: sdkConfig.timeout,
       retries: sdkConfig.retries,
@@ -221,12 +233,11 @@ export class RegistryClient {
       apiKey: sdkConfig.credentials.apiKey,
       sessionToken: sdkConfig.credentials.sessionToken,
       onTokenRefresh: config.onTokenRefresh,
-    };
+    });
+  }
 
-    this.http = new RegistryHttpClient(httpConfig);
-
-    // Bind operation namespaces
-    this.definitions = {
+  private bindDefinitions(): RegistryClient['definitions'] {
+    return {
       list: (query) => definitionsOps.list(this.http, query),
       get: (type, name, version, options) => definitionsOps.get(this.http, type, name, version, options),
       create: (type, name, body) => definitionsOps.create(this.http, type, name, body),
@@ -235,40 +246,54 @@ export class RegistryClient {
       publish: (type, name, version) => definitionsOps.publish(this.http, type, name, version),
       deprecate: (type, name, version, body) => definitionsOps.deprecate(this.http, type, name, version, body),
     };
+  }
 
-    this.versions = {
+  private bindVersions(): RegistryClient['versions'] {
+    return {
       list: (type, name) => versionsOps.list(this.http, type, name),
       diff: (type, name, from, to) => versionsOps.diff(this.http, type, name, from, to),
     };
+  }
 
-    this.validation = {
+  private bindValidation(): RegistryClient['validation'] {
+    return {
       validate: (type, yaml) => validationOps.validate(this.http, type, yaml),
     };
+  }
 
-    this.dependencies = {
+  private bindDependencies(): RegistryClient['dependencies'] {
+    return {
       get: (type, name, version, options) => dependenciesOps.get(this.http, type, name, version, options),
       getDependents: (type, name, version) => dependenciesOps.getDependents(this.http, type, name, version),
     };
+  }
 
-    this.forks = {
+  private bindForks(): RegistryClient['forks'] {
+    return {
       create: (type, name, version, body) => forksOps.create(this.http, type, name, version, body),
       checkForkable: (type, name, version, options) => forksOps.checkForkable(this.http, type, name, version, options),
       getLineage: (type, name, version) => forksOps.getLineage(this.http, type, name, version),
       list: (type, name, version) => forksOps.list(this.http, type, name, version),
     };
+  }
 
-    this.executions = {
+  private bindExecutions(): RegistryClient['executions'] {
+    return {
       record: (type, name, version, body) => executionsOps.record(this.http, type, name, version, body),
       getStats: (type, name, version, window) => executionsOps.getStats(this.http, type, name, version, window),
     };
+  }
 
-    this.translation = {
+  private bindTranslation(): RegistryClient['translation'] {
+    return {
       getVersion: () => translationOps.getVersion(this.http),
       retranslate: (type, name, version, options) => translationOps.retranslate(this.http, type, name, version, options),
       upgrade: (type, name, body) => translationOps.upgrade(this.http, type, name, body),
     };
+  }
 
-    this.models = {
+  private bindModels(): RegistryClient['models'] {
+    return {
       list: (query) => modelsOps.list(this.http, query),
       get: (provider, modelId) => modelsOps.get(this.http, provider, modelId),
       listProviders: () => modelsOps.listProviders(this.http),
@@ -276,13 +301,17 @@ export class RegistryClient {
       resolveAlias: (alias) => modelsOps.resolveAlias(this.http, alias),
       sync: () => modelsOps.sync(this.http),
     };
+  }
 
-    this.users = {
+  private bindUsers(): RegistryClient['users'] {
+    return {
       get: (id) => usersOps.get(this.http, id),
       batch: (ids) => usersOps.batch(this.http, ids),
     };
+  }
 
-    this.render = {
+  private bindRender(): RegistryClient['render'] {
+    return {
       get: (type, name, version) => renderOps.get(this.http, type, name, version),
       preview: (type, body) => renderOps.preview(this.http, type, body),
     };

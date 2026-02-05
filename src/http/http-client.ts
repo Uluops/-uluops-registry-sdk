@@ -54,7 +54,9 @@ export class RegistryHttpClient {
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'User-Agent': USER_AGENT,
+      'X-Content-Type-Options': 'nosniff',
     };
 
     // Create auth strategy if credentials provided
@@ -342,7 +344,10 @@ export class RegistryHttpClient {
     }
 
     if (retryAfter) {
-      details.retryAfter = parseInt(retryAfter, 10);
+      const parsedRetryAfter = parseInt(retryAfter, 10);
+      if (!isNaN(parsedRetryAfter)) {
+        details.retryAfter = parsedRetryAfter;
+      }
     }
 
     return createErrorFromStatus(
