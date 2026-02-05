@@ -146,6 +146,7 @@ export function createMockUser(overrides: Record<string, unknown> = {}): Record<
 
 // Setup global test hooks
 beforeEach(() => {
+  nock.cleanAll(); // Ensure no stale interceptors from previous test
   enableMocks();
 });
 

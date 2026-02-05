@@ -32,20 +32,28 @@ vi.mock('dotenv', () => ({
 }));
 
 describe('loaders', () => {
-  const originalEnv = process.env;
+  // Save only the SDK-specific env vars we'll mutate (preserves process.env proxy behavior)
+  const SDK_ENV_KEYS = [ENV_VARS.API_KEY, ENV_VARS.SESSION_TOKEN, ENV_VARS.BASE_URL, ENV_VARS.DEBUG] as const;
+  const savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset environment variables
-    process.env = { ...originalEnv };
-    delete process.env[ENV_VARS.API_KEY];
-    delete process.env[ENV_VARS.SESSION_TOKEN];
-    delete process.env[ENV_VARS.BASE_URL];
-    delete process.env[ENV_VARS.DEBUG];
+    // Save and clear SDK env vars
+    for (const key of SDK_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    // Restore original values
+    for (const key of SDK_ENV_KEYS) {
+      if (savedEnv[key] !== undefined) {
+        process.env[key] = savedEnv[key];
+      } else {
+        delete process.env[key];
+      }
+    }
   });
 
   describe('getGlobalConfigDir', () => {

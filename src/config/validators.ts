@@ -4,14 +4,16 @@
 
 import { DEFINITION_TYPES, type DefinitionType } from '../types/enums.js';
 import { MAX_YAML_SIZE } from './constants.js';
+import { ValidationError } from '../errors/errors.js';
 
 /**
  * Validate that a value is a valid definition type
  */
 export function validateDefinitionType(type: string): asserts type is DefinitionType {
-  if (!DEFINITION_TYPES.includes(type as DefinitionType)) {
-    throw new Error(
-      `Invalid definition type '${type}'. Must be one of: ${DEFINITION_TYPES.join(', ')}`
+  if (!(DEFINITION_TYPES as readonly string[]).includes(type)) {
+    throw new ValidationError(
+      `Invalid definition type '${type}'. Must be one of: ${DEFINITION_TYPES.join(', ')}`,
+      { field: 'type', value: type, allowed: [...DEFINITION_TYPES] }
     );
   }
 }
@@ -23,18 +25,21 @@ export function validateDefinitionType(type: string): asserts type is Definition
  */
 export function validateDefinitionName(name: string): void {
   if (!name || typeof name !== 'string') {
-    throw new Error('Definition name is required');
+    throw new ValidationError('Definition name is required', { field: 'name' });
   }
 
   if (name.length < 1 || name.length > 100) {
-    throw new Error('Definition name must be 1-100 characters');
+    throw new ValidationError('Definition name must be 1-100 characters', {
+      field: 'name', length: name.length, maxLength: 100,
+    });
   }
 
   const pattern = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
   if (!pattern.test(name)) {
-    throw new Error(
+    throw new ValidationError(
       'Definition name must be lowercase letters, numbers, and hyphens. ' +
-        'Cannot start or end with hyphen.'
+        'Cannot start or end with hyphen.',
+      { field: 'name', value: name }
     );
   }
 }
@@ -44,12 +49,15 @@ export function validateDefinitionName(name: string): void {
  */
 export function validateVersion(version: string): void {
   if (!version || typeof version !== 'string') {
-    throw new Error('Version is required');
+    throw new ValidationError('Version is required', { field: 'version' });
   }
 
   const pattern = /^\d+\.\d+\.\d+$/;
   if (!pattern.test(version)) {
-    throw new Error(`Invalid version '${version}'. Must be semver format (X.Y.Z)`);
+    throw new ValidationError(
+      `Invalid version '${version}'. Must be semver format (X.Y.Z)`,
+      { field: 'version', value: version }
+    );
   }
 }
 
@@ -59,9 +67,10 @@ export function validateVersion(version: string): void {
 export function validateYamlSize(yaml: string): void {
   const bytes = Buffer.byteLength(yaml, 'utf-8');
   if (bytes > MAX_YAML_SIZE) {
-    throw new Error(
+    throw new ValidationError(
       `YAML content exceeds maximum size of ${MAX_YAML_SIZE / 1024}KB ` +
-        `(${Math.round(bytes / 1024)}KB provided)`
+        `(${Math.round(bytes / 1024)}KB provided)`,
+      { field: 'yaml', bytes, maxBytes: MAX_YAML_SIZE }
     );
   }
 }
@@ -72,19 +81,22 @@ export function validateYamlSize(yaml: string): void {
  */
 export function parseDefinitionRef(ref: string): { name: string; version?: string } {
   if (!ref || typeof ref !== 'string') {
-    throw new Error('Definition reference is required');
+    throw new ValidationError('Definition reference is required', { field: 'ref' });
   }
 
   const parts = ref.split('@');
   if (parts.length > 2) {
-    throw new Error(`Invalid definition reference '${ref}'`);
+    throw new ValidationError(
+      `Invalid definition reference '${ref}'`,
+      { field: 'ref', value: ref }
+    );
   }
 
   const name = parts[0];
   const version = parts[1];
 
   if (!name) {
-    throw new Error('Definition name is required in reference');
+    throw new ValidationError('Definition name is required in reference', { field: 'ref' });
   }
 
   validateDefinitionName(name);
@@ -118,7 +130,10 @@ export function buildDefinitionPath(
 export function validateUuid(id: string, fieldName = 'id'): void {
   const pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!pattern.test(id)) {
-    throw new Error(`Invalid UUID format for ${fieldName}: '${id}'`);
+    throw new ValidationError(
+      `Invalid UUID format for ${fieldName}: '${id}'`,
+      { field: fieldName, value: id }
+    );
   }
 }
 
@@ -128,13 +143,17 @@ export function validateUuid(id: string, fieldName = 'id'): void {
 export function validatePagination(limit?: number, offset?: number): void {
   if (limit !== undefined) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
-      throw new Error('Limit must be an integer between 1 and 200');
+      throw new ValidationError('Limit must be an integer between 1 and 200', {
+        field: 'limit', value: limit, min: 1, max: 200,
+      });
     }
   }
 
   if (offset !== undefined) {
     if (!Number.isInteger(offset) || offset < 0) {
-      throw new Error('Offset must be a non-negative integer');
+      throw new ValidationError('Offset must be a non-negative integer', {
+        field: 'offset', value: offset,
+      });
     }
   }
 }

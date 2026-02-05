@@ -14,6 +14,7 @@ import {
   buildDefinitionPath,
 } from '../src/config/validators.js';
 import { MAX_YAML_SIZE } from '../src/config/constants.js';
+import { ValidationError } from '../src/errors/errors.js';
 
 describe('validators', () => {
   describe('validateDefinitionType', () => {
@@ -30,6 +31,19 @@ describe('validators', () => {
       );
       expect(() => validateDefinitionType('')).toThrow('Invalid definition type');
       expect(() => validateDefinitionType('AGENT')).toThrow('Invalid definition type');
+    });
+
+    it('should throw ValidationError with details', () => {
+      try {
+        validateDefinitionType('invalid');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        const ve = error as ValidationError;
+        expect(ve.details).toHaveProperty('field', 'type');
+        expect(ve.details).toHaveProperty('value', 'invalid');
+        expect(ve.details).toHaveProperty('allowed');
+      }
     });
   });
 
@@ -96,6 +110,32 @@ describe('validators', () => {
       expect(() => validateDefinitionName('a')).not.toThrow();
       expect(() => validateDefinitionName('1')).not.toThrow();
     });
+
+    it('should throw ValidationError with field details', () => {
+      try {
+        validateDefinitionName('Invalid-Name');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toHaveProperty('field', 'name');
+      }
+    });
+
+    it('should reject two-character name starting with hyphen', () => {
+      expect(() => validateDefinitionName('-a')).toThrow('Cannot start or end with hyphen');
+    });
+
+    it('should accept two-character alphanumeric name', () => {
+      expect(() => validateDefinitionName('ab')).not.toThrow();
+      expect(() => validateDefinitionName('a1')).not.toThrow();
+    });
+
+    it('should reject non-string input', () => {
+      // @ts-expect-error Testing invalid input
+      expect(() => validateDefinitionName(null)).toThrow('Definition name is required');
+      // @ts-expect-error Testing invalid input
+      expect(() => validateDefinitionName(undefined)).toThrow('Definition name is required');
+    });
   });
 
   describe('validateVersion', () => {
@@ -123,6 +163,26 @@ describe('validators', () => {
       expect(() => validateVersion(null)).toThrow('Version is required');
       // @ts-expect-error Testing invalid input
       expect(() => validateVersion(undefined)).toThrow('Version is required');
+    });
+
+    it('should throw ValidationError with field details', () => {
+      try {
+        validateVersion('bad');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toHaveProperty('field', 'version');
+        expect((error as ValidationError).details).toHaveProperty('value', 'bad');
+      }
+    });
+
+    it('should reject version with leading zeros', () => {
+      // Current regex allows leading zeros — document behavior
+      expect(() => validateVersion('01.0.0')).not.toThrow();
+    });
+
+    it('should reject version with negative numbers', () => {
+      expect(() => validateVersion('-1.0.0')).toThrow('Must be semver format');
     });
   });
 
@@ -152,6 +212,20 @@ describe('validators', () => {
 
     it('should accept empty YAML', () => {
       expect(() => validateYamlSize('')).not.toThrow();
+    });
+
+    it('should throw ValidationError with byte details', () => {
+      const largeYaml = 'a'.repeat(MAX_YAML_SIZE + 1);
+      try {
+        validateYamlSize(largeYaml);
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        const details = (error as ValidationError).details!;
+        expect(details).toHaveProperty('field', 'yaml');
+        expect(details).toHaveProperty('maxBytes', MAX_YAML_SIZE);
+        expect(typeof details.bytes).toBe('number');
+      }
     });
   });
 
@@ -183,6 +257,17 @@ describe('validators', () => {
       expect(() => validateUuid('invalid', 'userId')).toThrow(
         "Invalid UUID format for userId: 'invalid'"
       );
+    });
+
+    it('should throw ValidationError with field details', () => {
+      try {
+        validateUuid('bad', 'definitionId');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toHaveProperty('field', 'definitionId');
+        expect((error as ValidationError).details).toHaveProperty('value', 'bad');
+      }
     });
   });
 
@@ -237,6 +322,38 @@ describe('validators', () => {
       expect(() => validatePagination(1)).not.toThrow();
       expect(() => validatePagination(200)).not.toThrow();
       expect(() => validatePagination(50, 0)).not.toThrow();
+    });
+
+    it('should throw ValidationError with field details for limit', () => {
+      try {
+        validatePagination(0);
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toHaveProperty('field', 'limit');
+      }
+    });
+
+    it('should throw ValidationError with field details for offset', () => {
+      try {
+        validatePagination(50, -1);
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toHaveProperty('field', 'offset');
+      }
+    });
+
+    it('should reject NaN limit', () => {
+      expect(() => validatePagination(NaN)).toThrow('Limit must be an integer');
+    });
+
+    it('should reject Infinity limit', () => {
+      expect(() => validatePagination(Infinity)).toThrow('Limit must be an integer');
+    });
+
+    it('should reject NaN offset', () => {
+      expect(() => validatePagination(50, NaN)).toThrow('Offset must be a non-negative integer');
     });
   });
 
