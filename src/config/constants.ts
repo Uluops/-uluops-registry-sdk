@@ -2,6 +2,11 @@
  * Configuration constants for the Registry SDK
  */
 
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../../package.json') as { version: string };
+
 /**
  * Production base URL for the registry API
  */
@@ -132,9 +137,9 @@ export const ERROR_CODES = {
 } as const;
 
 /**
- * SDK version (should match package.json)
+ * SDK version — read from package.json at runtime
  */
-export const SDK_VERSION = '0.1.0';
+export const SDK_VERSION = pkg.version;
 
 /**
  * User agent string for requests

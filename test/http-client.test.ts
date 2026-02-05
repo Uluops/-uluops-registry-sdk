@@ -453,16 +453,23 @@ describe('RegistryHttpClient', () => {
   });
 
   describe('timeout handling', () => {
+    /** Short timeout so the test triggers an abort quickly */
+    const SHORT_TIMEOUT_MS = 100;
+    /** Response delay that exceeds SHORT_TIMEOUT_MS to trigger timeout */
+    const SLOW_RESPONSE_DELAY_MS = 500;
+    /** Response delay that stays within the default client timeout */
+    const FAST_RESPONSE_DELAY_MS = 50;
+
     it('should timeout slow requests', async () => {
       const shortTimeoutClient = new RegistryHttpClient({
         apiKey: TEST_API_KEY,
-        timeout: 100,
+        timeout: SHORT_TIMEOUT_MS,
         retries: 1,
       });
 
       nock(MOCK_BASE_URL)
         .get('/slow')
-        .delay(500)
+        .delay(SLOW_RESPONSE_DELAY_MS)
         .reply(200, { data: { success: true } });
 
       await expect(shortTimeoutClient.get('/slow')).rejects.toThrow(TimeoutError);
@@ -471,7 +478,7 @@ describe('RegistryHttpClient', () => {
     it('should complete requests within timeout', async () => {
       nock(MOCK_BASE_URL)
         .get('/fast')
-        .delay(50)
+        .delay(FAST_RESPONSE_DELAY_MS)
         .reply(200, { data: { success: true } });
 
       const result = await client.get<{ success: boolean }>('/fast');

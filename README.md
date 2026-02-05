@@ -697,6 +697,10 @@ if (rateLimitInfo) {
 }
 ```
 
+### CORS / Browser Usage
+
+This SDK is designed for **server-side Node.js** environments. If you need to call the Registry API from a browser, make requests through your own backend to avoid CORS issues. The API does not set permissive `Access-Control-Allow-Origin` headers, so direct browser-to-API requests will be blocked.
+
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details.

@@ -305,10 +305,12 @@ export class RegistryHttpClient {
   }
 
   /**
-   * Get the last rate limit info from a response
+   * Get the last rate limit info from a response.
+   * Returns a copy so callers cannot mutate internal state.
    */
   getRateLimitInfo(): RateLimitInfo | null {
-    return this.lastRateLimitInfo;
+    if (!this.lastRateLimitInfo) return null;
+    return { ...this.lastRateLimitInfo };
   }
 
   /**

@@ -3,7 +3,8 @@
  */
 
 /**
- * Sleep for a specified number of milliseconds
+ * Sleep for a specified number of milliseconds.
+ * @param ms - Duration to sleep in milliseconds
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -49,7 +50,9 @@ export async function retry<T>(
 }
 
 /**
- * Build query string from object, filtering out undefined/null values
+ * Build query string from object, filtering out undefined/null values.
+ * @param params - Key-value pairs to serialize
+ * @returns Query string prefixed with `?`, or empty string if no params
  */
 export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
@@ -76,7 +79,9 @@ export function buildQueryString(params: Record<string, unknown>): string {
 }
 
 /**
- * Filter undefined values from an object
+ * Filter undefined values from an object.
+ * @param obj - Source object to filter
+ * @returns New object with only defined values
  */
 export function filterUndefined<T extends Record<string, unknown>>(
   obj: T
@@ -98,7 +103,11 @@ export function filterUndefined<T extends Record<string, unknown>>(
 const MAX_CLONE_DEPTH = 50;
 
 /**
- * Deep clone an object with depth limit to prevent stack overflow
+ * Deep clone an object with depth limit to prevent stack overflow.
+ * @param obj - Value to clone
+ * @param depth - Current recursion depth (internal)
+ * @returns Deep copy of the input value
+ * @throws If recursion exceeds {@link MAX_CLONE_DEPTH}
  */
 export function deepClone<T>(obj: T, depth = 0): T {
   if (depth > MAX_CLONE_DEPTH) {
@@ -131,6 +140,11 @@ export interface RateLimitInfo {
   retryAfter?: number;
 }
 
+/**
+ * Parse rate limit headers from a fetch Response.
+ * @param headers - Response headers containing `x-ratelimit-*` values
+ * @returns Parsed rate limit info, or `null` if headers are absent/invalid
+ */
 export function parseRateLimitHeaders(headers: Headers): RateLimitInfo | null {
   const limit = headers.get('x-ratelimit-limit');
   const remaining = headers.get('x-ratelimit-remaining');
@@ -160,7 +174,9 @@ export function parseRateLimitHeaders(headers: Headers): RateLimitInfo | null {
 }
 
 /**
- * Check if a value is a plain object
+ * Check if a value is a plain object (not an array, Date, etc.).
+ * @param value - Value to check
+ * @returns `true` if the value is a plain `{}` object
  */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   return (
@@ -172,7 +188,10 @@ export function isPlainObject(value: unknown): value is Record<string, unknown> 
 }
 
 /**
- * Truncate a string to a maximum length
+ * Truncate a string to a maximum length, appending `...` if trimmed.
+ * @param str - String to truncate
+ * @param maxLength - Maximum allowed length (including ellipsis)
+ * @returns Original string if within limit, otherwise truncated with `...`
  */
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) {

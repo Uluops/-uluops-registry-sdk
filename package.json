@@ -44,7 +44,12 @@
     "sdk",
     "api"
   ],
-  "author": "",
+  "author": "UluOps <hello@uluops.ai>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uluops/uluops.git",
+    "directory": "packages/registry-sdk"
+  },
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.4.7",
