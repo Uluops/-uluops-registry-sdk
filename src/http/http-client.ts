@@ -72,15 +72,25 @@ export class RegistryHttpClient {
   }
 
   /**
+   * HTTP methods that are safe to retry (idempotent)
+   */
+  private static readonly IDEMPOTENT_METHODS = new Set(['GET']);
+
+  /**
    * Make an authenticated request with retry support
+   *
+   * By default, only GET requests are retried on transient errors.
+   * Set `retryMutations: true` in options to also retry POST/PUT/DELETE
+   * (only use this for idempotent endpoints like recording executions with a runId).
    */
   async request<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     endpoint: string,
     data?: object,
-    options?: { params?: object; retries?: number; headers?: Record<string, string> }
+    options?: { params?: object; retries?: number; retryMutations?: boolean; headers?: Record<string, string> }
   ): Promise<T> {
     const maxRetries = options?.retries ?? this.retries;
+    const canRetry = RegistryHttpClient.IDEMPOTENT_METHODS.has(method) || (options?.retryMutations === true);
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -91,6 +101,7 @@ export class RegistryHttpClient {
 
         // Check if we should retry
         const shouldRetry =
+          canRetry &&
           lastError instanceof RegistryApiError &&
           lastError.isRetryable() &&
           attempt < maxRetries;
@@ -175,8 +186,19 @@ export class RegistryHttpClient {
         throw this.createHttpError(response.status, errorData, response.headers);
       }
 
-      const responseData = (await response.json()) as { data: T };
-      return responseData.data;
+      const responseData: unknown = await response.json();
+      if (
+        responseData === null ||
+        typeof responseData !== 'object' ||
+        !('data' in responseData)
+      ) {
+        throw new Error(
+          `Unexpected API response format: expected { data: ... } wrapper but received ${
+            responseData === null ? 'null' : typeof responseData
+          }`
+        );
+      }
+      return (responseData as { data: T }).data;
     } catch (error) {
       // Log error responses
       if (error instanceof RegistryApiError) {

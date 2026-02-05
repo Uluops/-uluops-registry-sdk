@@ -5,12 +5,12 @@
 /**
  * Default base URL for the registry API
  */
-export const DEFAULT_BASE_URL = 'http://localhost:3001/api/v1';
+export const DEFAULT_BASE_URL = 'https://registry.uluops.dev/api/v1';
 
 /**
- * Production base URL
+ * Local development base URL
  */
-export const PRODUCTION_BASE_URL = 'https://registry.uluops.dev/api/v1';
+export const LOCAL_BASE_URL = 'http://localhost:3001/api/v1';
 
 /**
  * Default request timeout in milliseconds

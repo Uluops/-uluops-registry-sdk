@@ -3,12 +3,11 @@
  */
 
 import nock from 'nock';
-import { DEFAULT_BASE_URL } from '../src/config/constants.js';
 
 /**
- * Mock API base URL
+ * Mock API base URL (explicit test URL, not tied to SDK defaults)
  */
-export const MOCK_BASE_URL = DEFAULT_BASE_URL;
+export const MOCK_BASE_URL = 'https://registry.uluops.dev/api/v1';
 
 /**
  * Test API key (must be at least 20 chars with ulr_ prefix)

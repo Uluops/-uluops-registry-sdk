@@ -308,6 +308,62 @@ describe('RegistryHttpClient', () => {
       expect(attempts).toBe(3);
     });
 
+    it('should NOT retry POST requests by default', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .post('/test')
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        });
+
+      await expect(client.post('/test', { name: 'test' })).rejects.toThrow(ServiceUnavailableError);
+      expect(attempts).toBe(1);
+    });
+
+    it('should NOT retry PUT requests by default', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .put('/test/123')
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        });
+
+      await expect(client.put('/test/123', { name: 'updated' })).rejects.toThrow(ServiceUnavailableError);
+      expect(attempts).toBe(1);
+    });
+
+    it('should NOT retry DELETE requests by default', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .delete('/test/123')
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        });
+
+      await expect(client.delete('/test/123')).rejects.toThrow(ServiceUnavailableError);
+      expect(attempts).toBe(1);
+    });
+
+    it('should retry POST when retryMutations is true', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .post('/test')
+        .times(1)
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        })
+        .post('/test')
+        .reply(201, { data: { id: '123' } });
+
+      const result = await client.request<{ id: string }>('POST', '/test', { name: 'test' }, { retryMutations: true });
+      expect(result.id).toBe('123');
+      expect(attempts).toBe(1);
+    });
+
     it('should respect custom retry count', { timeout: 30000 }, async () => {
       let attempts = 0;
       const customClient = new RegistryHttpClient({
@@ -385,6 +441,24 @@ describe('RegistryHttpClient', () => {
       const rateLimitInfo = client.getRateLimitInfo();
 
       expect(rateLimitInfo).toBeNull();
+    });
+  });
+
+  describe('response envelope validation', () => {
+    it('should throw on response without data wrapper', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .reply(200, { items: [] });
+
+      await expect(client.get('/test')).rejects.toThrow('Unexpected API response format');
+    });
+
+    it('should throw on null response body', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .reply(200, null);
+
+      await expect(client.get('/test')).rejects.toThrow();
     });
   });
 

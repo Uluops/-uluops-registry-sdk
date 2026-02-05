@@ -570,7 +570,7 @@ const preview = await client.render.preview('agent', {
 |----------|-------------|---------|
 | `ULUOPS_API_KEY` | API key for authentication | - |
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
-| `ULUOPS_REGISTRY_URL` | API base URL | `http://localhost:3001/api/v1` |
+| `ULUOPS_REGISTRY_URL` | API base URL | `https://registry.uluops.dev/api/v1` |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
 Create a `.env` file in your project:
