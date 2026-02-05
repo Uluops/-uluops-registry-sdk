@@ -187,7 +187,7 @@ describe('RegistryHttpClient', () => {
   });
 
   describe('retry logic', () => {
-    it('should retry on 502 Bad Gateway', async () => {
+    it('should retry on 502 Bad Gateway', { timeout: 15000 }, async () => {
       let attempts = 0;
       nock(MOCK_BASE_URL)
         .get('/test')

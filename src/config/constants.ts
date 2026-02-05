@@ -3,14 +3,22 @@
  */
 
 /**
- * Default base URL for the registry API
+ * Production base URL for the registry API
  */
-export const DEFAULT_BASE_URL = 'https://registry.uluops.dev/api/v1';
+export const DEFAULT_PROD_URL = 'https://registry.uluops.ai/api/v1';
 
 /**
- * Local development base URL
+ * Development base URL for local registry API
  */
-export const LOCAL_BASE_URL = 'http://localhost:3001/api/v1';
+export const DEFAULT_DEV_URL = 'http://localhost:3001/api/v1';
+
+/**
+ * Resolve the default base URL based on NODE_ENV.
+ * - NODE_ENV=development → localhost
+ * - Otherwise (production, test, undefined) → production
+ */
+export const DEFAULT_BASE_URL =
+  process.env.NODE_ENV === 'development' ? DEFAULT_DEV_URL : DEFAULT_PROD_URL;
 
 /**
  * Default request timeout in milliseconds

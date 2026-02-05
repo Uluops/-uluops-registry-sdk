@@ -164,7 +164,7 @@ const client = new RegistryClient({
   sessionToken: 'jwt-token',   // Existing session token
 
   // Connection settings
-  baseUrl: 'https://registry.uluops.dev/api/v1',  // API base URL
+  baseUrl: 'https://registry.uluops.ai/api/v1',  // API base URL
   timeout: 30000,              // Request timeout in ms (default: 30000)
   retries: 3,                  // Retry count for transient errors (default: 3)
   debug: false,                // Enable debug logging
@@ -570,14 +570,14 @@ const preview = await client.render.preview('agent', {
 |----------|-------------|---------|
 | `ULUOPS_API_KEY` | API key for authentication | - |
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
-| `ULUOPS_REGISTRY_URL` | API base URL | `https://registry.uluops.dev/api/v1` |
+| `ULUOPS_REGISTRY_URL` | API base URL | `https://registry.uluops.ai/api/v1` |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
 Create a `.env` file in your project:
 
 ```env
 ULUOPS_API_KEY=ulr_your-api-key-here
-ULUOPS_REGISTRY_URL=https://registry.uluops.dev/api/v1
+ULUOPS_REGISTRY_URL=https://registry.uluops.ai/api/v1
 ```
 
 ## Error Handling
@@ -660,7 +660,7 @@ For advanced use cases, you can use `RegistryHttpClient` directly:
 import { RegistryHttpClient } from '@uluops/registry-sdk';
 
 const http = new RegistryHttpClient({
-  baseUrl: 'https://registry.uluops.dev/api/v1',
+  baseUrl: 'https://registry.uluops.ai/api/v1',
   apiKey: 'ulr_...',
 });
 
