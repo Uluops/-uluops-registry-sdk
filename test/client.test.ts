@@ -8,6 +8,7 @@ import {
   mockEndpoint,
   mockError,
   TEST_API_KEY,
+  TEST_SESSION_TOKEN,
   createMockDefinition,
   createMockModel,
   createMockUser,
@@ -173,7 +174,7 @@ describe('RegistryClient', () => {
     });
 
     it('should return session for getAuthType when session token is provided', () => {
-      const sessionClient = new RegistryClient({ sessionToken: 'jwt-token-here' });
+      const sessionClient = new RegistryClient({ sessionToken: TEST_SESSION_TOKEN });
       expect(sessionClient.getAuthType()).toBe('session');
     });
 

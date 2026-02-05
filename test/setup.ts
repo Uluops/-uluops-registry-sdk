@@ -16,6 +16,11 @@ export const MOCK_BASE_URL = DEFAULT_BASE_URL;
 export const TEST_API_KEY = 'ulr_test_key_1234567890';
 
 /**
+ * Test JWT session token (valid format: header.payload.signature)
+ */
+export const TEST_SESSION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3QiLCJpYXQiOjE1MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+/**
  * Test user ID
  */
 export const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';

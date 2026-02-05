@@ -98,6 +98,18 @@ export class ApiKeyAuth implements AuthStrategy {
 }
 
 /**
+ * JWT format pattern: three base64url segments separated by dots
+ */
+const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+/**
+ * Validate JWT token format (not cryptographic validity)
+ */
+function isValidJwtFormat(token: string): boolean {
+  return JWT_PATTERN.test(token);
+}
+
+/**
  * JWT session authentication strategy
  *
  * Session tokens are obtained from the ops-uluops-api and can be used
@@ -114,6 +126,9 @@ export class JwtSessionAuth implements AuthStrategy {
   ) {
     if (!sessionToken) {
       throw new Error('Session token is required');
+    }
+    if (!isValidJwtFormat(sessionToken)) {
+      throw new Error('Invalid session token format. Expected JWT (header.payload.signature)');
     }
     this.sessionToken = sessionToken;
   }
@@ -145,6 +160,12 @@ export class JwtSessionAuth implements AuthStrategy {
    * Update the session token (called externally when token is refreshed)
    */
   updateToken(newToken: string): void {
+    if (!newToken) {
+      throw new Error('Session token is required');
+    }
+    if (!isValidJwtFormat(newToken)) {
+      throw new Error('Invalid session token format. Expected JWT (header.payload.signature)');
+    }
     this.sessionToken = newToken;
     this.onTokenRefresh?.(newToken);
   }
