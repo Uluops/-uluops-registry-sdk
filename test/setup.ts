@@ -1,0 +1,150 @@
+/**
+ * Test setup and utilities for the Registry SDK
+ */
+
+import nock from 'nock';
+import { DEFAULT_BASE_URL } from '../src/config/constants.js';
+
+/**
+ * Mock API base URL
+ */
+export const MOCK_BASE_URL = DEFAULT_BASE_URL;
+
+/**
+ * Test API key
+ */
+export const TEST_API_KEY = 'ulr_test_key_12345';
+
+/**
+ * Test user ID
+ */
+export const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
+
+/**
+ * Enable/disable all nock mocks
+ */
+export function enableMocks(): void {
+  nock.disableNetConnect();
+}
+
+export function disableMocks(): void {
+  nock.enableNetConnect();
+  nock.cleanAll();
+}
+
+/**
+ * Create a mock endpoint
+ */
+export function mockEndpoint(
+  method: 'get' | 'post' | 'put' | 'delete',
+  path: string,
+  response: unknown,
+  statusCode = 200
+): nock.Scope {
+  return nock(MOCK_BASE_URL)
+    [method](path)
+    .reply(statusCode, { data: response });
+}
+
+/**
+ * Create a mock error response
+ */
+export function mockError(
+  method: 'get' | 'post' | 'put' | 'delete',
+  path: string,
+  statusCode: number,
+  error: { code: string; message: string; details?: Record<string, unknown> }
+): nock.Scope {
+  return nock(MOCK_BASE_URL)
+    [method](path)
+    .reply(statusCode, { error });
+}
+
+/**
+ * Create a mock with custom headers
+ */
+export function mockWithHeaders(
+  method: 'get' | 'post' | 'put' | 'delete',
+  path: string,
+  response: unknown,
+  headers: Record<string, string>,
+  statusCode = 200
+): nock.Scope {
+  return nock(MOCK_BASE_URL)
+    [method](path)
+    .reply(statusCode, { data: response }, headers);
+}
+
+/**
+ * Create a mock definition for testing
+ */
+export function createMockDefinition(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: '00000000-0000-0000-0000-000000000001',
+    type: 'agent',
+    name: 'test-agent',
+    version: '1.0.0',
+    status: 'draft',
+    yaml: 'agent:\\n  interface:\\n    name: test-agent',
+    hash: 'sha256:abc123',
+    displayName: 'Test Agent',
+    description: 'A test agent',
+    domain: 'software',
+    agentType: 'validator',
+    ownerId: TEST_USER_ID,
+    tier: 'user',
+    visibility: 'private',
+    executionCount: 0,
+    forkCount: 0,
+    starCount: 0,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock model for testing
+ */
+export function createMockModel(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    provider: 'anthropic',
+    modelId: 'claude-3-opus',
+    displayName: 'Claude 3 Opus',
+    description: 'Most capable Claude model',
+    providerModelId: 'claude-3-opus-20240229',
+    capabilities: {
+      vision: true,
+      tools: true,
+      streaming: true,
+      extendedThinking: false,
+    },
+    tier: 'premium',
+    status: 'available',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock user for testing
+ */
+export function createMockUser(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: TEST_USER_ID,
+    username: 'testuser',
+    name: 'Test User',
+    bio: 'A test user',
+    ...overrides,
+  };
+}
+
+// Setup global test hooks
+beforeEach(() => {
+  enableMocks();
+});
+
+afterEach(() => {
+  disableMocks();
+});

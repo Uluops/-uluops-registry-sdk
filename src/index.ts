@@ -1,0 +1,124 @@
+/**
+ * @uluops/registry-sdk
+ *
+ * SDK and CLI for the UluOps Registry API - manage AI workflow definitions
+ * (agents, commands, workflows, pipelines).
+ *
+ * @example
+ * ```typescript
+ * import { RegistryClient } from '@uluops/registry-sdk';
+ *
+ * const client = new RegistryClient({
+ *   apiKey: process.env.ULUOPS_API_KEY,
+ * });
+ *
+ * // List agent definitions
+ * const agents = await client.definitions.list({ type: 'agent' });
+ *
+ * // Get a specific definition
+ * const def = await client.definitions.get('agent', 'my-agent', '1.0.0');
+ * ```
+ */
+
+// Main client
+export { RegistryClient, type RegistryClientConfig } from './client.js';
+
+// HTTP layer (for advanced use cases)
+export {
+  RegistryHttpClient,
+  type HttpClientConfig,
+} from './http/http-client.js';
+
+export {
+  ApiKeyAuth,
+  JwtSessionAuth,
+  createAuthStrategy,
+  type AuthStrategy,
+  type AuthConfig,
+} from './http/auth-strategy.js';
+
+// Re-export types for convenience
+export type {
+  // Enums
+  DefinitionType,
+  DefinitionStatus,
+  Domain,
+  AgentType,
+  Tier,
+  Visibility,
+  ModelTier,
+  ModelStatus,
+  ChangeType,
+  SortField,
+  SortOrder,
+} from './types/enums.js';
+
+export type {
+  // Definition types
+  Definition,
+  DefinitionListItem,
+  ListDefinitionsQuery,
+  GetDefinitionOptions,
+  CreateDefinitionBody,
+  UpdateDefinitionBody,
+  DeprecateDefinitionBody,
+} from './types/definitions.js';
+
+export type {
+  // Version types
+  DefinitionVersion,
+  VersionListItem,
+  VersionDiff,
+} from './types/versions.js';
+
+export type {
+  // Dependency types
+  DependencyGraph,
+  DependencyNode,
+  DependencyEdge,
+  GetDependenciesOptions,
+} from './types/dependencies.js';
+
+export type {
+  // Fork types
+  Fork,
+  ForkDefinitionBody,
+  ForkResponse,
+  ForkableCheck,
+  ForkLineage,
+  CheckForkableOptions,
+} from './types/forks.js';
+
+export type {
+  // Model types
+  Model,
+  ModelAlias,
+  AliasResolution,
+  Provider,
+  ModelCapabilities,
+  ListModelsQuery,
+  ModelSyncResult,
+} from './types/models.js';
+
+export type {
+  // User types
+  PublicUser,
+  BatchUserResponse,
+} from './types/users.js';
+
+export type {
+  // Response types
+  SingleResponse,
+  PaginatedResponse,
+  ErrorResponse,
+  ValidationResult,
+  RenderResult,
+  RenderPreviewBody,
+  TranslatorVersion,
+  RetranslateOptions,
+  UpgradeDefinitionBody,
+  UpgradeResult,
+  RecordExecutionBody,
+  RecordExecutionResult,
+  ExecutionStats,
+} from './types/responses.js';
