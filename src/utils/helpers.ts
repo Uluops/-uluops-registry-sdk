@@ -93,20 +93,29 @@ export function filterUndefined<T extends Record<string, unknown>>(
 }
 
 /**
- * Deep clone an object
+ * Maximum recursion depth for deepClone
  */
-export function deepClone<T>(obj: T): T {
+const MAX_CLONE_DEPTH = 50;
+
+/**
+ * Deep clone an object with depth limit to prevent stack overflow
+ */
+export function deepClone<T>(obj: T, depth = 0): T {
+  if (depth > MAX_CLONE_DEPTH) {
+    throw new Error(`deepClone exceeded maximum depth of ${MAX_CLONE_DEPTH}`);
+  }
+
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(deepClone) as T;
+    return obj.map((item) => deepClone(item, depth + 1)) as T;
   }
 
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    result[key] = deepClone(value);
+    result[key] = deepClone(value, depth + 1);
   }
 
   return result as T;

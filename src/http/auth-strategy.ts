@@ -48,6 +48,16 @@ export interface AuthConfig {
 }
 
 /**
+ * Minimum API key length (prefix + at least 16 chars)
+ */
+const MIN_API_KEY_LENGTH = 20;
+
+/**
+ * Valid API key character pattern (alphanumeric, underscores, hyphens)
+ */
+const API_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
+
+/**
  * API key authentication strategy
  */
 export class ApiKeyAuth implements AuthStrategy {
@@ -57,6 +67,12 @@ export class ApiKeyAuth implements AuthStrategy {
     }
     if (!apiKey.startsWith(API_KEY_PREFIX)) {
       throw new Error(`Invalid API key format. Expected prefix: ${API_KEY_PREFIX}`);
+    }
+    if (apiKey.length < MIN_API_KEY_LENGTH) {
+      throw new Error(`Invalid API key format. Key too short (min ${MIN_API_KEY_LENGTH} chars)`);
+    }
+    if (!API_KEY_PATTERN.test(apiKey)) {
+      throw new Error('Invalid API key format. Key contains invalid characters');
     }
   }
 

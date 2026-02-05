@@ -2,7 +2,7 @@
  * Tests for HTTP client including retry logic, timeout handling, and error transformation
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import nock from 'nock';
 import { RegistryHttpClient } from '../src/http/http-client.js';
 import {
@@ -18,36 +18,29 @@ import {
   ServiceUnavailableError,
   TimeoutError,
 } from '../src/errors/errors.js';
-import { DEFAULT_BASE_URL } from '../src/config/constants.js';
+import { mockEndpoint, mockError, mockWithHeaders, TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
 
 describe('RegistryHttpClient', () => {
   let client: RegistryHttpClient;
 
   beforeEach(() => {
-    nock.cleanAll();
     client = new RegistryHttpClient({
-      apiKey: 'ulr_test_key_12345',
+      apiKey: TEST_API_KEY,
       retries: 3,
       timeout: 5000,
     });
   });
 
-  afterEach(() => {
-    nock.cleanAll();
-  });
-
   describe('basic requests', () => {
     it('should make GET requests', async () => {
-      nock(DEFAULT_BASE_URL)
-        .get('/test')
-        .reply(200, { data: { message: 'success' } });
+      mockEndpoint('get', '/test', { message: 'success' });
 
       const result = await client.get<{ message: string }>('/test');
       expect(result.message).toBe('success');
     });
 
     it('should make POST requests with body', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .post('/test', { name: 'test' })
         .reply(201, { data: { id: '123' } });
 
@@ -56,7 +49,7 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should make PUT requests', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .put('/test/123', { name: 'updated' })
         .reply(200, { data: { id: '123', name: 'updated' } });
 
@@ -67,16 +60,14 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should make DELETE requests', async () => {
-      nock(DEFAULT_BASE_URL)
-        .delete('/test/123')
-        .reply(200, { data: { deleted: true } });
+      mockEndpoint('delete', '/test/123', { deleted: true });
 
       const result = await client.delete<{ deleted: boolean }>('/test/123');
       expect(result.deleted).toBe(true);
     });
 
     it('should include query parameters for GET requests', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .query({ type: 'agent', limit: '10' })
         .reply(200, { data: { items: [] } });
@@ -89,9 +80,9 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should include authorization header', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
-        .matchHeader('Authorization', 'Bearer ulr_test_key_12345')
+        .matchHeader('Authorization', `Bearer ${TEST_API_KEY}`)
         .reply(200, { data: { authenticated: true } });
 
       const result = await client.get<{ authenticated: boolean }>('/test');
@@ -101,77 +92,54 @@ describe('RegistryHttpClient', () => {
 
   describe('error transformation', () => {
     it('should transform 400 to ValidationError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .get('/test')
-        .reply(400, {
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid input',
-            details: { field: 'name' },
-          },
-        });
+      mockError('get', '/test', 400, {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid input',
+        details: { field: 'name' },
+      });
 
       await expect(client.get('/test')).rejects.toThrow(ValidationError);
-      try {
-        await client.get('/test');
-      } catch (error) {
-        // Need a new nock for the second call
-      }
     });
 
     it('should transform 401 to UnauthorizedError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .get('/test')
-        .reply(401, { error: { code: 'UNAUTHORIZED', message: 'Invalid token' } });
+      mockError('get', '/test', 401, { code: 'UNAUTHORIZED', message: 'Invalid token' });
 
       await expect(client.get('/test')).rejects.toThrow(UnauthorizedError);
     });
 
     it('should transform 403 to ForbiddenError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .get('/test')
-        .reply(403, { error: { code: 'FORBIDDEN', message: 'Access denied' } });
+      mockError('get', '/test', 403, { code: 'FORBIDDEN', message: 'Access denied' });
 
       await expect(client.get('/test')).rejects.toThrow(ForbiddenError);
     });
 
     it('should transform 404 to NotFoundError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .get('/test')
-        .reply(404, { error: { code: 'NOT_FOUND', message: 'Resource not found' } });
+      mockError('get', '/test', 404, { code: 'NOT_FOUND', message: 'Resource not found' });
 
       await expect(client.get('/test')).rejects.toThrow(NotFoundError);
     });
 
     it('should transform 409 to ConflictError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .get('/test')
-        .reply(409, { error: { code: 'CONFLICT', message: 'Already exists' } });
+      mockError('get', '/test', 409, { code: 'CONFLICT', message: 'Already exists' });
 
       await expect(client.get('/test')).rejects.toThrow(ConflictError);
     });
 
     it('should transform 413 to PayloadTooLargeError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .post('/test')
-        .reply(413, { error: { code: 'PAYLOAD_TOO_LARGE', message: 'Too large' } });
+      mockError('post', '/test', 413, { code: 'PAYLOAD_TOO_LARGE', message: 'Too large' });
 
       await expect(client.post('/test', {})).rejects.toThrow(PayloadTooLargeError);
     });
 
     it('should transform 422 to UnprocessableError', async () => {
-      nock(DEFAULT_BASE_URL)
-        .post('/test')
-        .reply(422, {
-          error: { code: 'UNPROCESSABLE_ENTITY', message: 'Invalid YAML' },
-        });
+      mockError('post', '/test', 422, { code: 'UNPROCESSABLE_ENTITY', message: 'Invalid YAML' });
 
       await expect(client.post('/test', {})).rejects.toThrow(UnprocessableError);
     });
 
-    it('should transform 429 to RateLimitError with retry-after', async () => {
+    it('should transform 429 to RateLimitError with retry-after', { timeout: 15000 }, async () => {
       // Use .times(3) because 429 is retryable and client retries 3 times by default
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(3)
         .reply(
@@ -189,9 +157,9 @@ describe('RegistryHttpClient', () => {
       }
     });
 
-    it('should transform 503 to ServiceUnavailableError', async () => {
+    it('should transform 503 to ServiceUnavailableError', { timeout: 15000 }, async () => {
       // Use .times(3) because 503 is retryable and client retries 3 times by default
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(3)
         .reply(503, { error: { code: 'SERVICE_UNAVAILABLE', message: 'Unavailable' } });
@@ -200,7 +168,7 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should include request ID from headers', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .reply(
           500,
@@ -221,7 +189,7 @@ describe('RegistryHttpClient', () => {
   describe('retry logic', () => {
     it('should retry on 502 Bad Gateway', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(2)
         .reply(() => {
@@ -238,7 +206,7 @@ describe('RegistryHttpClient', () => {
 
     it('should retry on 503 Service Unavailable', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(1)
         .reply(() => {
@@ -255,7 +223,7 @@ describe('RegistryHttpClient', () => {
 
     it('should retry on 504 Gateway Timeout', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(1)
         .reply(() => {
@@ -272,7 +240,7 @@ describe('RegistryHttpClient', () => {
 
     it('should retry on 429 Too Many Requests', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(1)
         .reply(() => {
@@ -289,7 +257,7 @@ describe('RegistryHttpClient', () => {
 
     it('should NOT retry on 400 Bad Request', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .reply(() => {
           attempts++;
@@ -302,7 +270,7 @@ describe('RegistryHttpClient', () => {
 
     it('should NOT retry on 401 Unauthorized', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .reply(() => {
           attempts++;
@@ -315,7 +283,7 @@ describe('RegistryHttpClient', () => {
 
     it('should NOT retry on 404 Not Found', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .reply(() => {
           attempts++;
@@ -328,7 +296,7 @@ describe('RegistryHttpClient', () => {
 
     it('should stop retrying after max attempts', async () => {
       let attempts = 0;
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(3)
         .reply(() => {
@@ -343,11 +311,11 @@ describe('RegistryHttpClient', () => {
     it('should respect custom retry count', { timeout: 30000 }, async () => {
       let attempts = 0;
       const customClient = new RegistryHttpClient({
-        apiKey: 'ulr_test_key_12345',
+        apiKey: TEST_API_KEY,
         retries: 5,
       });
 
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .times(4)
         .reply(() => {
@@ -366,12 +334,12 @@ describe('RegistryHttpClient', () => {
   describe('timeout handling', () => {
     it('should timeout slow requests', async () => {
       const shortTimeoutClient = new RegistryHttpClient({
-        apiKey: 'ulr_test_key_12345',
+        apiKey: TEST_API_KEY,
         timeout: 100,
         retries: 1,
       });
 
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/slow')
         .delay(500)
         .reply(200, { data: { success: true } });
@@ -380,7 +348,7 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should complete requests within timeout', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/fast')
         .delay(50)
         .reply(200, { data: { success: true } });
@@ -392,7 +360,7 @@ describe('RegistryHttpClient', () => {
 
   describe('rate limit info', () => {
     it('should parse rate limit headers', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .reply(200, { data: { success: true } }, {
           'x-ratelimit-limit': '100',
@@ -409,7 +377,7 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should return null when no rate limit headers', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/test')
         .reply(200, { data: { success: true } });
 
@@ -422,7 +390,7 @@ describe('RegistryHttpClient', () => {
 
   describe('requestRaw', () => {
     it('should return raw response without unwrapping', async () => {
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/raw')
         .reply(200, { models: [{ id: '1' }], total: 1 });
 
@@ -439,7 +407,7 @@ describe('RegistryHttpClient', () => {
     it('should work without authentication', async () => {
       const unauthClient = new RegistryHttpClient();
 
-      nock(DEFAULT_BASE_URL)
+      nock(MOCK_BASE_URL)
         .get('/public')
         .reply(200, { data: { public: true } });
 
@@ -466,12 +434,12 @@ describe('backoff calculation', () => {
     const timestamps: number[] = [];
 
     const client = new RegistryHttpClient({
-      apiKey: 'ulr_test_key_12345',
+      apiKey: TEST_API_KEY,
       retries: 3,
     });
 
     // Set up failing requests
-    nock(DEFAULT_BASE_URL)
+    nock(MOCK_BASE_URL)
       .get('/test')
       .times(3)
       .reply(() => {

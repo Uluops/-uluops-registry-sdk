@@ -3,10 +3,9 @@
  * Tests boundary conditions, validation, and behavior
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import nock from 'nock';
 import { RegistryHttpClient } from '../src/http/http-client.js';
-import { DEFAULT_BASE_URL } from '../src/config/constants.js';
 import * as userOps from '../src/operations/users.js';
 import * as definitionOps from '../src/operations/definitions.js';
 import * as versionOps from '../src/operations/versions.js';
@@ -17,19 +16,15 @@ import * as executionOps from '../src/operations/executions.js';
 import * as translationOps from '../src/operations/translation.js';
 import * as modelOps from '../src/operations/models.js';
 import * as renderOps from '../src/operations/render.js';
+import { TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
 
 describe('operations', () => {
   let http: RegistryHttpClient;
 
   beforeEach(() => {
-    nock.cleanAll();
     http = new RegistryHttpClient({
-      apiKey: 'ulr_test_key_12345',
+      apiKey: TEST_API_KEY,
     });
-  });
-
-  afterEach(() => {
-    nock.cleanAll();
   });
 
   describe('users', () => {
@@ -49,7 +44,7 @@ describe('operations', () => {
           mockResponse[id] = { id, username: 'user' };
         });
 
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/users/batch', { ids })
           .reply(200, { data: mockResponse });
 
@@ -77,7 +72,7 @@ describe('operations', () => {
     describe('get', () => {
       it('should fetch user by valid UUID', async () => {
         const id = '00000000-0000-0000-0000-000000000001';
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get(`/users/${id}`)
           .reply(200, { data: { id, username: 'testuser' } });
 
@@ -96,7 +91,7 @@ describe('operations', () => {
   describe('definitions', () => {
     describe('list', () => {
       it('should list definitions with filters', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions')
           .query({ type: 'agent', limit: '10' })
           .reply(200, { data: { items: [], total: 0, limit: 10, offset: 0 } });
@@ -106,7 +101,7 @@ describe('operations', () => {
       });
 
       it('should list definitions without filters', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions')
           .reply(200, { data: { items: [], total: 0, limit: 50, offset: 0 } });
 
@@ -117,7 +112,7 @@ describe('operations', () => {
 
     describe('get', () => {
       it('should get definition without version', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent')
           .reply(200, { data: { type: 'agent', name: 'my-agent' } });
 
@@ -126,7 +121,7 @@ describe('operations', () => {
       });
 
       it('should get definition with version', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0')
           .reply(200, { data: { type: 'agent', name: 'my-agent', version: '1.0.0' } });
 
@@ -137,7 +132,7 @@ describe('operations', () => {
 
     describe('create', () => {
       it('should create definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/new-agent', { yaml: 'test' })
           .reply(201, { data: { name: 'new-agent', status: 'draft' } });
 
@@ -150,7 +145,7 @@ describe('operations', () => {
 
     describe('update', () => {
       it('should update definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .put('/definitions/agent/my-agent@1.0.0', { yaml: 'updated' })
           .reply(200, { data: { name: 'my-agent', version: '1.0.0' } });
 
@@ -163,7 +158,7 @@ describe('operations', () => {
 
     describe('delete', () => {
       it('should delete definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .delete('/definitions/agent/my-agent@1.0.0')
           .reply(200, { data: null });
 
@@ -175,7 +170,7 @@ describe('operations', () => {
 
     describe('publish', () => {
       it('should publish definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/publish')
           .reply(200, { data: { status: 'published' } });
 
@@ -186,7 +181,7 @@ describe('operations', () => {
 
     describe('deprecate', () => {
       it('should deprecate definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/deprecate', {
             reason: 'Superseded',
           })
@@ -207,7 +202,7 @@ describe('operations', () => {
   describe('versions', () => {
     describe('list', () => {
       it('should list versions', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent/versions')
           .reply(200, {
             data: [
@@ -223,7 +218,7 @@ describe('operations', () => {
 
     describe('diff', () => {
       it('should diff versions', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent/diff')
           .query({ from: '1.0.0', to: '2.0.0' })
           .reply(200, {
@@ -245,7 +240,7 @@ describe('operations', () => {
   describe('validation', () => {
     describe('validate', () => {
       it('should validate YAML', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/validate/agent', { yaml: 'valid yaml' })
           .reply(200, { data: { valid: true, errors: [] } });
 
@@ -254,7 +249,7 @@ describe('operations', () => {
       });
 
       it('should return validation errors', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/validate/agent', { yaml: 'invalid' })
           .reply(200, {
             data: { valid: false, errors: ['Missing required field: name'] },
@@ -270,7 +265,7 @@ describe('operations', () => {
   describe('dependencies', () => {
     describe('get', () => {
       it('should get dependency graph', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
           .reply(200, {
             data: {
@@ -291,7 +286,7 @@ describe('operations', () => {
       });
 
       it('should include maxDepth option', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
           .query({ maxDepth: '3' })
           .reply(200, {
@@ -311,7 +306,7 @@ describe('operations', () => {
 
     describe('getDependents', () => {
       it('should get dependents', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/dependents')
           .reply(200, {
             data: { nodes: [{ id: 'dep1' }], edges: [], cycleDetected: false },
@@ -331,7 +326,7 @@ describe('operations', () => {
   describe('forks', () => {
     describe('create', () => {
       it('should create fork', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/original@1.0.0/fork', { newName: 'forked' })
           .reply(201, { data: { name: 'forked', forkedFromId: 'original-id' } });
 
@@ -344,7 +339,7 @@ describe('operations', () => {
 
     describe('checkForkable', () => {
       it('should check if forkable', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/forkable')
           .reply(200, { data: { forkable: true } });
 
@@ -360,7 +355,7 @@ describe('operations', () => {
 
     describe('getLineage', () => {
       it('should get lineage', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/lineage')
           .reply(200, { data: { parent: null, ancestors: [] } });
 
@@ -371,7 +366,7 @@ describe('operations', () => {
 
     describe('list', () => {
       it('should list forks', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/forks')
           .reply(200, { data: [{ id: 'fork1' }, { id: 'fork2' }] });
 
@@ -384,7 +379,7 @@ describe('operations', () => {
   describe('executions', () => {
     describe('record', () => {
       it('should record execution', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/executions', {
             durationMs: 1500,
             status: 'success',
@@ -401,7 +396,7 @@ describe('operations', () => {
 
     describe('getStats', () => {
       it('should get stats with default window', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/executions')
           .reply(200, { data: { count: 100, avgDurationMs: 1200 } });
 
@@ -415,7 +410,7 @@ describe('operations', () => {
       });
 
       it('should get stats with custom window', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/executions')
           .query({ window: '7d' })
           .reply(200, { data: { count: 50, avgDurationMs: 1000 } });
@@ -435,7 +430,7 @@ describe('operations', () => {
   describe('translation', () => {
     describe('getVersion', () => {
       it('should get translator version', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/translation/version')
           .reply(200, { data: { version: '2.0.0', schemaVersion: '1.0.0' } });
 
@@ -446,7 +441,7 @@ describe('operations', () => {
 
     describe('retranslate', () => {
       it('should retranslate definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/retranslate')
           .reply(200, { data: { translatorVersion: '2.0.0' } });
 
@@ -460,7 +455,7 @@ describe('operations', () => {
       });
 
       it('should retranslate with force option', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/retranslate', { force: true })
           .reply(200, { data: { translatorVersion: '2.0.0' } });
 
@@ -477,7 +472,7 @@ describe('operations', () => {
 
     describe('upgrade', () => {
       it('should upgrade legacy definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/definitions/agent/legacy-agent/upgrade', { yaml: 'old format' })
           .reply(200, { data: { upgraded: true, yaml: 'new format' } });
 
@@ -492,7 +487,7 @@ describe('operations', () => {
   describe('models', () => {
     describe('list', () => {
       it('should list models', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/models')
           .reply(200, { data: { models: [], aliases: [], total: 0 } });
 
@@ -501,7 +496,7 @@ describe('operations', () => {
       });
 
       it('should list models with filters', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/models')
           .query({ provider: 'anthropic', tier: 'premium' })
           .reply(200, { data: { models: [{ provider: 'anthropic' }], total: 1 } });
@@ -516,7 +511,7 @@ describe('operations', () => {
 
     describe('get', () => {
       it('should get model', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/models/anthropic/claude-3-opus')
           .reply(200, { data: { provider: 'anthropic', modelId: 'claude-3-opus' } });
 
@@ -527,7 +522,7 @@ describe('operations', () => {
 
     describe('listProviders', () => {
       it('should list providers', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/models/providers')
           .reply(200, { data: [{ name: 'anthropic' }, { name: 'openai' }] });
 
@@ -538,7 +533,7 @@ describe('operations', () => {
 
     describe('listAliases', () => {
       it('should list aliases', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/models/aliases')
           .reply(200, { data: [{ alias: 'opus' }, { alias: 'sonnet' }] });
 
@@ -549,7 +544,7 @@ describe('operations', () => {
 
     describe('resolveAlias', () => {
       it('should resolve alias', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/models/resolve/opus')
           .reply(200, {
             data: { alias: 'opus', resolved: true, provider: 'anthropic' },
@@ -562,7 +557,7 @@ describe('operations', () => {
 
     describe('sync', () => {
       it('should sync models', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/models/sync')
           .reply(200, { data: { added: 5, updated: 2 } });
 
@@ -575,7 +570,7 @@ describe('operations', () => {
   describe('render', () => {
     describe('get', () => {
       it('should get rendered definition', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/render')
           .reply(200, { data: { markdown: '# My Agent' } });
 
@@ -586,7 +581,7 @@ describe('operations', () => {
 
     describe('preview', () => {
       it('should preview render', async () => {
-        nock(DEFAULT_BASE_URL)
+        nock(MOCK_BASE_URL)
           .post('/render/agent/preview', { yaml: 'test yaml' })
           .reply(200, { data: { markdown: '# Preview' } });
 

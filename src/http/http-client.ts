@@ -233,7 +233,11 @@ export class RegistryHttpClient {
         throw this.createHttpError(response.status, errorData, response.headers);
       }
 
-      return (await response.json()) as T;
+      const data: unknown = await response.json();
+      if (data === null || typeof data !== 'object') {
+        throw new Error('Expected JSON object response');
+      }
+      return data as T;
     } catch (error) {
       throw this.handleFetchError(error);
     } finally {

@@ -11,9 +11,9 @@ import { DEFAULT_BASE_URL } from '../src/config/constants.js';
 export const MOCK_BASE_URL = DEFAULT_BASE_URL;
 
 /**
- * Test API key
+ * Test API key (must be at least 20 chars with ulr_ prefix)
  */
-export const TEST_API_KEY = 'ulr_test_key_12345';
+export const TEST_API_KEY = 'ulr_test_key_1234567890';
 
 /**
  * Test user ID
