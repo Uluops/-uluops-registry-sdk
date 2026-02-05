@@ -155,4 +155,31 @@ describe('RegistryClient', () => {
       await expect(client.definitions.list()).rejects.toThrow('Authentication required');
     });
   });
+
+  describe('authentication helpers', () => {
+    it('should return true for isAuthenticated when API key is provided', () => {
+      const authenticatedClient = new RegistryClient({ apiKey: TEST_API_KEY });
+      expect(authenticatedClient.isAuthenticated()).toBe(true);
+    });
+
+    it('should return false for isAuthenticated when no credentials provided', () => {
+      const unauthenticatedClient = new RegistryClient();
+      expect(unauthenticatedClient.isAuthenticated()).toBe(false);
+    });
+
+    it('should return api_key for getAuthType when API key is provided', () => {
+      const apiKeyClient = new RegistryClient({ apiKey: TEST_API_KEY });
+      expect(apiKeyClient.getAuthType()).toBe('api_key');
+    });
+
+    it('should return session for getAuthType when session token is provided', () => {
+      const sessionClient = new RegistryClient({ sessionToken: 'jwt-token-here' });
+      expect(sessionClient.getAuthType()).toBe('session');
+    });
+
+    it('should return null for getAuthType when no credentials provided', () => {
+      const unauthenticatedClient = new RegistryClient();
+      expect(unauthenticatedClient.getAuthType()).toBeNull();
+    });
+  });
 });

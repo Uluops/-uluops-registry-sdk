@@ -1,0 +1,598 @@
+/**
+ * Tests for SDK operations
+ * Tests boundary conditions, validation, and behavior
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import nock from 'nock';
+import { RegistryHttpClient } from '../src/http/http-client.js';
+import { DEFAULT_BASE_URL } from '../src/config/constants.js';
+import * as userOps from '../src/operations/users.js';
+import * as definitionOps from '../src/operations/definitions.js';
+import * as versionOps from '../src/operations/versions.js';
+import * as validationOps from '../src/operations/validation.js';
+import * as dependencyOps from '../src/operations/dependencies.js';
+import * as forkOps from '../src/operations/forks.js';
+import * as executionOps from '../src/operations/executions.js';
+import * as translationOps from '../src/operations/translation.js';
+import * as modelOps from '../src/operations/models.js';
+import * as renderOps from '../src/operations/render.js';
+
+describe('operations', () => {
+  let http: RegistryHttpClient;
+
+  beforeEach(() => {
+    nock.cleanAll();
+    http = new RegistryHttpClient({
+      apiKey: 'ulr_test_key_12345',
+    });
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+  });
+
+  describe('users', () => {
+    describe('batch', () => {
+      it('should return empty object for empty array', async () => {
+        const result = await userOps.batch(http, []);
+        expect(result).toEqual({});
+      });
+
+      it('should accept exactly 100 IDs', async () => {
+        const ids = Array.from({ length: 100 }, (_, i) =>
+          `${String(i).padStart(8, '0')}-0000-0000-0000-000000000000`
+        );
+
+        const mockResponse: Record<string, unknown> = {};
+        ids.forEach((id) => {
+          mockResponse[id] = { id, username: 'user' };
+        });
+
+        nock(DEFAULT_BASE_URL)
+          .post('/users/batch', { ids })
+          .reply(200, { data: mockResponse });
+
+        const result = await userOps.batch(http, ids);
+        expect(Object.keys(result)).toHaveLength(100);
+      });
+
+      it('should reject more than 100 IDs', async () => {
+        const ids = Array.from({ length: 101 }, (_, i) =>
+          `${String(i).padStart(8, '0')}-0000-0000-0000-000000000000`
+        );
+
+        await expect(userOps.batch(http, ids)).rejects.toThrow(
+          'Batch lookup supports maximum 100 user IDs'
+        );
+      });
+
+      it('should validate each ID format', async () => {
+        const ids = ['valid-uuid-format-here-000000000000', 'invalid-id'];
+
+        await expect(userOps.batch(http, ids)).rejects.toThrow('Invalid UUID format');
+      });
+    });
+
+    describe('get', () => {
+      it('should fetch user by valid UUID', async () => {
+        const id = '00000000-0000-0000-0000-000000000001';
+        nock(DEFAULT_BASE_URL)
+          .get(`/users/${id}`)
+          .reply(200, { data: { id, username: 'testuser' } });
+
+        const result = await userOps.get(http, id);
+        expect(result.username).toBe('testuser');
+      });
+
+      it('should reject invalid UUID', async () => {
+        await expect(userOps.get(http, 'not-a-uuid')).rejects.toThrow(
+          'Invalid UUID format'
+        );
+      });
+    });
+  });
+
+  describe('definitions', () => {
+    describe('list', () => {
+      it('should list definitions with filters', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions')
+          .query({ type: 'agent', limit: '10' })
+          .reply(200, { data: { items: [], total: 0, limit: 10, offset: 0 } });
+
+        const result = await definitionOps.list(http, { type: 'agent', limit: 10 });
+        expect(result.items).toEqual([]);
+      });
+
+      it('should list definitions without filters', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions')
+          .reply(200, { data: { items: [], total: 0, limit: 50, offset: 0 } });
+
+        const result = await definitionOps.list(http);
+        expect(result).toBeDefined();
+      });
+    });
+
+    describe('get', () => {
+      it('should get definition without version', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent')
+          .reply(200, { data: { type: 'agent', name: 'my-agent' } });
+
+        const result = await definitionOps.get(http, 'agent', 'my-agent');
+        expect(result.name).toBe('my-agent');
+      });
+
+      it('should get definition with version', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0')
+          .reply(200, { data: { type: 'agent', name: 'my-agent', version: '1.0.0' } });
+
+        const result = await definitionOps.get(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.version).toBe('1.0.0');
+      });
+    });
+
+    describe('create', () => {
+      it('should create definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/new-agent', { yaml: 'test' })
+          .reply(201, { data: { name: 'new-agent', status: 'draft' } });
+
+        const result = await definitionOps.create(http, 'agent', 'new-agent', {
+          yaml: 'test',
+        });
+        expect(result.status).toBe('draft');
+      });
+    });
+
+    describe('update', () => {
+      it('should update definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .put('/definitions/agent/my-agent@1.0.0', { yaml: 'updated' })
+          .reply(200, { data: { name: 'my-agent', version: '1.0.0' } });
+
+        const result = await definitionOps.update(http, 'agent', 'my-agent', '1.0.0', {
+          yaml: 'updated',
+        });
+        expect(result.name).toBe('my-agent');
+      });
+    });
+
+    describe('delete', () => {
+      it('should delete definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .delete('/definitions/agent/my-agent@1.0.0')
+          .reply(200, { data: null });
+
+        await expect(
+          definitionOps.remove(http, 'agent', 'my-agent', '1.0.0')
+        ).resolves.not.toThrow();
+      });
+    });
+
+    describe('publish', () => {
+      it('should publish definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/publish')
+          .reply(200, { data: { status: 'published' } });
+
+        const result = await definitionOps.publish(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.status).toBe('published');
+      });
+    });
+
+    describe('deprecate', () => {
+      it('should deprecate definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/deprecate', {
+            reason: 'Superseded',
+          })
+          .reply(200, { data: { status: 'deprecated' } });
+
+        const result = await definitionOps.deprecate(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0',
+          { reason: 'Superseded' }
+        );
+        expect(result.status).toBe('deprecated');
+      });
+    });
+  });
+
+  describe('versions', () => {
+    describe('list', () => {
+      it('should list versions', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent/versions')
+          .reply(200, {
+            data: [
+              { version: '1.0.0', status: 'published' },
+              { version: '2.0.0', status: 'draft' },
+            ],
+          });
+
+        const result = await versionOps.list(http, 'agent', 'my-agent');
+        expect(result).toHaveLength(2);
+      });
+    });
+
+    describe('diff', () => {
+      it('should diff versions', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent/diff')
+          .query({ from: '1.0.0', to: '2.0.0' })
+          .reply(200, {
+            data: { added: [], removed: [], modified: ['description'] },
+          });
+
+        const result = await versionOps.diff(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0',
+          '2.0.0'
+        );
+        expect(result.modified).toContain('description');
+      });
+    });
+  });
+
+  describe('validation', () => {
+    describe('validate', () => {
+      it('should validate YAML', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/validate/agent', { yaml: 'valid yaml' })
+          .reply(200, { data: { valid: true, errors: [] } });
+
+        const result = await validationOps.validate(http, 'agent', 'valid yaml');
+        expect(result.valid).toBe(true);
+      });
+
+      it('should return validation errors', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/validate/agent', { yaml: 'invalid' })
+          .reply(200, {
+            data: { valid: false, errors: ['Missing required field: name'] },
+          });
+
+        const result = await validationOps.validate(http, 'agent', 'invalid');
+        expect(result.valid).toBe(false);
+        expect(result.errors).toContain('Missing required field: name');
+      });
+    });
+  });
+
+  describe('dependencies', () => {
+    describe('get', () => {
+      it('should get dependency graph', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
+          .reply(200, {
+            data: {
+              nodes: [{ id: '1', name: 'dep1' }],
+              edges: [],
+              cycleDetected: false,
+            },
+          });
+
+        const result = await dependencyOps.get(
+          http,
+          'workflow',
+          'my-workflow',
+          '1.0.0'
+        );
+        expect(result.nodes).toHaveLength(1);
+        expect(result.cycleDetected).toBe(false);
+      });
+
+      it('should include maxDepth option', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
+          .query({ maxDepth: '3' })
+          .reply(200, {
+            data: { nodes: [], edges: [], cycleDetected: false },
+          });
+
+        const result = await dependencyOps.get(
+          http,
+          'workflow',
+          'my-workflow',
+          '1.0.0',
+          { maxDepth: 3 }
+        );
+        expect(result).toBeDefined();
+      });
+    });
+
+    describe('getDependents', () => {
+      it('should get dependents', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/dependents')
+          .reply(200, {
+            data: { nodes: [{ id: 'dep1' }], edges: [], cycleDetected: false },
+          });
+
+        const result = await dependencyOps.getDependents(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0'
+        );
+        expect(result.nodes).toHaveLength(1);
+      });
+    });
+  });
+
+  describe('forks', () => {
+    describe('create', () => {
+      it('should create fork', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/original@1.0.0/fork', { newName: 'forked' })
+          .reply(201, { data: { name: 'forked', forkedFromId: 'original-id' } });
+
+        const result = await forkOps.create(http, 'agent', 'original', '1.0.0', {
+          newName: 'forked',
+        });
+        expect(result.name).toBe('forked');
+      });
+    });
+
+    describe('checkForkable', () => {
+      it('should check if forkable', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/forkable')
+          .reply(200, { data: { forkable: true } });
+
+        const result = await forkOps.checkForkable(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0'
+        );
+        expect(result.forkable).toBe(true);
+      });
+    });
+
+    describe('getLineage', () => {
+      it('should get lineage', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/lineage')
+          .reply(200, { data: { parent: null, ancestors: [] } });
+
+        const result = await forkOps.getLineage(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.parent).toBeNull();
+      });
+    });
+
+    describe('list', () => {
+      it('should list forks', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/forks')
+          .reply(200, { data: [{ id: 'fork1' }, { id: 'fork2' }] });
+
+        const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
+        expect(result).toHaveLength(2);
+      });
+    });
+  });
+
+  describe('executions', () => {
+    describe('record', () => {
+      it('should record execution', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/executions', {
+            durationMs: 1500,
+            status: 'success',
+          })
+          .reply(201, { data: { recorded: true } });
+
+        const result = await executionOps.record(http, 'agent', 'my-agent', '1.0.0', {
+          durationMs: 1500,
+          status: 'success',
+        });
+        expect(result.recorded).toBe(true);
+      });
+    });
+
+    describe('getStats', () => {
+      it('should get stats with default window', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/executions')
+          .reply(200, { data: { count: 100, avgDurationMs: 1200 } });
+
+        const result = await executionOps.getStats(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0'
+        );
+        expect(result.count).toBe(100);
+      });
+
+      it('should get stats with custom window', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/executions')
+          .query({ window: '7d' })
+          .reply(200, { data: { count: 50, avgDurationMs: 1000 } });
+
+        const result = await executionOps.getStats(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0',
+          '7d'
+        );
+        expect(result.count).toBe(50);
+      });
+    });
+  });
+
+  describe('translation', () => {
+    describe('getVersion', () => {
+      it('should get translator version', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/translation/version')
+          .reply(200, { data: { version: '2.0.0', schemaVersion: '1.0.0' } });
+
+        const result = await translationOps.getVersion(http);
+        expect(result.version).toBe('2.0.0');
+      });
+    });
+
+    describe('retranslate', () => {
+      it('should retranslate definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/retranslate')
+          .reply(200, { data: { translatorVersion: '2.0.0' } });
+
+        const result = await translationOps.retranslate(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0'
+        );
+        expect(result.translatorVersion).toBe('2.0.0');
+      });
+
+      it('should retranslate with force option', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/retranslate', { force: true })
+          .reply(200, { data: { translatorVersion: '2.0.0' } });
+
+        const result = await translationOps.retranslate(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0',
+          { force: true }
+        );
+        expect(result.translatorVersion).toBe('2.0.0');
+      });
+    });
+
+    describe('upgrade', () => {
+      it('should upgrade legacy definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/definitions/agent/legacy-agent/upgrade', { yaml: 'old format' })
+          .reply(200, { data: { upgraded: true, yaml: 'new format' } });
+
+        const result = await translationOps.upgrade(http, 'agent', 'legacy-agent', {
+          yaml: 'old format',
+        });
+        expect(result.upgraded).toBe(true);
+      });
+    });
+  });
+
+  describe('models', () => {
+    describe('list', () => {
+      it('should list models', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/models')
+          .reply(200, { data: { models: [], aliases: [], total: 0 } });
+
+        const result = await modelOps.list(http);
+        expect(result.models).toEqual([]);
+      });
+
+      it('should list models with filters', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/models')
+          .query({ provider: 'anthropic', tier: 'premium' })
+          .reply(200, { data: { models: [{ provider: 'anthropic' }], total: 1 } });
+
+        const result = await modelOps.list(http, {
+          provider: 'anthropic',
+          tier: 'premium',
+        });
+        expect(result.models).toHaveLength(1);
+      });
+    });
+
+    describe('get', () => {
+      it('should get model', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/models/anthropic/claude-3-opus')
+          .reply(200, { data: { provider: 'anthropic', modelId: 'claude-3-opus' } });
+
+        const result = await modelOps.get(http, 'anthropic', 'claude-3-opus');
+        expect(result.provider).toBe('anthropic');
+      });
+    });
+
+    describe('listProviders', () => {
+      it('should list providers', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/models/providers')
+          .reply(200, { data: [{ name: 'anthropic' }, { name: 'openai' }] });
+
+        const result = await modelOps.listProviders(http);
+        expect(result).toHaveLength(2);
+      });
+    });
+
+    describe('listAliases', () => {
+      it('should list aliases', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/models/aliases')
+          .reply(200, { data: [{ alias: 'opus' }, { alias: 'sonnet' }] });
+
+        const result = await modelOps.listAliases(http);
+        expect(result).toHaveLength(2);
+      });
+    });
+
+    describe('resolveAlias', () => {
+      it('should resolve alias', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/models/resolve/opus')
+          .reply(200, {
+            data: { alias: 'opus', resolved: true, provider: 'anthropic' },
+          });
+
+        const result = await modelOps.resolveAlias(http, 'opus');
+        expect(result.resolved).toBe(true);
+      });
+    });
+
+    describe('sync', () => {
+      it('should sync models', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/models/sync')
+          .reply(200, { data: { added: 5, updated: 2 } });
+
+        const result = await modelOps.sync(http);
+        expect(result.added).toBe(5);
+      });
+    });
+  });
+
+  describe('render', () => {
+    describe('get', () => {
+      it('should get rendered definition', async () => {
+        nock(DEFAULT_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/render')
+          .reply(200, { data: { markdown: '# My Agent' } });
+
+        const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.markdown).toBe('# My Agent');
+      });
+    });
+
+    describe('preview', () => {
+      it('should preview render', async () => {
+        nock(DEFAULT_BASE_URL)
+          .post('/render/agent/preview', { yaml: 'test yaml' })
+          .reply(200, { data: { markdown: '# Preview' } });
+
+        const result = await renderOps.preview(http, 'agent', { yaml: 'test yaml' });
+        expect(result.markdown).toBe('# Preview');
+      });
+    });
+  });
+});

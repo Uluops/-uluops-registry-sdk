@@ -294,4 +294,22 @@ export class RegistryClient {
   getHttpClient(): RegistryHttpClient {
     return this.http;
   }
+
+  /**
+   * Check if the client is authenticated
+   * @returns true if credentials are configured, false otherwise
+   */
+  isAuthenticated(): boolean {
+    const strategy = this.http.getAuthStrategy();
+    return strategy !== null && strategy.isAuthenticated();
+  }
+
+  /**
+   * Get the authentication type being used
+   * @returns 'api_key', 'session', or null if not authenticated
+   */
+  getAuthType(): 'api_key' | 'session' | null {
+    const strategy = this.http.getAuthStrategy();
+    return strategy ? strategy.getType() : null;
+  }
 }
