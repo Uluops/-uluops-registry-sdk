@@ -198,6 +198,29 @@ describe('loaders', () => {
       const result = loadStoredCredentials();
       expect(result).toBeNull();
     });
+
+    it('should log warning on error when debug is enabled', () => {
+      process.env[ENV_VARS.DEBUG] = 'true';
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue('invalid json');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      loadStoredCredentials();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to load credentials')
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('should not log when debug is not enabled', () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue('invalid json');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      loadStoredCredentials();
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
   });
 
   describe('loadCredentials', () => {

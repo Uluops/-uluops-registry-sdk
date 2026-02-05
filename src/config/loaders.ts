@@ -105,7 +105,11 @@ export function loadStoredCredentials(profile = 'default'): Partial<Credentials>
       apiKey: profileCreds.apiKey,
       sessionToken: profileCreds.sessionToken,
     };
-  } catch {
+  } catch (error) {
+    if (process.env[ENV_VARS.DEBUG] === 'true') {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`[registry-sdk] Failed to load credentials from ${credPath}: ${msg}`);
+    }
     return null;
   }
 }

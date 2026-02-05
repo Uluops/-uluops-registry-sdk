@@ -312,6 +312,14 @@ export class RegistryHttpClient {
   /**
    * Create an HTTP error from response data
    */
+  /**
+   * Keys that should be stripped from error details to prevent leaking server internals
+   */
+  private static readonly REDACTED_DETAIL_KEYS = new Set([
+    'stack', 'trace', 'stackTrace', 'internal', 'query', 'sql', 'sqlMessage',
+    'sqlState', 'errno', 'syscall', 'hostname', 'address',
+  ]);
+
   private createHttpError(
     status: number,
     data: unknown,
@@ -322,7 +330,17 @@ export class RegistryHttpClient {
 
     // Parse retry-after for rate limit and service unavailable errors
     const retryAfter = headers.get('retry-after');
-    const details: Record<string, unknown> = { ...apiError?.details };
+    const details: Record<string, unknown> = {};
+
+    // Copy details, stripping keys that could contain server internals
+    if (apiError?.details) {
+      for (const [key, value] of Object.entries(apiError.details)) {
+        if (!RegistryHttpClient.REDACTED_DETAIL_KEYS.has(key)) {
+          details[key] = value;
+        }
+      }
+    }
+
     if (retryAfter) {
       details.retryAfter = parseInt(retryAfter, 10);
     }

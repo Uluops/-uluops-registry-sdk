@@ -167,6 +167,37 @@ describe('RegistryHttpClient', () => {
       await expect(client.get('/test')).rejects.toThrow(ServiceUnavailableError);
     });
 
+    it('should strip server-internal details from error responses', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .reply(400, {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid input',
+            details: {
+              field: 'name',
+              reason: 'too short',
+              stack: 'Error: at Server.handler (/app/src/routes.ts:42)',
+              sql: 'SELECT * FROM users WHERE id = $1',
+              internal: { serverPath: '/opt/app' },
+            },
+          },
+        });
+
+      try {
+        await client.get('/test');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        const details = (error as ValidationError).details;
+        expect(details).toHaveProperty('field', 'name');
+        expect(details).toHaveProperty('reason', 'too short');
+        expect(details).not.toHaveProperty('stack');
+        expect(details).not.toHaveProperty('sql');
+        expect(details).not.toHaveProperty('internal');
+      }
+    });
+
     it('should include request ID from headers', async () => {
       nock(MOCK_BASE_URL)
         .get('/test')
@@ -361,6 +392,40 @@ describe('RegistryHttpClient', () => {
 
       const result = await client.request<{ id: string }>('POST', '/test', { name: 'test' }, { retryMutations: true });
       expect(result.id).toBe('123');
+      expect(attempts).toBe(1);
+    });
+
+    it('should not retry when retries is 1 (single attempt)', async () => {
+      const singleAttemptClient = new RegistryHttpClient({
+        apiKey: TEST_API_KEY,
+        retries: 1,
+      });
+
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        });
+
+      await expect(singleAttemptClient.get('/test')).rejects.toThrow('Service Unavailable');
+      expect(attempts).toBe(1);
+    });
+
+    it('should override default retries with per-request option', async () => {
+      // Client has 3 retries, but request overrides to 1
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        });
+
+      await expect(
+        client.request('GET', '/test', undefined, { retries: 1 })
+      ).rejects.toThrow('Service Unavailable');
       expect(attempts).toBe(1);
     });
 
