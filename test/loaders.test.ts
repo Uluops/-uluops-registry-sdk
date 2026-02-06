@@ -220,13 +220,15 @@ describe('loaders', () => {
       warnSpy.mockRestore();
     });
 
-    it('should not log when debug is not enabled', () => {
+    it('should always warn on corrupt credentials regardless of debug mode', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue('invalid json');
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       loadStoredCredentials();
-      expect(warnSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to load credentials')
+      );
       warnSpy.mockRestore();
     });
   });

@@ -193,6 +193,11 @@ export class RegistryHttpClient {
         throw this.createHttpError(response.status, errorData, response.headers);
       }
 
+      // Handle 204 No Content (e.g., DELETE responses)
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
       const responseData: unknown = await response.json();
       if (
         responseData === null ||

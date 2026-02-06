@@ -55,7 +55,7 @@ export async function get(
   provider: string,
   modelId: string
 ): Promise<Model> {
-  return http.get<Model>(`/models/${provider}/${modelId}`);
+  return http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`);
 }
 
 /**
@@ -79,7 +79,7 @@ export async function resolveAlias(
   http: RegistryHttpClient,
   alias: string
 ): Promise<AliasResolution> {
-  return http.get<AliasResolution>(`/models/resolve/${alias}`);
+  return http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`);
 }
 
 /**
