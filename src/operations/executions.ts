@@ -39,5 +39,5 @@ export async function getStats(
   window?: number
 ): Promise<ExecutionStats> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;
-  return http.get<ExecutionStats>(path, window ? { window } : undefined, { schema: executionStatsSchema });
+  return http.get<ExecutionStats>(path, window !== undefined ? { window } : undefined, { schema: executionStatsSchema });
 }

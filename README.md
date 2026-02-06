@@ -174,6 +174,16 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 | `@uluops/registry-sdk/errors` | Error classes and utilities |
 | `@uluops/registry-sdk/config` | Configuration loaders and constants |
 
+## API Compatibility
+
+This SDK targets the **UluOps Registry API v1** (`/api/v1`). The SDK version follows [semver](https://semver.org/):
+
+- **Patch** (0.1.x): Bug fixes, no API changes
+- **Minor** (0.x.0): New features, backward-compatible
+- **Major** (x.0.0): Breaking changes (method signatures, removed endpoints)
+
+The base URL defaults to `https://registry.uluops.ai/api/v1` in production and `http://localhost:3001/api/v1` when `NODE_ENV=development`. Override with the `baseUrl` constructor option or `ULUOPS_BASE_URL` env var.
+
 ## API Reference
 
 ### Client Configuration
