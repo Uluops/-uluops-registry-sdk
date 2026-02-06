@@ -66,10 +66,19 @@ export const API_KEY_PREFIX = 'ulr_';
  */
 export const ENV_VARS = {
   API_KEY: 'ULUOPS_API_KEY',
+  EMAIL: 'ULUOPS_EMAIL',
+  PASSWORD: 'ULUOPS_PASSWORD',
   SESSION_TOKEN: 'ULUOPS_SESSION_TOKEN',
   BASE_URL: 'ULUOPS_REGISTRY_URL',
+  AUTH_BASE_URL: 'ULUOPS_BASE_URL',
   DEBUG: 'ULUOPS_DEBUG',
 } as const;
+
+/**
+ * Default auth base URL (ops API) for login/refresh.
+ * The registry API has no auth endpoints — it delegates to ops-uluops-api.
+ */
+export const DEFAULT_AUTH_BASE_URL = 'http://localhost:3100/api/v1';
 
 /**
  * Config file paths

@@ -2,7 +2,7 @@
  * Tests for the RegistryClient
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { RegistryClient } from '../src/client.js';
 import {
   mockEndpoint,
@@ -158,6 +158,22 @@ describe('RegistryClient', () => {
   });
 
   describe('authentication helpers', () => {
+    let originalHome: string | undefined;
+
+    beforeEach(() => {
+      // Use a non-existent HOME to prevent loading stored credentials from disk
+      originalHome = process.env.HOME;
+      process.env.HOME = '/tmp/__nonexistent_test_home__';
+    });
+
+    afterEach(() => {
+      if (originalHome !== undefined) {
+        process.env.HOME = originalHome;
+      } else {
+        delete process.env.HOME;
+      }
+    });
+
     it('should return true for isAuthenticated when API key is provided', () => {
       const authenticatedClient = new RegistryClient({ apiKey: TEST_API_KEY });
       expect(authenticatedClient.isAuthenticated()).toBe(true);

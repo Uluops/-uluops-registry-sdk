@@ -8,8 +8,25 @@ import {
   JwtSessionAuth,
   createAuthStrategy,
 } from '../src/http/auth-strategy.js';
+import type { FetchClient } from '../src/http/fetch-adapter.js';
 import { ValidationError } from '../src/errors/errors.js';
 import { TEST_API_KEY, TEST_SESSION_TOKEN } from './setup.js';
+
+/**
+ * Create a mock FetchClient for testing
+ */
+function createMockFetchClient(): FetchClient {
+  return {
+    post: vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          sessionToken: 'new-token-from-login',
+          expiresAt: '2026-03-01T00:00:00.000Z',
+        },
+      },
+    }),
+  };
+}
 
 describe('ApiKeyAuth', () => {
   it('should create with valid API key', () => {
@@ -77,96 +94,123 @@ describe('ApiKeyAuth', () => {
 });
 
 describe('JwtSessionAuth', () => {
-  it('should create with valid JWT token', () => {
-    const auth = new JwtSessionAuth(TEST_SESSION_TOKEN);
+  it('should create with initial token', () => {
+    const httpClient = createMockFetchClient();
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, TEST_SESSION_TOKEN);
     expect(auth.getType()).toBe('session');
     expect(auth.isAuthenticated()).toBe(true);
   });
 
   it('should return Bearer authorization header', () => {
-    const auth = new JwtSessionAuth(TEST_SESSION_TOKEN);
+    const httpClient = createMockFetchClient();
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, TEST_SESSION_TOKEN);
     expect(auth.getAuthorizationHeader()).toBe(`Bearer ${TEST_SESSION_TOKEN}`);
   });
 
-  it('should not support refresh', () => {
-    const auth = new JwtSessionAuth(TEST_SESSION_TOKEN);
-    expect(auth.canRefresh()).toBe(false);
-  });
-
-  it('should throw on refresh attempt with helpful message', async () => {
-    const auth = new JwtSessionAuth(TEST_SESSION_TOKEN);
-    await expect(auth.refresh()).rejects.toThrow('re-authenticate with the ops-uluops-api');
+  it('should support refresh (can re-login)', () => {
+    const httpClient = createMockFetchClient();
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' });
+    expect(auth.canRefresh()).toBe(true);
   });
 
   it('should return current session token', () => {
-    const auth = new JwtSessionAuth(TEST_SESSION_TOKEN);
+    const httpClient = createMockFetchClient();
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, TEST_SESSION_TOKEN);
     expect(auth.getSessionToken()).toBe(TEST_SESSION_TOKEN);
   });
 
-  describe('validation', () => {
-    it('should throw ValidationError on empty token', () => {
-      expect(() => new JwtSessionAuth('')).toThrow(ValidationError);
-      expect(() => new JwtSessionAuth('')).toThrow('Session token is required');
-    });
+  it('should return null token when not yet authenticated', () => {
+    const httpClient = createMockFetchClient();
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' });
+    expect(auth.getSessionToken()).toBeNull();
+    expect(auth.isAuthenticated()).toBe(false);
+  });
 
-    it('should throw ValidationError on invalid JWT format (no dots)', () => {
-      expect(() => new JwtSessionAuth('not-a-jwt')).toThrow(ValidationError);
-      expect(() => new JwtSessionAuth('not-a-jwt')).toThrow('Invalid session token format');
-    });
+  it('should throw UnauthorizedError when getting header without token', () => {
+    const httpClient = createMockFetchClient();
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' });
+    expect(() => auth.getAuthorizationHeader()).toThrow('Session expired or not authenticated');
+  });
 
-    it('should throw ValidationError on invalid JWT format (one dot)', () => {
-      expect(() => new JwtSessionAuth('header.payload')).toThrow(ValidationError);
-    });
+  it('should accept non-JWT session tokens (ops API format)', () => {
+    const httpClient = createMockFetchClient();
+    const opsToken = '-9M8qDiwnLX5lwOXHooBrsRBH9hy7MmU-889Phbd1Fk';
+    const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, opsToken);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(auth.getAuthorizationHeader()).toBe(`Bearer ${opsToken}`);
+  });
 
-    it('should throw ValidationError on JWT with invalid characters', () => {
-      expect(() => new JwtSessionAuth('header.pay load.sig')).toThrow(ValidationError);
-    });
+  describe('login', () => {
+    it('should login and store token', async () => {
+      const httpClient = createMockFetchClient();
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass123' });
 
-    it('should include field details in validation errors', () => {
-      try {
-        new JwtSessionAuth('');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ValidationError);
-        expect((error as ValidationError).details).toEqual({ field: 'sessionToken' });
-      }
-    });
-
-    it('should accept minimal valid JWT format', () => {
-      const auth = new JwtSessionAuth('a.b.c');
+      const token = await auth.login();
+      expect(token).toBe('new-token-from-login');
+      expect(auth.getSessionToken()).toBe('new-token-from-login');
       expect(auth.isAuthenticated()).toBe(true);
+      expect(httpClient.post).toHaveBeenCalledWith('/auth/login', { email: 'test@test.com', password: 'pass123' });
+    });
+
+    it('should call onTokenRefresh callback on login', async () => {
+      const httpClient = createMockFetchClient();
+      const callback = vi.fn();
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass123' }, callback);
+
+      await auth.login();
+      expect(callback).toHaveBeenCalledWith('new-token-from-login');
+    });
+
+    it('should set expiresAt from login response', async () => {
+      const httpClient = createMockFetchClient();
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass123' });
+
+      await auth.login();
+      expect(auth.getExpiresAt()).toEqual(new Date('2026-03-01T00:00:00.000Z'));
+    });
+
+    it('should throw when login response missing sessionToken', async () => {
+      const httpClient: FetchClient = {
+        post: vi.fn().mockResolvedValue({ data: { data: {} } }),
+      };
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass123' });
+      await expect(auth.login()).rejects.toThrow('Login response missing sessionToken');
     });
   });
 
-  describe('updateToken', () => {
-    it('should update to a new valid token', () => {
-      const auth = new JwtSessionAuth('aaa.bbb.ccc');
-      auth.updateToken('xxx.yyy.zzz');
-      expect(auth.getSessionToken()).toBe('xxx.yyy.zzz');
-      expect(auth.getAuthorizationHeader()).toBe('Bearer xxx.yyy.zzz');
-    });
+  describe('refresh', () => {
+    it('should re-login on refresh', async () => {
+      const httpClient = createMockFetchClient();
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass123' });
 
-    it('should throw ValidationError on empty new token', () => {
-      const auth = new JwtSessionAuth('aaa.bbb.ccc');
-      expect(() => auth.updateToken('')).toThrow(ValidationError);
-      expect(() => auth.updateToken('')).toThrow('Session token is required');
+      await auth.refresh();
+      expect(auth.getSessionToken()).toBe('new-token-from-login');
+      expect(httpClient.post).toHaveBeenCalledWith('/auth/login', { email: 'test@test.com', password: 'pass123' });
     });
+  });
 
-    it('should throw ValidationError on invalid format new token', () => {
-      const auth = new JwtSessionAuth('aaa.bbb.ccc');
-      expect(() => auth.updateToken('invalid')).toThrow(ValidationError);
-      expect(() => auth.updateToken('invalid')).toThrow('Invalid session token format');
+  describe('clearSession', () => {
+    it('should clear token and expiration', () => {
+      const httpClient = createMockFetchClient();
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, TEST_SESSION_TOKEN);
+
+      expect(auth.isAuthenticated()).toBe(true);
+      auth.clearSession();
+      expect(auth.isAuthenticated()).toBe(false);
+      expect(auth.getSessionToken()).toBeNull();
+      expect(auth.getExpiresAt()).toBeNull();
     });
+  });
 
-    it('should call onTokenRefresh callback', () => {
-      const callback = vi.fn();
-      const auth = new JwtSessionAuth('aaa.bbb.ccc', callback);
-      auth.updateToken('xxx.yyy.zzz');
-      expect(callback).toHaveBeenCalledWith('xxx.yyy.zzz');
-    });
+  describe('expiration', () => {
+    it('should report not authenticated when token is expired', () => {
+      const httpClient = createMockFetchClient();
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, 'some-token');
+      // Force expiration by setting expiresAt to the past
+      (auth as unknown as { expiresAt: Date }).expiresAt = new Date('2020-01-01');
 
-    it('should not fail when no onTokenRefresh callback', () => {
-      const auth = new JwtSessionAuth('aaa.bbb.ccc');
-      expect(() => auth.updateToken('xxx.yyy.zzz')).not.toThrow();
+      expect(auth.isAuthenticated()).toBe(false);
+      expect(auth.getSessionToken()).toBeNull(); // Should clear on expiration check
     });
   });
 });
@@ -177,15 +221,35 @@ describe('createAuthStrategy', () => {
     expect(strategy.getType()).toBe('api_key');
   });
 
-  it('should create JwtSessionAuth when sessionToken provided', () => {
-    const strategy = createAuthStrategy({ sessionToken: TEST_SESSION_TOKEN });
+  it('should create JwtSessionAuth when sessionToken and httpClient provided', () => {
+    const httpClient = createMockFetchClient();
+    const strategy = createAuthStrategy({ sessionToken: TEST_SESSION_TOKEN, httpClient });
+    expect(strategy.getType()).toBe('session');
+  });
+
+  it('should create JwtSessionAuth when email/password and httpClient provided', () => {
+    const httpClient = createMockFetchClient();
+    const strategy = createAuthStrategy({ email: 'test@test.com', password: 'pass', httpClient });
     expect(strategy.getType()).toBe('session');
   });
 
   it('should prefer apiKey over sessionToken', () => {
+    const httpClient = createMockFetchClient();
     const strategy = createAuthStrategy({
       apiKey: TEST_API_KEY,
       sessionToken: TEST_SESSION_TOKEN,
+      httpClient,
+    });
+    expect(strategy.getType()).toBe('api_key');
+  });
+
+  it('should prefer apiKey over email/password', () => {
+    const httpClient = createMockFetchClient();
+    const strategy = createAuthStrategy({
+      apiKey: TEST_API_KEY,
+      email: 'test@test.com',
+      password: 'pass',
+      httpClient,
     });
     expect(strategy.getType()).toBe('api_key');
   });
@@ -194,15 +258,18 @@ describe('createAuthStrategy', () => {
     expect(() => createAuthStrategy({})).toThrow('No valid credentials provided');
   });
 
-  it('should pass onTokenRefresh to JwtSessionAuth', () => {
+  it('should pass onTokenRefresh to JwtSessionAuth', async () => {
+    const httpClient = createMockFetchClient();
     const callback = vi.fn();
     const strategy = createAuthStrategy({
-      sessionToken: TEST_SESSION_TOKEN,
+      email: 'test@test.com',
+      password: 'pass',
+      httpClient,
       onTokenRefresh: callback,
     });
     expect(strategy.getType()).toBe('session');
-    // Verify callback is wired by updating token
-    (strategy as JwtSessionAuth).updateToken('xxx.yyy.zzz');
-    expect(callback).toHaveBeenCalledWith('xxx.yyy.zzz');
+    // Verify callback is wired by doing a login
+    await (strategy as JwtSessionAuth).login();
+    expect(callback).toHaveBeenCalledWith('new-token-from-login');
   });
 });

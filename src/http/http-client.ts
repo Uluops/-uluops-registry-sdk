@@ -5,6 +5,7 @@
 import type { ZodType } from 'zod';
 import {
   DEFAULT_BASE_URL,
+  DEFAULT_AUTH_BASE_URL,
   DEFAULT_TIMEOUT,
   DEFAULT_RETRY_COUNT,
   BACKOFF_BASE_MS,
@@ -21,6 +22,7 @@ import {
   TimeoutError,
 } from '../errors/errors.js';
 import { createAuthStrategy, type AuthStrategy, type AuthConfig } from './auth-strategy.js';
+import type { FetchClient } from './fetch-adapter.js';
 import { createLogger, type Logger } from '../utils/logger.js';
 import { sleep, parseRateLimitHeaders, type RateLimitInfo } from '../utils/helpers.js';
 
@@ -29,10 +31,13 @@ import { sleep, parseRateLimitHeaders, type RateLimitInfo } from '../utils/helpe
  */
 export interface HttpClientConfig {
   baseUrl?: string;
+  authBaseUrl?: string;
   timeout?: number;
   retries?: number;
   debug?: boolean;
   apiKey?: string;
+  email?: string;
+  password?: string;
   sessionToken?: string;
   onTokenRefresh?: (token: string) => void;
 }
@@ -42,17 +47,20 @@ export interface HttpClientConfig {
  */
 export class RegistryHttpClient {
   private readonly baseUrl: string;
+  private readonly authBaseUrl: string;
   private readonly timeout: number;
   private readonly authStrategy: AuthStrategy | null;
   private readonly logger: Logger;
   private readonly retries: number;
   private readonly defaultHeaders: Record<string, string>;
   private lastRateLimitInfo: RateLimitInfo | null = null;
+  private refreshPromise: Promise<void> | null = null;
 
   constructor(config: HttpClientConfig = {}) {
     this.logger = createLogger(config.debug ?? false);
     this.retries = config.retries ?? DEFAULT_RETRY_COUNT;
     this.baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
+    this.authBaseUrl = config.authBaseUrl ?? DEFAULT_AUTH_BASE_URL;
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
@@ -62,17 +70,56 @@ export class RegistryHttpClient {
     };
 
     // Create auth strategy if credentials provided
-    const hasCredentials = config.apiKey || config.sessionToken;
+    const hasCredentials = config.apiKey || config.sessionToken || (config.email && config.password);
     if (hasCredentials) {
       const authConfig: AuthConfig = {
         apiKey: config.apiKey,
+        email: config.email,
+        password: config.password,
         sessionToken: config.sessionToken,
+        httpClient: this.createFetchClient(),
         onTokenRefresh: config.onTokenRefresh,
       };
       this.authStrategy = createAuthStrategy(authConfig);
     } else {
       this.authStrategy = null;
     }
+  }
+
+  /**
+   * Create a minimal FetchClient for auth strategy use (login/refresh).
+   * This targets the ops-uluops-api (authBaseUrl), not the registry API,
+   * because the registry API has no auth endpoints.
+   */
+  private createFetchClient(): FetchClient {
+    return {
+      post: async <T>(url: string, body: object) => {
+        const fullUrl = new URL(url, this.authBaseUrl).toString();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+        try {
+          const response = await fetch(fullUrl, {
+            method: 'POST',
+            headers: this.defaultHeaders,
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw this.createHttpError(response.status, data, response.headers);
+          }
+
+          const data = await response.json();
+          return { data } as { data: { data: T } };
+        } catch (error) {
+          throw this.handleFetchError(error);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      },
+    };
   }
 
   /**
@@ -120,6 +167,28 @@ export class RegistryHttpClient {
           this.logger.debug(`Attempt ${attempt}/${maxAttempts} failed, retrying after ${delay}ms`);
           await sleep(delay);
           continue;
+        }
+
+        // Handle 401 with token refresh (only on first attempt to prevent loops)
+        const isFirstAttempt = attempt === 1;
+        if (
+          lastError instanceof UnauthorizedError &&
+          this.authStrategy?.canRefresh() &&
+          isFirstAttempt
+        ) {
+          try {
+            this.logger.debug('Token expired, attempting refresh via ops API...');
+            // Deduplicate concurrent refresh attempts
+            if (!this.refreshPromise) {
+              this.refreshPromise = this.authStrategy.refresh().finally(() => {
+                this.refreshPromise = null;
+              });
+            }
+            await this.refreshPromise;
+            continue; // Retry the request with new token
+          } catch (refreshError) {
+            this.logger.debug(`Token refresh failed: ${refreshError instanceof Error ? refreshError.message : String(refreshError)}`);
+          }
         }
 
         throw lastError;

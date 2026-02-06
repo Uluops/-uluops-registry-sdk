@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { config as loadDotenv } from 'dotenv';
-import { ENV_VARS, CONFIG_PATHS, DEFAULT_BASE_URL, API_KEY_PREFIX } from './constants.js';
+import { ENV_VARS, CONFIG_PATHS, DEFAULT_BASE_URL, DEFAULT_AUTH_BASE_URL, API_KEY_PREFIX } from './constants.js';
 import { ValidationError } from '../errors/errors.js';
 
 /**
@@ -14,6 +14,8 @@ import { ValidationError } from '../errors/errors.js';
  */
 export interface Credentials {
   apiKey?: string;
+  email?: string;
+  password?: string;
   sessionToken?: string;
 }
 
@@ -22,6 +24,7 @@ export interface Credentials {
  */
 export interface SdkConfig {
   baseUrl: string;
+  authBaseUrl: string;
   credentials: Credentials;
   debug: boolean;
   timeout?: number;
@@ -41,6 +44,7 @@ interface StoredProfile {
   apiKey?: string;
   sessionToken?: string;
   expiresAt?: string;
+  email?: string;
 }
 
 /**
@@ -105,6 +109,7 @@ export function loadStoredCredentials(profile = 'default'): Partial<Credentials>
     return {
       apiKey: profileCreds.apiKey,
       sessionToken: profileCreds.sessionToken,
+      email: profileCreds.email,
     };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -119,6 +124,8 @@ export function loadStoredCredentials(profile = 'default'): Partial<Credentials>
  */
 export function loadCredentials(options: {
   apiKey?: string;
+  email?: string;
+  password?: string;
   sessionToken?: string;
   profile?: string;
 } = {}): Credentials {
@@ -130,6 +137,10 @@ export function loadCredentials(options: {
     return { apiKey: options.apiKey };
   }
 
+  if (options.email && options.password) {
+    return { email: options.email, password: options.password };
+  }
+
   if (options.sessionToken) {
     return { sessionToken: options.sessionToken };
   }
@@ -138,6 +149,12 @@ export function loadCredentials(options: {
   const envApiKey = process.env[ENV_VARS.API_KEY];
   if (envApiKey) {
     return { apiKey: envApiKey };
+  }
+
+  const envEmail = process.env[ENV_VARS.EMAIL];
+  const envPassword = process.env[ENV_VARS.PASSWORD];
+  if (envEmail && envPassword) {
+    return { email: envEmail, password: envPassword };
   }
 
   const envSessionToken = process.env[ENV_VARS.SESSION_TOKEN];
@@ -151,7 +168,7 @@ export function loadCredentials(options: {
     return { apiKey: stored.apiKey };
   }
   if (stored?.sessionToken) {
-    return { sessionToken: stored.sessionToken };
+    return { sessionToken: stored.sessionToken, email: stored.email };
   }
 
   // No credentials found
@@ -163,8 +180,11 @@ export function loadCredentials(options: {
  */
 export function loadConfig(options: {
   apiKey?: string;
+  email?: string;
+  password?: string;
   sessionToken?: string;
   baseUrl?: string;
+  authBaseUrl?: string;
   profile?: string;
   debug?: boolean;
   timeout?: number;
@@ -173,8 +193,11 @@ export function loadConfig(options: {
   // Load env files
   loadEnvFiles();
 
-  // Determine base URL
+  // Determine base URL (registry API)
   const baseUrl = options.baseUrl ?? process.env[ENV_VARS.BASE_URL] ?? DEFAULT_BASE_URL;
+
+  // Determine auth base URL (ops API for login/refresh)
+  const authBaseUrl = options.authBaseUrl ?? process.env[ENV_VARS.AUTH_BASE_URL] ?? DEFAULT_AUTH_BASE_URL;
 
   // Determine debug mode
   const debug = options.debug ?? process.env[ENV_VARS.DEBUG] === 'true';
@@ -182,12 +205,15 @@ export function loadConfig(options: {
   // Load credentials
   const credentials = loadCredentials({
     apiKey: options.apiKey,
+    email: options.email,
+    password: options.password,
     sessionToken: options.sessionToken,
     profile: options.profile,
   });
 
   return {
     baseUrl,
+    authBaseUrl,
     credentials,
     debug,
     timeout: options.timeout,
@@ -208,11 +234,12 @@ export function isApiKey(value: string): boolean {
 export function validateCredentials(credentials: Credentials): void {
   const hasApiKey = !!credentials.apiKey;
   const hasSession = !!credentials.sessionToken;
+  const hasPassword = !!credentials.email && !!credentials.password;
 
-  if (!hasApiKey && !hasSession) {
+  if (!hasApiKey && !hasSession && !hasPassword) {
     throw new ValidationError(
       `No credentials found. Set ${ENV_VARS.API_KEY} environment variable, ` +
-        `provide apiKey in constructor, or provide sessionToken.`,
+        `provide apiKey in constructor, or use email/password.`,
       { field: 'credentials' }
     );
   }

@@ -1,13 +1,18 @@
 /**
  * Authentication strategies for the Registry SDK
  *
- * The registry API supports two authentication methods:
+ * The registry API supports three authentication methods:
  * 1. API Key - Bearer token using API key (preferred)
- * 2. Session Token - JWT token from the ops-uluops-api
+ * 2. Session Token - Token from the ops-uluops-api
+ * 3. Email/Password - Login via ops-uluops-api to obtain a session token
+ *
+ * Session authentication (login/refresh) is delegated to the ops-uluops-api
+ * since the registry API has no auth endpoints of its own.
  */
 
+import type { FetchClient } from './fetch-adapter.js';
 import { API_KEY_PREFIX } from '../config/constants.js';
-import { ValidationError } from '../errors/errors.js';
+import { ValidationError, UnauthorizedError } from '../errors/errors.js';
 
 /**
  * Authentication strategy interface
@@ -19,12 +24,12 @@ export interface AuthStrategy {
   getAuthorizationHeader(): string;
 
   /**
-   * Check if credentials can be refreshed
+   * Check if credentials can be refreshed (re-login)
    */
   canRefresh(): boolean;
 
   /**
-   * Refresh the credentials
+   * Refresh the credentials (re-login)
    */
   refresh(): Promise<void>;
 
@@ -44,7 +49,10 @@ export interface AuthStrategy {
  */
 export interface AuthConfig {
   apiKey?: string;
+  email?: string;
+  password?: string;
   sessionToken?: string;
+  httpClient?: FetchClient;
   onTokenRefresh?: (token: string) => void;
 }
 
@@ -99,58 +107,88 @@ export class ApiKeyAuth implements AuthStrategy {
 }
 
 /**
- * JWT format pattern: three base64url segments separated by dots
+ * Shape of the login endpoint response used internally for token extraction
  */
-const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
-
-/**
- * Validate JWT token format (not cryptographic validity)
- */
-function isValidJwtFormat(token: string): boolean {
-  return JWT_PATTERN.test(token);
+interface LoginApiResponse {
+  data?: {
+    data?: {
+      sessionToken?: string;
+      expiresAt?: string;
+    };
+  };
 }
 
 /**
- * JWT session authentication strategy
+ * Session authentication strategy
  *
- * Session tokens are obtained from the ops-uluops-api and can be used
- * to authenticate with the registry API. Tokens cannot be refreshed
- * directly through the registry API - the user must re-authenticate
- * with the ops-api to get a new token.
+ * Session tokens are obtained from the ops-uluops-api and used to
+ * authenticate with the registry API. When email/password credentials
+ * are available, tokens can be automatically refreshed on 401.
  */
 export class JwtSessionAuth implements AuthStrategy {
-  private sessionToken: string;
+  private sessionToken: string | null;
+  private expiresAt: Date | null = null;
 
   constructor(
-    sessionToken: string,
-    private readonly onTokenRefresh?: (token: string) => void
+    private readonly httpClient: FetchClient,
+    private readonly credentials: { email: string; password: string },
+    private readonly onTokenRefresh?: (token: string) => void,
+    initialToken?: string
   ) {
-    if (!sessionToken) {
-      throw new ValidationError('Session token is required', { field: 'sessionToken' });
+    this.sessionToken = initialToken ?? null;
+  }
+
+  /**
+   * Login via the ops-uluops-api and get a new session token
+   */
+  async login(): Promise<string> {
+    const response = await this.httpClient.post('/auth/login', {
+      email: this.credentials.email,
+      password: this.credentials.password,
+    });
+
+    const loginData = (response as LoginApiResponse)?.data?.data;
+
+    if (!loginData?.sessionToken) {
+      throw new Error('Login response missing sessionToken');
     }
-    if (!isValidJwtFormat(sessionToken)) {
-      throw new ValidationError('Invalid session token format. Expected JWT (header.payload.signature)', { field: 'sessionToken' });
-    }
-    this.sessionToken = sessionToken;
+
+    this.sessionToken = loginData.sessionToken;
+    this.expiresAt = loginData.expiresAt ? new Date(loginData.expiresAt) : null;
+
+    // Notify listeners of new token
+    this.onTokenRefresh?.(loginData.sessionToken);
+
+    return loginData.sessionToken;
   }
 
   getAuthorizationHeader(): string {
+    if (!this.sessionToken) {
+      throw new UnauthorizedError(
+        'Session expired or not authenticated. Call client.login(email, password) to obtain a new session.'
+      );
+    }
     return `Bearer ${this.sessionToken}`;
   }
 
   canRefresh(): boolean {
-    return false; // Session tokens must be refreshed via ops-api
+    return true; // Can always re-login with email/password
   }
 
   async refresh(): Promise<void> {
-    throw new Error(
-      'Session tokens cannot be refreshed through the registry API. ' +
-        'Please re-authenticate with the ops-uluops-api to get a new token.'
-    );
+    await this.login();
   }
 
   isAuthenticated(): boolean {
-    return !!this.sessionToken;
+    if (!this.sessionToken) return false;
+
+    // Check if token is expired
+    if (this.expiresAt && this.expiresAt <= new Date()) {
+      this.sessionToken = null;
+      return false;
+    }
+
+    return true;
   }
 
   getType(): 'session' {
@@ -158,24 +196,25 @@ export class JwtSessionAuth implements AuthStrategy {
   }
 
   /**
-   * Update the session token (called externally when token is refreshed)
+   * Get the current session token (for storage)
    */
-  updateToken(newToken: string): void {
-    if (!newToken) {
-      throw new ValidationError('Session token is required', { field: 'sessionToken' });
-    }
-    if (!isValidJwtFormat(newToken)) {
-      throw new ValidationError('Invalid session token format. Expected JWT (header.payload.signature)', { field: 'sessionToken' });
-    }
-    this.sessionToken = newToken;
-    this.onTokenRefresh?.(newToken);
+  getSessionToken(): string | null {
+    return this.sessionToken;
   }
 
   /**
-   * Get the current session token
+   * Get the token expiration time
    */
-  getSessionToken(): string {
-    return this.sessionToken;
+  getExpiresAt(): Date | null {
+    return this.expiresAt;
+  }
+
+  /**
+   * Clear the session (logout)
+   */
+  clearSession(): void {
+    this.sessionToken = null;
+    this.expiresAt = null;
   }
 }
 
@@ -183,17 +222,29 @@ export class JwtSessionAuth implements AuthStrategy {
  * Create an auth strategy from config
  */
 export function createAuthStrategy(config: AuthConfig): AuthStrategy {
-  // Priority 1: API key (preferred)
+  // Priority 1: API key
   if (config.apiKey) {
     return new ApiKeyAuth(config.apiKey);
   }
 
-  // Priority 2: Session token
-  if (config.sessionToken) {
-    return new JwtSessionAuth(config.sessionToken, config.onTokenRefresh);
+  // Priority 2: Session token (already logged in)
+  if (config.sessionToken && config.httpClient) {
+    return new JwtSessionAuth(
+      config.httpClient,
+      { email: '', password: '' }, // Won't be used since we have a token
+      config.onTokenRefresh,
+      config.sessionToken
+    );
+  }
+
+  // Priority 3: Email/password for session auth
+  if (config.email && config.password && config.httpClient) {
+    return new JwtSessionAuth(config.httpClient, { email: config.email, password: config.password }, config.onTokenRefresh);
   }
 
   throw new Error(
-    'No valid credentials provided. Supply apiKey or sessionToken.'
+    'No valid credentials provided. ' +
+    'Set ULUOPS_API_KEY env var, or pass one of: apiKey, sessionToken, or email/password to the constructor. ' +
+    'Priority: apiKey > sessionToken > email/password.'
   );
 }

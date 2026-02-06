@@ -27,6 +27,7 @@
  */
 
 import { RegistryHttpClient } from './http/http-client.js';
+import { JwtSessionAuth } from './http/auth-strategy.js';
 import { loadConfig } from './config/loaders.js';
 import * as definitionsOps from './operations/definitions.js';
 import * as versionsOps from './operations/versions.js';
@@ -90,10 +91,16 @@ import type {
 export interface RegistryClientConfig {
   /** API key for authentication (preferred) */
   apiKey?: string;
+  /** Email for session-based auth */
+  email?: string;
+  /** Password for session-based auth */
+  password?: string;
   /** Session token from ops-uluops-api */
   sessionToken?: string;
   /** Base URL for the registry API */
   baseUrl?: string;
+  /** Base URL for the ops API (login/refresh) — defaults to localhost:3100 */
+  authBaseUrl?: string;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
   /** Number of retries for transient errors (default: 3) */
@@ -215,11 +222,55 @@ export class RegistryClient {
     this.render = this.bindRender();
   }
 
+  // ============================================
+  // SESSION MANAGEMENT
+  // ============================================
+
+  /**
+   * Login with email and password via the ops-uluops-api.
+   * The registry API has no auth endpoints — login is delegated to the ops API.
+   */
+  async login(email: string, password: string): Promise<{ sessionToken: string; expiresAt?: string }> {
+    const authStrategy = this.http.getAuthStrategy();
+    if (authStrategy instanceof JwtSessionAuth) {
+      const token = await authStrategy.login();
+      return { sessionToken: token, expiresAt: authStrategy.getExpiresAt()?.toISOString() };
+    }
+
+    // No JwtSessionAuth strategy — create a temporary one for login
+    const { RegistryHttpClient: HttpClient } = await import('./http/http-client.js');
+    const tempHttp = new HttpClient({
+      authBaseUrl: (this.http as RegistryHttpClient & { authBaseUrl?: string })['authBaseUrl'],
+      email,
+      password,
+    });
+    const tempStrategy = tempHttp.getAuthStrategy();
+    if (tempStrategy instanceof JwtSessionAuth) {
+      const token = await tempStrategy.login();
+      return { sessionToken: token, expiresAt: tempStrategy.getExpiresAt()?.toISOString() };
+    }
+
+    throw new Error('Cannot login: no session auth strategy available');
+  }
+
+  /**
+   * Logout (clear local session — registry has no server-side logout endpoint)
+   */
+  logout(): void {
+    const authStrategy = this.http.getAuthStrategy();
+    if (authStrategy instanceof JwtSessionAuth) {
+      authStrategy.clearSession();
+    }
+  }
+
   private createHttpClient(config: RegistryClientConfig): RegistryHttpClient {
     const sdkConfig = loadConfig({
       apiKey: config.apiKey,
+      email: config.email,
+      password: config.password,
       sessionToken: config.sessionToken,
       baseUrl: config.baseUrl,
+      authBaseUrl: config.authBaseUrl,
       debug: config.debug,
       timeout: config.timeout,
       retries: config.retries,
@@ -227,10 +278,13 @@ export class RegistryClient {
 
     return new RegistryHttpClient({
       baseUrl: sdkConfig.baseUrl,
+      authBaseUrl: sdkConfig.authBaseUrl,
       timeout: sdkConfig.timeout,
       retries: sdkConfig.retries,
       debug: sdkConfig.debug,
       apiKey: sdkConfig.credentials.apiKey,
+      email: sdkConfig.credentials.email,
+      password: sdkConfig.credentials.password,
       sessionToken: sdkConfig.credentials.sessionToken,
       onTokenRefresh: config.onTokenRefresh,
     });

@@ -162,6 +162,13 @@ export function createMockUser(overrides?: Record<string, unknown>): Record<stri
 beforeEach(() => {
   nock.cleanAll(); // Ensure no stale interceptors from previous test
   enableMocks();
+
+  // Clear ULUOPS_ env vars to prevent tests from picking up real credentials
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith('ULUOPS_')) {
+      delete process.env[key];
+    }
+  }
 });
 
 afterEach(() => {
