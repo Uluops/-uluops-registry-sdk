@@ -395,6 +395,15 @@ export class RegistryHttpClient {
 
     // Network errors (fetch throws TypeError for network issues)
     if (error instanceof TypeError) {
+      // When no credentials are configured, surface that as the primary issue
+      // rather than the raw network error (which is likely a side effect)
+      if (!this.authStrategy) {
+        return new UnauthorizedError(
+          'No credentials configured. Set ULUOPS_API_KEY environment variable, ' +
+          'pass apiKey to RegistryClient constructor, or provide sessionToken. ' +
+          `(Network error: ${error.message})`
+        );
+      }
       return new NetworkError(error.message);
     }
 

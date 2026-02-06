@@ -17,6 +17,7 @@ import {
   RateLimitError,
   ServiceUnavailableError,
   TimeoutError,
+  NetworkError,
 } from '../src/errors/errors.js';
 import { mockEndpoint, mockError, mockWithHeaders, TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
 
@@ -633,6 +634,27 @@ describe('RegistryHttpClient', () => {
 
     it('should return auth strategy when authenticated', () => {
       expect(client.getAuthStrategy()).not.toBeNull();
+    });
+
+    it('should throw UnauthorizedError (not NetworkError) when no credentials and server unreachable', async () => {
+      // Allow real connections so fetch throws a genuine TypeError
+      nock.enableNetConnect('localhost:19999');
+
+      const unauthClient = new RegistryHttpClient({
+        baseUrl: 'http://localhost:19999', // unreachable port
+        retries: 1,
+        timeout: 2000,
+      });
+
+      try {
+        await unauthClient.get('/test');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnauthorizedError);
+        expect(error).not.toBeInstanceOf(NetworkError);
+        expect((error as UnauthorizedError).message).toContain('ULUOPS_API_KEY');
+        expect((error as UnauthorizedError).message).toContain('Network error');
+      }
     });
 
     it('should throw actionable UnauthorizedError when no credentials and server returns 401', async () => {
