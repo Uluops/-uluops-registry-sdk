@@ -582,73 +582,204 @@ ULUOPS_REGISTRY_URL=https://registry.uluops.ai/api/v1
 
 ## Error Handling
 
-The SDK provides typed error classes for precise error handling:
+The SDK provides a typed error hierarchy so you can catch and recover from specific failure modes.
+
+### Error Classes
+
+| Error | Status | When It Happens |
+|-------|--------|-----------------|
+| `ValidationError` | 400 | Malformed request — invalid params, missing fields |
+| `UnauthorizedError` | 401 | No credentials, expired token, invalid API key |
+| `ForbiddenError` | 403 | Valid credentials but insufficient permissions or subscription tier |
+| `NotFoundError` | 404 | Definition, model, or user doesn't exist |
+| `ConflictError` | 409 | Name collision, publishing already-published definition |
+| `PayloadTooLargeError` | 413 | YAML exceeds 100KB limit |
+| `UnprocessableError` | 422 | Valid YAML syntax but invalid semantics (missing refs, cycles) |
+| `RateLimitError` | 429 | Too many requests (100 executions/min per definition) |
+| `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
+| `NetworkError` | - | DNS failure, connection refused, network unreachable |
+| `TimeoutError` | - | Request exceeded timeout (default: 30s) |
+
+All API errors extend `RegistryApiError` and include:
+- `statusCode` — HTTP status code (0 for network/timeout)
+- `code` — Machine-readable error code (e.g., `'NOT_FOUND'`, `'RATE_LIMIT_ERROR'`)
+- `message` — Human-readable description
+- `details` — Optional structured metadata
+- `requestId` — Server request ID for support/debugging
+
+### Basic Error Handling
 
 ```typescript
 import {
   RegistryApiError,
-  ValidationError,
-  UnauthorizedError,
-  ForbiddenError,
   NotFoundError,
-  ConflictError,
-  PayloadTooLargeError,
-  UnprocessableError,
-  RateLimitError,
-  ServiceUnavailableError,
-  NetworkError,
-  TimeoutError,
+  ValidationError,
   isRegistryApiError,
 } from '@uluops/registry-sdk/errors';
 
 try {
-  await client.definitions.get('agent', 'nonexistent');
+  const def = await client.definitions.get('agent', 'my-agent', '1.0.0');
 } catch (error) {
   if (error instanceof NotFoundError) {
     console.log('Definition not found');
-  } else if (error instanceof UnauthorizedError) {
-    console.log('Please authenticate');
-  } else if (error instanceof RateLimitError) {
-    console.log(`Rate limited. Retry after ${error.retryAfter}s`);
   } else if (error instanceof ValidationError) {
-    console.log('Invalid input:', error.details);
-  } else if (error instanceof PayloadTooLargeError) {
-    console.log('YAML exceeds 100KB limit');
-  } else if (error instanceof UnprocessableError) {
-    console.log('YAML is invalid:', error.details);
+    console.log('Bad request:', error.details);
   } else if (isRegistryApiError(error)) {
-    console.log(`API error: ${error.code} - ${error.message}`);
+    console.log(`API error [${error.code}]: ${error.message}`);
+  } else {
+    throw error; // Unexpected non-API error
   }
 }
 ```
 
-### Error Classes
+### Recovery Patterns
 
-| Error | Status | Description |
-|-------|--------|-------------|
-| `ValidationError` | 400 | Invalid request data |
-| `UnauthorizedError` | 401 | Authentication required |
-| `ForbiddenError` | 403 | Access denied |
-| `NotFoundError` | 404 | Resource not found |
-| `ConflictError` | 409 | Resource conflict |
-| `PayloadTooLargeError` | 413 | YAML exceeds 100KB limit |
-| `UnprocessableError` | 422 | Valid request but semantically invalid |
-| `RateLimitError` | 429 | Rate limit exceeded |
-| `ServiceUnavailableError` | 503 | Server unavailable |
-| `NetworkError` | - | Connection error |
-| `TimeoutError` | - | Request timeout |
+#### Handling Authentication Failures
+
+```typescript
+import { UnauthorizedError, ForbiddenError } from '@uluops/registry-sdk/errors';
+
+try {
+  await client.definitions.create('agent', 'my-agent', { yaml });
+} catch (error) {
+  if (error instanceof UnauthorizedError) {
+    // Token expired or invalid — re-authenticate
+    const newToken = await refreshMyToken();
+    const retryClient = new RegistryClient({ sessionToken: newToken });
+    await retryClient.definitions.create('agent', 'my-agent', { yaml });
+  } else if (error instanceof ForbiddenError) {
+    // Valid auth but wrong role/tier — can't retry, need elevated permissions
+    console.error('Requires publisher role or pro subscription');
+  }
+}
+```
+
+#### Rate Limit Backoff
+
+The SDK auto-retries on 429 with exponential backoff, but if all retries are exhausted:
+
+```typescript
+import { RateLimitError } from '@uluops/registry-sdk/errors';
+
+try {
+  await client.executions.record('agent', 'my-agent', '1.0.0', { source: 'cli' });
+} catch (error) {
+  if (error instanceof RateLimitError) {
+    const waitMs = (error.retryAfter ?? 60) * 1000;
+    console.log(`Rate limited. Waiting ${waitMs / 1000}s...`);
+    await new Promise((r) => setTimeout(r, waitMs));
+    await client.executions.record('agent', 'my-agent', '1.0.0', { source: 'cli' });
+  }
+}
+```
+
+#### Handling YAML Validation Errors
+
+Two distinct failure modes for YAML — catch them separately:
+
+```typescript
+import { ValidationError, UnprocessableError, PayloadTooLargeError } from '@uluops/registry-sdk/errors';
+
+try {
+  await client.definitions.create('agent', 'my-agent', { yaml: rawYaml });
+} catch (error) {
+  if (error instanceof PayloadTooLargeError) {
+    // YAML > 100KB — split or compress before retrying
+    console.error('YAML too large. Max: 100KB');
+  } else if (error instanceof ValidationError) {
+    // Malformed request (e.g., missing required fields in body)
+    console.error('Request validation failed:', error.details);
+  } else if (error instanceof UnprocessableError) {
+    // YAML parses but is semantically invalid (bad refs, missing interface, cycles)
+    console.error('YAML semantic errors:', error.details);
+  }
+}
+```
+
+#### Conflict Resolution
+
+Conflicts arise from name collisions or state transitions:
+
+```typescript
+import { ConflictError } from '@uluops/registry-sdk/errors';
+
+try {
+  await client.definitions.create('agent', 'my-agent', { yaml });
+} catch (error) {
+  if (error instanceof ConflictError) {
+    // Name already taken — try updating instead, or choose a different name
+    console.log('Definition already exists, updating...');
+    await client.definitions.update('agent', 'my-agent', '1.0.0', { yaml });
+  }
+}
+```
+
+#### Network Resilience
+
+For unreliable networks, combine timeout config with manual retry:
+
+```typescript
+import { NetworkError, TimeoutError, ServiceUnavailableError } from '@uluops/registry-sdk/errors';
+
+async function resilientFetch() {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await client.definitions.list({ type: 'agent', limit: 10 });
+    } catch (error) {
+      const isTransient =
+        error instanceof NetworkError ||
+        error instanceof TimeoutError ||
+        error instanceof ServiceUnavailableError;
+
+      if (isTransient && attempt < maxAttempts) {
+        const delay = 1000 * Math.pow(2, attempt - 1);
+        console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+```
+
+#### Logging All Errors with Request ID
+
+For production debugging, log the `requestId` so support can trace the request server-side:
+
+```typescript
+import { isRegistryApiError } from '@uluops/registry-sdk/errors';
+
+try {
+  await client.definitions.publish('agent', 'my-agent', '1.0.0');
+} catch (error) {
+  if (isRegistryApiError(error)) {
+    console.error(JSON.stringify({
+      level: 'error',
+      code: error.code,
+      status: error.statusCode,
+      message: error.message,
+      requestId: error.requestId,
+      details: error.details,
+    }));
+  }
+}
+```
 
 ### Automatic Retries
 
-The SDK automatically retries on transient errors (502, 503, 504, 429) with exponential backoff:
+The SDK automatically retries GET requests on transient errors (502, 503, 504, 429) with exponential backoff and jitter. Mutations (POST/PUT/DELETE) are **not** retried by default to prevent duplicate side effects.
 
 ```typescript
 const client = new RegistryClient({
   apiKey: 'ulr_...',
-  retries: 3,        // Number of retry attempts (default: 3)
+  retries: 3,        // Max retry attempts (default: 3)
   timeout: 30000,    // Request timeout in ms (default: 30000)
 });
 ```
+
+Retryable status codes: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`, `429 Too Many Requests`.
 
 ## Advanced Usage
 
