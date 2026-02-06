@@ -94,7 +94,7 @@ export class RegistryHttpClient {
   private createFetchClient(): FetchClient {
     return {
       post: async <T>(url: string, body: object) => {
-        const fullUrl = new URL(url, this.authBaseUrl).toString();
+        const fullUrl = this.buildAuthUrl(url);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -501,6 +501,15 @@ export class RegistryHttpClient {
    */
   private buildUrl(endpoint: string): string {
     const base = this.baseUrl.replace(/\/$/, '');
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${base}${path}`;
+  }
+
+  /**
+   * Build full URL using authBaseUrl (for login/refresh via ops API)
+   */
+  private buildAuthUrl(endpoint: string): string {
+    const base = this.authBaseUrl.replace(/\/$/, '');
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return `${base}${path}`;
   }
