@@ -404,7 +404,10 @@ export class RegistryHttpClient {
           `(Network error: ${error.message})`
         );
       }
-      return new NetworkError(error.message);
+      return new NetworkError(
+        `Cannot connect to ${this.baseUrl}: ${error.message}. ` +
+        'Check that the server is running and the baseUrl is correct.'
+      );
     }
 
     if (error instanceof Error) {

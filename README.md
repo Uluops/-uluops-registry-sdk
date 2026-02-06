@@ -9,6 +9,8 @@ TypeScript SDK for the UluOps Registry API. Manage AI workflow definitions inclu
 
 ## Quick Start
 
+> **Note:** Examples use TypeScript syntax. Run with [tsx](https://github.com/privatenumber/tsx) (`npx tsx script.ts`) or compile with `tsc` first. A running Registry API server is required — see [Environment Variables](#environment-variables) to configure the base URL.
+
 ```typescript
 import { RegistryClient } from '@uluops/registry-sdk';
 

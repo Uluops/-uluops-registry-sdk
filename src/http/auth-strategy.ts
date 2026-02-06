@@ -7,6 +7,7 @@
  */
 
 import { API_KEY_PREFIX } from '../config/constants.js';
+import { ValidationError } from '../errors/errors.js';
 
 /**
  * Authentication strategy interface
@@ -63,16 +64,16 @@ const API_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
 export class ApiKeyAuth implements AuthStrategy {
   constructor(private readonly apiKey: string) {
     if (!apiKey) {
-      throw new Error('API key is required');
+      throw new ValidationError('API key is required', { field: 'apiKey' });
     }
     if (!apiKey.startsWith(API_KEY_PREFIX)) {
-      throw new Error(`Invalid API key format. Expected prefix: ${API_KEY_PREFIX}`);
+      throw new ValidationError(`Invalid API key format. Expected prefix: ${API_KEY_PREFIX}`, { field: 'apiKey' });
     }
     if (apiKey.length < MIN_API_KEY_LENGTH) {
-      throw new Error(`Invalid API key format. Key too short (min ${MIN_API_KEY_LENGTH} chars)`);
+      throw new ValidationError(`Invalid API key format. Key too short (min ${MIN_API_KEY_LENGTH} chars)`, { field: 'apiKey', minLength: MIN_API_KEY_LENGTH });
     }
     if (!API_KEY_PATTERN.test(apiKey)) {
-      throw new Error('Invalid API key format. Key contains invalid characters');
+      throw new ValidationError('Invalid API key format. Key contains invalid characters', { field: 'apiKey' });
     }
   }
 
@@ -125,10 +126,10 @@ export class JwtSessionAuth implements AuthStrategy {
     private readonly onTokenRefresh?: (token: string) => void
   ) {
     if (!sessionToken) {
-      throw new Error('Session token is required');
+      throw new ValidationError('Session token is required', { field: 'sessionToken' });
     }
     if (!isValidJwtFormat(sessionToken)) {
-      throw new Error('Invalid session token format. Expected JWT (header.payload.signature)');
+      throw new ValidationError('Invalid session token format. Expected JWT (header.payload.signature)', { field: 'sessionToken' });
     }
     this.sessionToken = sessionToken;
   }
@@ -161,10 +162,10 @@ export class JwtSessionAuth implements AuthStrategy {
    */
   updateToken(newToken: string): void {
     if (!newToken) {
-      throw new Error('Session token is required');
+      throw new ValidationError('Session token is required', { field: 'sessionToken' });
     }
     if (!isValidJwtFormat(newToken)) {
-      throw new Error('Invalid session token format. Expected JWT (header.payload.signature)');
+      throw new ValidationError('Invalid session token format. Expected JWT (header.payload.signature)', { field: 'sessionToken' });
     }
     this.sessionToken = newToken;
     this.onTokenRefresh?.(newToken);

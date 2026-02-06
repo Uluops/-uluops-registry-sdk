@@ -27,12 +27,12 @@ export function validateDefinitionType(type: string): asserts type is Definition
  */
 export function validateDefinitionName(name: string): void {
   if (!name || typeof name !== 'string') {
-    throw new ValidationError('Definition name is required', { field: 'name' });
+    throw new ValidationError('Definition name is required', { field: 'name', value: name });
   }
 
   if (name.length < 1 || name.length > 100) {
     throw new ValidationError('Definition name must be 1-100 characters', {
-      field: 'name', length: name.length, maxLength: 100,
+      field: 'name', value: name, length: name.length, maxLength: 100,
     });
   }
 
@@ -98,7 +98,7 @@ export function parseDefinitionRef(ref: string): { name: string; version?: strin
   const version = parts[1];
 
   if (!name) {
-    throw new ValidationError('Definition name is required in reference', { field: 'ref' });
+    throw new ValidationError('Definition name is required in reference', { field: 'ref', value: ref });
   }
 
   validateDefinitionName(name);

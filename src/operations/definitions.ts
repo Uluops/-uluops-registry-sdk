@@ -13,7 +13,7 @@ import type {
   DeprecateDefinitionBody,
 } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
-import { buildDefinitionPath, validateYamlSize } from '../config/validators.js';
+import { buildDefinitionPath, validateYamlSize, validatePagination } from '../config/validators.js';
 import { definitionSchema } from '../types/schemas.js';
 
 /**
@@ -33,6 +33,9 @@ export async function list(
   http: RegistryHttpClient,
   query?: ListDefinitionsQuery
 ): Promise<DefinitionListResponse> {
+  if (query) {
+    validatePagination(query.limit, query.offset);
+  }
   return http.get<DefinitionListResponse>('/definitions', query);
 }
 

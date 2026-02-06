@@ -8,6 +8,7 @@ import {
   JwtSessionAuth,
   createAuthStrategy,
 } from '../src/http/auth-strategy.js';
+import { ValidationError } from '../src/errors/errors.js';
 import { TEST_API_KEY, TEST_SESSION_TOKEN } from './setup.js';
 
 describe('ApiKeyAuth', () => {
@@ -33,20 +34,33 @@ describe('ApiKeyAuth', () => {
   });
 
   describe('validation', () => {
-    it('should throw on empty key', () => {
+    it('should throw ValidationError on empty key', () => {
+      expect(() => new ApiKeyAuth('')).toThrow(ValidationError);
       expect(() => new ApiKeyAuth('')).toThrow('API key is required');
     });
 
-    it('should throw on missing ulr_ prefix', () => {
+    it('should throw ValidationError on missing ulr_ prefix', () => {
+      expect(() => new ApiKeyAuth('invalid_key_1234567890')).toThrow(ValidationError);
       expect(() => new ApiKeyAuth('invalid_key_1234567890')).toThrow('Expected prefix: ulr_');
     });
 
-    it('should throw on key too short', () => {
+    it('should throw ValidationError on key too short', () => {
+      expect(() => new ApiKeyAuth('ulr_short')).toThrow(ValidationError);
       expect(() => new ApiKeyAuth('ulr_short')).toThrow('Key too short');
     });
 
-    it('should throw on invalid characters', () => {
+    it('should throw ValidationError on invalid characters', () => {
+      expect(() => new ApiKeyAuth('ulr_invalid!key@#$%^&*1234567890')).toThrow(ValidationError);
       expect(() => new ApiKeyAuth('ulr_invalid!key@#$%^&*1234567890')).toThrow('invalid characters');
+    });
+
+    it('should include field details in validation errors', () => {
+      try {
+        new ApiKeyAuth('');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toEqual({ field: 'apiKey' });
+      }
     });
 
     it('should accept key at minimum length', () => {
@@ -90,20 +104,31 @@ describe('JwtSessionAuth', () => {
   });
 
   describe('validation', () => {
-    it('should throw on empty token', () => {
+    it('should throw ValidationError on empty token', () => {
+      expect(() => new JwtSessionAuth('')).toThrow(ValidationError);
       expect(() => new JwtSessionAuth('')).toThrow('Session token is required');
     });
 
-    it('should throw on invalid JWT format (no dots)', () => {
+    it('should throw ValidationError on invalid JWT format (no dots)', () => {
+      expect(() => new JwtSessionAuth('not-a-jwt')).toThrow(ValidationError);
       expect(() => new JwtSessionAuth('not-a-jwt')).toThrow('Invalid session token format');
     });
 
-    it('should throw on invalid JWT format (one dot)', () => {
-      expect(() => new JwtSessionAuth('header.payload')).toThrow('Invalid session token format');
+    it('should throw ValidationError on invalid JWT format (one dot)', () => {
+      expect(() => new JwtSessionAuth('header.payload')).toThrow(ValidationError);
     });
 
-    it('should throw on JWT with invalid characters', () => {
-      expect(() => new JwtSessionAuth('header.pay load.sig')).toThrow('Invalid session token format');
+    it('should throw ValidationError on JWT with invalid characters', () => {
+      expect(() => new JwtSessionAuth('header.pay load.sig')).toThrow(ValidationError);
+    });
+
+    it('should include field details in validation errors', () => {
+      try {
+        new JwtSessionAuth('');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toEqual({ field: 'sessionToken' });
+      }
     });
 
     it('should accept minimal valid JWT format', () => {
@@ -120,13 +145,15 @@ describe('JwtSessionAuth', () => {
       expect(auth.getAuthorizationHeader()).toBe('Bearer xxx.yyy.zzz');
     });
 
-    it('should throw on empty new token', () => {
+    it('should throw ValidationError on empty new token', () => {
       const auth = new JwtSessionAuth('aaa.bbb.ccc');
+      expect(() => auth.updateToken('')).toThrow(ValidationError);
       expect(() => auth.updateToken('')).toThrow('Session token is required');
     });
 
-    it('should throw on invalid format new token', () => {
+    it('should throw ValidationError on invalid format new token', () => {
       const auth = new JwtSessionAuth('aaa.bbb.ccc');
+      expect(() => auth.updateToken('invalid')).toThrow(ValidationError);
       expect(() => auth.updateToken('invalid')).toThrow('Invalid session token format');
     });
 
