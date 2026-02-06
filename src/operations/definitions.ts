@@ -13,7 +13,7 @@ import type {
   DeprecateDefinitionBody,
 } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
-import { buildDefinitionPath } from '../config/validators.js';
+import { buildDefinitionPath, validateYamlSize } from '../config/validators.js';
 import { definitionSchema } from '../types/schemas.js';
 
 /**
@@ -60,6 +60,7 @@ export async function create(
   name: string,
   body: CreateDefinitionBody
 ): Promise<Definition> {
+  validateYamlSize(body.yaml);
   const path = buildDefinitionPath(type, name);
   return http.post<Definition>(path, body, { schema: definitionSchema });
 }
@@ -74,6 +75,9 @@ export async function update(
   version: string,
   body: UpdateDefinitionBody
 ): Promise<Definition> {
+  if (body.yaml) {
+    validateYamlSize(body.yaml);
+  }
   const path = buildDefinitionPath(type, name, version);
   return http.put<Definition>(path, body, { schema: definitionSchema });
 }

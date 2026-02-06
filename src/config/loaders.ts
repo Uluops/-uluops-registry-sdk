@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { config as loadDotenv } from 'dotenv';
 import { ENV_VARS, CONFIG_PATHS, DEFAULT_BASE_URL, API_KEY_PREFIX } from './constants.js';
+import { ValidationError } from '../errors/errors.js';
 
 /**
  * Credentials for authentication
@@ -209,9 +210,10 @@ export function validateCredentials(credentials: Credentials): void {
   const hasSession = !!credentials.sessionToken;
 
   if (!hasApiKey && !hasSession) {
-    throw new Error(
+    throw new ValidationError(
       `No credentials found. Set ${ENV_VARS.API_KEY} environment variable, ` +
-        `provide apiKey in constructor, or provide sessionToken.`
+        `provide apiKey in constructor, or provide sessionToken.`,
+      { field: 'credentials' }
     );
   }
 }

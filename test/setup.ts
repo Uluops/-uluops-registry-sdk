@@ -81,12 +81,13 @@ export function mockWithHeaders(
 
 /**
  * Create a mock entity by merging defaults with overrides.
+ * Uses structuredClone to prevent shared mutable state between tests.
  */
 function createMock(
   defaults: Record<string, unknown>,
   overrides: Record<string, unknown> = {}
 ): Record<string, unknown> {
-  return { ...defaults, ...overrides };
+  return { ...structuredClone(defaults), ...overrides };
 }
 
 const MOCK_DEFINITION_DEFAULTS: Record<string, unknown> = {

@@ -188,13 +188,14 @@ describe('deepClone', () => {
     expect(original.a.b.c.d).toBe('deep');
   });
 
-  it('should throw on exceeding max depth', () => {
-    // Build a deeply nested object
+  it('should handle deeply nested objects', () => {
     let obj: Record<string, unknown> = { value: 'bottom' };
     for (let i = 0; i < 55; i++) {
       obj = { nested: obj };
     }
-    expect(() => deepClone(obj)).toThrow('exceeded maximum depth');
+    const cloned = deepClone(obj);
+    expect(cloned).toEqual(obj);
+    expect(cloned).not.toBe(obj);
   });
 
   it('should clone empty objects and arrays', () => {

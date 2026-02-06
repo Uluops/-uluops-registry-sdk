@@ -229,7 +229,7 @@ export class RegistryHttpClient {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     endpoint: string,
     data?: object,
-    options?: { params?: object; headers?: Record<string, string> }
+    options?: { params?: object; headers?: Record<string, string>; schema?: ZodType<T> }
   ): Promise<T> {
     const url = new URL(this.buildUrl(endpoint));
     const queryParams = method === 'GET' ? data : options?.params;
@@ -267,11 +267,14 @@ export class RegistryHttpClient {
         throw this.createHttpError(response.status, errorData, response.headers);
       }
 
-      const data: unknown = await response.json();
-      if (data === null || typeof data !== 'object') {
+      const responseData: unknown = await response.json();
+      if (responseData === null || typeof responseData !== 'object') {
         throw new Error('Expected JSON object response');
       }
-      return data as T;
+      if (options?.schema) {
+        return options.schema.parse(responseData);
+      }
+      return responseData as T;
     } catch (error) {
       throw this.handleFetchError(error);
     } finally {

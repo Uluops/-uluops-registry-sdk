@@ -98,36 +98,12 @@ export function filterUndefined<T extends Record<string, unknown>>(
 }
 
 /**
- * Maximum recursion depth for deepClone
- */
-const MAX_CLONE_DEPTH = 50;
-
-/**
- * Deep clone an object with depth limit to prevent stack overflow.
+ * Deep clone a value using the native structuredClone API.
  * @param obj - Value to clone
- * @param depth - Current recursion depth (internal)
  * @returns Deep copy of the input value
- * @throws If recursion exceeds {@link MAX_CLONE_DEPTH}
  */
-export function deepClone<T>(obj: T, depth = 0): T {
-  if (depth > MAX_CLONE_DEPTH) {
-    throw new Error(`deepClone exceeded maximum depth of ${MAX_CLONE_DEPTH}`);
-  }
-
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map((item: unknown) => deepClone(item, depth + 1)) as unknown as T;
-  }
-
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-    result[key] = deepClone(value, depth + 1);
-  }
-
-  return result as unknown as T;
+export function deepClone<T>(obj: T): T {
+  return structuredClone(obj);
 }
 
 /**
