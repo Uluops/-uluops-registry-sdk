@@ -120,10 +120,12 @@ if (!isApiKey(key)) {
   process.exit(1);
 }
 
-// Full credential validation (returns { valid, apiKey?, sessionToken? })
-const creds = validateCredentials({ apiKey: key });
-if (!creds.valid) {
-  console.error('Invalid credentials');
+// Full credential validation (throws ValidationError if missing)
+try {
+  validateCredentials({ apiKey: key });
+} catch (error) {
+  console.error('Invalid credentials:', error.message);
+  process.exit(1);
 }
 ```
 

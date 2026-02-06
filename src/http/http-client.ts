@@ -15,6 +15,7 @@ import {
 } from '../config/constants.js';
 import {
   RegistryApiError,
+  UnauthorizedError,
   createErrorFromStatus,
   NetworkError,
   TimeoutError,
@@ -190,6 +191,13 @@ export class RegistryHttpClient {
 
       // Handle errors
       if (!response.ok) {
+        // Provide actionable guidance when 401 is caused by missing credentials
+        if (response.status === 401 && !this.authStrategy) {
+          throw new UnauthorizedError(
+            'No credentials configured. Set ULUOPS_API_KEY environment variable, ' +
+            'pass apiKey to RegistryClient constructor, or provide sessionToken.'
+          );
+        }
         const errorData = await response.json().catch(() => ({}));
         throw this.createHttpError(response.status, errorData, response.headers);
       }

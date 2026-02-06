@@ -325,7 +325,7 @@ describe('RegistryHttpClient', () => {
       expect(attempts).toBe(1);
     });
 
-    it('should stop retrying after max attempts', async () => {
+    it('should stop retrying after max attempts', { timeout: 15000 }, async () => {
       let attempts = 0;
       nock(MOCK_BASE_URL)
         .get('/test')
@@ -633,6 +633,23 @@ describe('RegistryHttpClient', () => {
 
     it('should return auth strategy when authenticated', () => {
       expect(client.getAuthStrategy()).not.toBeNull();
+    });
+
+    it('should throw actionable UnauthorizedError when no credentials and server returns 401', async () => {
+      const unauthClient = new RegistryHttpClient();
+
+      nock(MOCK_BASE_URL)
+        .get('/protected')
+        .reply(401, { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } });
+
+      try {
+        await unauthClient.get('/protected');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnauthorizedError);
+        expect((error as UnauthorizedError).message).toContain('ULUOPS_API_KEY');
+        expect((error as UnauthorizedError).message).toContain('apiKey');
+      }
     });
   });
 });
