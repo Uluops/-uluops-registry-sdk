@@ -601,6 +601,217 @@ describe('operations', () => {
         const result = await renderOps.preview(http, 'agent', { yaml: 'test yaml' });
         expect(result.markdown).toBe('# Preview');
       });
+
+      it('should reject invalid definition type', async () => {
+        await expect(
+          renderOps.preview(http, 'invalid' as never, { yaml: 'test' })
+        ).rejects.toThrow('Invalid definition type');
+      });
+
+      it('should reject oversized YAML', async () => {
+        const oversizedYaml = 'x'.repeat(102401);
+        await expect(
+          renderOps.preview(http, 'agent', { yaml: oversizedYaml })
+        ).rejects.toThrow('exceeds maximum size');
+      });
+    });
+  });
+
+  describe('input validation across operations', () => {
+    describe('invalid definition type', () => {
+      it('should reject invalid type in definitions.get', async () => {
+        await expect(
+          definitionOps.get(http, 'invalid' as never, 'my-agent')
+        ).rejects.toThrow('Invalid definition type');
+      });
+
+      it('should reject invalid type in definitions.create', async () => {
+        await expect(
+          definitionOps.create(http, 'invalid' as never, 'my-agent', { yaml: 'test' })
+        ).rejects.toThrow('Invalid definition type');
+      });
+
+      it('should reject invalid type in versions.list', async () => {
+        await expect(
+          versionOps.list(http, 'invalid' as never, 'my-agent')
+        ).rejects.toThrow('Invalid definition type');
+      });
+
+      it('should reject invalid type in validation.validate', async () => {
+        await expect(
+          validationOps.validate(http, 'invalid' as never, 'yaml content')
+        ).rejects.toThrow('Invalid definition type');
+      });
+    });
+
+    describe('invalid definition name', () => {
+      it('should reject uppercase name', async () => {
+        await expect(
+          definitionOps.get(http, 'agent', 'MyAgent')
+        ).rejects.toThrow('lowercase');
+      });
+
+      it('should reject name starting with hyphen', async () => {
+        await expect(
+          definitionOps.get(http, 'agent', '-my-agent')
+        ).rejects.toThrow('Cannot start or end with hyphen');
+      });
+
+      it('should reject name ending with hyphen', async () => {
+        await expect(
+          definitionOps.get(http, 'agent', 'my-agent-')
+        ).rejects.toThrow('Cannot start or end with hyphen');
+      });
+
+      it('should reject empty name', async () => {
+        await expect(
+          definitionOps.get(http, 'agent', '')
+        ).rejects.toThrow('name is required');
+      });
+    });
+
+    describe('invalid version format', () => {
+      it('should reject partial semver', async () => {
+        await expect(
+          definitionOps.update(http, 'agent', 'my-agent', '1.0', { yaml: 'test' })
+        ).rejects.toThrow('semver');
+      });
+
+      it('should reject non-numeric version', async () => {
+        await expect(
+          definitionOps.publish(http, 'agent', 'my-agent', 'latest')
+        ).rejects.toThrow('semver');
+      });
+
+      it('should reject version with spaces', async () => {
+        await expect(
+          definitionOps.publish(http, 'agent', 'my-agent', '1.0 .0')
+        ).rejects.toThrow('semver');
+      });
+    });
+
+    describe('oversized YAML', () => {
+      it('should reject oversized YAML in validation.validate', async () => {
+        const oversizedYaml = 'x'.repeat(102401);
+        await expect(
+          validationOps.validate(http, 'agent', oversizedYaml)
+        ).rejects.toThrow('exceeds maximum size');
+      });
+
+      it('should accept YAML at exactly MAX_YAML_SIZE', async () => {
+        const exactSizeYaml = 'x'.repeat(102400);
+        nock(MOCK_BASE_URL)
+          .post('/validate/agent')
+          .reply(200, { data: { valid: true, errors: [] } });
+
+        const result = await validationOps.validate(http, 'agent', exactSizeYaml);
+        expect(result.valid).toBe(true);
+      });
+    });
+  });
+
+  describe('forks (additional)', () => {
+    describe('list', () => {
+      it('should list forks of a definition', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/forks')
+          .reply(200, {
+            data: {
+              items: [{ name: 'fork-1' }, { name: 'fork-2' }],
+              total: 2,
+            },
+          });
+
+        const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.items).toHaveLength(2);
+        expect(result.total).toBe(2);
+      });
+
+      it('should handle empty forks list', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/forks')
+          .reply(200, { data: { items: [], total: 0 } });
+
+        const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.items).toEqual([]);
+        expect(result.total).toBe(0);
+      });
+
+      it('should reject invalid type', async () => {
+        await expect(
+          forkOps.list(http, 'invalid' as never, 'my-agent', '1.0.0')
+        ).rejects.toThrow('Invalid definition type');
+      });
+    });
+  });
+
+  describe('executions (additional)', () => {
+    describe('record', () => {
+      it('should handle duplicate execution with runId', async () => {
+        const runId = '550e8400-e29b-41d4-a716-446655440000';
+        nock(MOCK_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/executions', {
+            source: 'sdk',
+            runId,
+          })
+          .reply(200, {
+            data: {
+              recorded: false,
+              duplicate: true,
+              definition: {
+                id: '00000000-0000-0000-0000-000000000001',
+                type: 'agent',
+                name: 'my-agent',
+                version: '1.0.0',
+              },
+              executionCount: 5,
+            },
+          });
+
+        const result = await executionOps.record(http, 'agent', 'my-agent', '1.0.0', {
+          source: 'sdk',
+          runId,
+        });
+        expect(result.recorded).toBe(false);
+        expect(result.duplicate).toBe(true);
+      });
+    });
+
+    describe('getStats', () => {
+      it('should pass window=1 (minimum boundary)', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/executions')
+          .query({ window: '1' })
+          .reply(200, { data: { totalCount: 10, recentCount: 2, windowMinutes: 1 } });
+
+        const result = await executionOps.getStats(http, 'agent', 'my-agent', '1.0.0', 1);
+        expect(result.windowMinutes).toBe(1);
+      });
+
+      it('should omit window param when undefined', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/executions')
+          .reply(200, { data: { totalCount: 10, recentCount: 5, windowMinutes: 60 } });
+
+        const result = await executionOps.getStats(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.totalCount).toBe(10);
+      });
+    });
+  });
+
+  describe('versions (additional)', () => {
+    describe('diff', () => {
+      it('should reject invalid from version', async () => {
+        await expect(
+          versionOps.diff(http, 'agent', 'my-agent', 'bad', '2.0.0')
+        ).rejects.toThrow('semver');
+      });
+
+      it('should reject invalid to version', async () => {
+        await expect(
+          versionOps.diff(http, 'agent', 'my-agent', '1.0.0', 'bad')
+        ).rejects.toThrow('semver');
+      });
     });
   });
 });

@@ -6,11 +6,13 @@ import { DEFINITION_TYPES, type DefinitionType } from '../types/enums.js';
 import { MAX_YAML_SIZE } from './constants.js';
 import { ValidationError } from '../errors/errors.js';
 
+const DEFINITION_TYPE_SET: Set<string> = new Set(DEFINITION_TYPES);
+
 /**
  * Validate that a value is a valid definition type
  */
 export function validateDefinitionType(type: string): asserts type is DefinitionType {
-  if (!(DEFINITION_TYPES as readonly string[]).includes(type)) {
+  if (!DEFINITION_TYPE_SET.has(type)) {
     throw new ValidationError(
       `Invalid definition type '${type}'. Must be one of: ${DEFINITION_TYPES.join(', ')}`,
       { field: 'type', value: type, allowed: [...DEFINITION_TYPES] }

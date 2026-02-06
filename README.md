@@ -106,6 +106,27 @@ const client = new RegistryClient({
 });
 ```
 
+### Validating API Keys
+
+Use the config utilities to validate API key format before constructing a client:
+
+```typescript
+import { isApiKey, validateCredentials, API_KEY_PREFIX } from '@uluops/registry-sdk/config';
+
+// Quick format check (returns boolean)
+const key = process.env.ULUOPS_API_KEY ?? '';
+if (!isApiKey(key)) {
+  console.error(`Invalid API key. Keys must start with '${API_KEY_PREFIX}'`);
+  process.exit(1);
+}
+
+// Full credential validation (returns { valid, apiKey?, sessionToken? })
+const creds = validateCredentials({ apiKey: key });
+if (!creds.valid) {
+  console.error('Invalid credentials');
+}
+```
+
 ### Credential Priority Chain
 
 The SDK loads credentials in the following order:
