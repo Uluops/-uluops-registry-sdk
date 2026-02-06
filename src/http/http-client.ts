@@ -75,9 +75,10 @@ export class RegistryHttpClient {
   }
 
   /**
-   * HTTP methods that are safe to retry (idempotent)
+   * HTTP methods that are automatically retried without opt-in.
+   * PUT/DELETE are technically idempotent but require explicit `retryMutations: true`.
    */
-  private static readonly IDEMPOTENT_METHODS = new Set(['GET']);
+  private static readonly AUTO_RETRY_METHODS = new Set(['GET']);
 
   /**
    * Make an authenticated request with retry support
@@ -92,11 +93,11 @@ export class RegistryHttpClient {
     data?: object,
     options?: { params?: object; retries?: number; retryMutations?: boolean; headers?: Record<string, string>; schema?: ZodType<T> }
   ): Promise<T> {
-    const maxRetries = options?.retries ?? this.retries;
-    const canRetry = RegistryHttpClient.IDEMPOTENT_METHODS.has(method) || (options?.retryMutations === true);
+    const maxAttempts = options?.retries ?? this.retries;
+    const canRetry = RegistryHttpClient.AUTO_RETRY_METHODS.has(method) || (options?.retryMutations === true);
     let lastError: Error | null = null;
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const result = await this.doFetch<T>(method, endpoint, data, options);
         if (options?.schema) {
@@ -111,11 +112,11 @@ export class RegistryHttpClient {
           canRetry &&
           lastError instanceof RegistryApiError &&
           lastError.isRetryable() &&
-          attempt < maxRetries;
+          attempt < maxAttempts;
 
         if (shouldRetry) {
           const delay = this.calculateBackoff(attempt);
-          this.logger.debug(`Retry ${attempt}/${maxRetries} after ${delay}ms`);
+          this.logger.debug(`Attempt ${attempt}/${maxAttempts} failed, retrying after ${delay}ms`);
           await sleep(delay);
           continue;
         }
@@ -199,18 +200,14 @@ export class RegistryHttpClient {
       }
 
       const responseData: unknown = await response.json();
-      if (
-        responseData === null ||
-        typeof responseData !== 'object' ||
-        !('data' in responseData)
-      ) {
+      if (!isDataEnvelope(responseData)) {
         throw new Error(
           `Unexpected API response format: expected { data: ... } wrapper but received ${
             responseData === null ? 'null' : typeof responseData
           }`
         );
       }
-      return (responseData as { data: T }).data;
+      return responseData.data as T;
     } catch (error) {
       // Log error responses
       if (error instanceof RegistryApiError) {
@@ -418,4 +415,11 @@ export class RegistryHttpClient {
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return `${base}${path}`;
   }
+}
+
+/**
+ * Type guard for the standard API response envelope `{ data: T }`.
+ */
+function isDataEnvelope(value: unknown): value is { data: unknown } {
+  return value !== null && typeof value === 'object' && 'data' in value;
 }

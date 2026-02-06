@@ -395,6 +395,71 @@ describe('RegistryHttpClient', () => {
       expect(attempts).toBe(1);
     });
 
+    it('should retry PUT when retryMutations is true', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .put('/test/123')
+        .times(1)
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        })
+        .put('/test/123')
+        .reply(200, { data: { id: '123', name: 'updated' } });
+
+      const result = await client.request<{ id: string }>('PUT', '/test/123', { name: 'updated' }, { retryMutations: true });
+      expect(result.id).toBe('123');
+      expect(attempts).toBe(1);
+    });
+
+    it('should retry DELETE when retryMutations is true', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .delete('/test/123')
+        .times(1)
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        })
+        .delete('/test/123')
+        .reply(200, { data: { deleted: true } });
+
+      const result = await client.request<{ deleted: boolean }>('DELETE', '/test/123', undefined, { retryMutations: true });
+      expect(result.deleted).toBe(true);
+      expect(attempts).toBe(1);
+    });
+
+    it('should NOT retry mutations on non-retryable errors even with retryMutations', async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .post('/test')
+        .reply(() => {
+          attempts++;
+          return [400, { error: { code: 'VALIDATION_ERROR', message: 'Bad Request' } }];
+        });
+
+      await expect(
+        client.request('POST', '/test', { name: 'test' }, { retryMutations: true })
+      ).rejects.toThrow(ValidationError);
+      expect(attempts).toBe(1);
+    });
+
+    it('should exhaust all attempts for mutations with retryMutations', { timeout: 15000 }, async () => {
+      let attempts = 0;
+      nock(MOCK_BASE_URL)
+        .post('/test')
+        .times(3)
+        .reply(() => {
+          attempts++;
+          return [503, { error: { message: 'Service Unavailable' } }];
+        });
+
+      await expect(
+        client.request('POST', '/test', { name: 'test' }, { retryMutations: true })
+      ).rejects.toThrow(ServiceUnavailableError);
+      expect(attempts).toBe(3);
+    });
+
     it('should not retry when retries is 1 (single attempt)', async () => {
       const singleAttemptClient = new RegistryHttpClient({
         apiKey: TEST_API_KEY,

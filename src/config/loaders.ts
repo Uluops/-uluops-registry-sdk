@@ -174,7 +174,7 @@ export function loadConfig(options: {
   loadEnvFiles();
 
   // Determine base URL
-  const baseUrl = options.baseUrl || process.env[ENV_VARS.BASE_URL] || DEFAULT_BASE_URL;
+  const baseUrl = options.baseUrl ?? process.env[ENV_VARS.BASE_URL] ?? DEFAULT_BASE_URL;
 
   // Determine debug mode
   const debug = options.debug ?? process.env[ENV_VARS.DEBUG] === 'true';

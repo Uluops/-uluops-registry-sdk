@@ -86,15 +86,9 @@ export function buildQueryString(params: Record<string, unknown>): string {
 export function filterUndefined<T extends Record<string, unknown>>(
   obj: T
 ): Partial<T> {
-  const result: Partial<T> = {};
-
-  for (const key of Object.keys(obj) as Array<keyof T>) {
-    if (obj[key] !== undefined) {
-      result[key] = obj[key];
-    }
-  }
-
-  return result;
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
 }
 
 /**
