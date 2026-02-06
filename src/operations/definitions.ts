@@ -14,6 +14,7 @@ import type {
 } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
+import { definitionSchema } from '../types/schemas.js';
 
 /**
  * Paginated list response
@@ -47,7 +48,7 @@ export async function get(
   options?: GetDefinitionOptions
 ): Promise<Definition> {
   const path = buildDefinitionPath(type, name, version);
-  return http.get<Definition>(path, options);
+  return http.get<Definition>(path, options, { schema: definitionSchema });
 }
 
 /**
@@ -60,7 +61,7 @@ export async function create(
   body: CreateDefinitionBody
 ): Promise<Definition> {
   const path = buildDefinitionPath(type, name);
-  return http.post<Definition>(path, body);
+  return http.post<Definition>(path, body, { schema: definitionSchema });
 }
 
 /**
@@ -74,7 +75,7 @@ export async function update(
   body: UpdateDefinitionBody
 ): Promise<Definition> {
   const path = buildDefinitionPath(type, name, version);
-  return http.put<Definition>(path, body);
+  return http.put<Definition>(path, body, { schema: definitionSchema });
 }
 
 /**
@@ -100,7 +101,7 @@ export async function publish(
   version: string
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/publish`;
-  return http.post<Definition>(path);
+  return http.post<Definition>(path, undefined, { schema: definitionSchema });
 }
 
 /**
@@ -114,5 +115,5 @@ export async function deprecate(
   body: DeprecateDefinitionBody
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/deprecate`;
-  return http.post<Definition>(path, body);
+  return http.post<Definition>(path, body, { schema: definitionSchema });
 }

@@ -10,6 +10,7 @@ import type {
 } from '../types/responses.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
+import { recordExecutionResultSchema, executionStatsSchema } from '../types/schemas.js';
 
 /**
  * Record an execution of a definition
@@ -23,7 +24,7 @@ export async function record(
   body: RecordExecutionBody
 ): Promise<RecordExecutionResult> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;
-  return http.post<RecordExecutionResult>(path, body);
+  return http.post<RecordExecutionResult>(path, body, { schema: recordExecutionResultSchema });
 }
 
 /**
@@ -38,5 +39,5 @@ export async function getStats(
   window?: number
 ): Promise<ExecutionStats> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;
-  return http.get<ExecutionStats>(path, window ? { window } : undefined);
+  return http.get<ExecutionStats>(path, window ? { window } : undefined, { schema: executionStatsSchema });
 }

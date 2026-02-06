@@ -397,11 +397,11 @@ Record and query execution statistics.
 Record an execution event.
 
 ```typescript
-await client.executions.record('agent', 'code-validator', '1.0.0', {
-  durationMs: 1500,
-  status: 'success',
-  tokens: { input: 1000, output: 500 },
+const result = await client.executions.record('agent', 'code-validator', '1.0.0', {
+  source: 'cli',
+  runId: '550e8400-e29b-41d4-a716-446655440000', // optional, for idempotency
 });
+console.log(result.recorded); // true if new, false if duplicate
 ```
 
 #### `getStats(type, name, version, window?)`
@@ -409,10 +409,10 @@ await client.executions.record('agent', 'code-validator', '1.0.0', {
 Get aggregated execution statistics.
 
 ```typescript
-const stats = await client.executions.getStats('agent', 'code-validator', '1.0.0', '7d');
-console.log(`Executions: ${stats.count}`);
-console.log(`Avg duration: ${stats.avgDurationMs}ms`);
-console.log(`Success rate: ${stats.successRate * 100}%`);
+const stats = await client.executions.getStats('agent', 'code-validator', '1.0.0', 60);
+console.log(`Total executions: ${stats.totalCount}`);
+console.log(`Recent executions: ${stats.recentCount}`);
+console.log(`Window: ${stats.windowMinutes} minutes`);
 ```
 
 ---

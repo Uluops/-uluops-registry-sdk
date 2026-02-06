@@ -250,14 +250,26 @@ export const renderResultSchema = z.object({
 });
 
 export const executionStatsSchema = z.object({
-  total: z.number().int().nonnegative(),
-  recent: z.number().int().nonnegative(),
-  window: z.number().int().positive(),
+  totalCount: z.number().int().nonnegative(),
+  recentCount: z.number().int().nonnegative(),
+  windowMinutes: z.number().int().positive(),
 });
 
 export const recordExecutionBodySchema = z.object({
   source: z.string().max(32),
   runId: z.string().optional(),
+});
+
+export const recordExecutionResultSchema = z.object({
+  recorded: z.boolean(),
+  duplicate: z.boolean(),
+  definition: z.object({
+    id: z.string().uuid(),
+    type: z.string(),
+    name: z.string(),
+    version: z.string(),
+  }),
+  executionCount: z.number().int().nonnegative(),
 });
 
 export const translatorVersionSchema = z.object({

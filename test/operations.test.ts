@@ -16,7 +16,7 @@ import * as executionOps from '../src/operations/executions.js';
 import * as translationOps from '../src/operations/translation.js';
 import * as modelOps from '../src/operations/models.js';
 import * as renderOps from '../src/operations/render.js';
-import { TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
+import { TEST_API_KEY, MOCK_BASE_URL, createMockDefinition } from './setup.js';
 
 describe('operations', () => {
   let http: RegistryHttpClient;
@@ -114,7 +114,7 @@ describe('operations', () => {
       it('should get definition without version', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent')
-          .reply(200, { data: { type: 'agent', name: 'my-agent' } });
+          .reply(200, { data: createMockDefinition({ name: 'my-agent' }) });
 
         const result = await definitionOps.get(http, 'agent', 'my-agent');
         expect(result.name).toBe('my-agent');
@@ -123,7 +123,7 @@ describe('operations', () => {
       it('should get definition with version', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0')
-          .reply(200, { data: { type: 'agent', name: 'my-agent', version: '1.0.0' } });
+          .reply(200, { data: createMockDefinition({ name: 'my-agent', version: '1.0.0' }) });
 
         const result = await definitionOps.get(http, 'agent', 'my-agent', '1.0.0');
         expect(result.version).toBe('1.0.0');
@@ -134,7 +134,7 @@ describe('operations', () => {
       it('should create definition', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/new-agent', { yaml: 'test' })
-          .reply(201, { data: { name: 'new-agent', status: 'draft' } });
+          .reply(201, { data: createMockDefinition({ name: 'new-agent', status: 'draft' }) });
 
         const result = await definitionOps.create(http, 'agent', 'new-agent', {
           yaml: 'test',
@@ -147,7 +147,7 @@ describe('operations', () => {
       it('should update definition', async () => {
         nock(MOCK_BASE_URL)
           .put('/definitions/agent/my-agent@1.0.0', { yaml: 'updated' })
-          .reply(200, { data: { name: 'my-agent', version: '1.0.0' } });
+          .reply(200, { data: createMockDefinition({ name: 'my-agent', version: '1.0.0' }) });
 
         const result = await definitionOps.update(http, 'agent', 'my-agent', '1.0.0', {
           yaml: 'updated',
@@ -172,7 +172,7 @@ describe('operations', () => {
       it('should publish definition', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/publish')
-          .reply(200, { data: { status: 'published' } });
+          .reply(200, { data: createMockDefinition({ name: 'my-agent', version: '1.0.0', status: 'published' }) });
 
         const result = await definitionOps.publish(http, 'agent', 'my-agent', '1.0.0');
         expect(result.status).toBe('published');
@@ -185,7 +185,7 @@ describe('operations', () => {
           .post('/definitions/agent/my-agent@1.0.0/deprecate', {
             reason: 'Superseded',
           })
-          .reply(200, { data: { status: 'deprecated' } });
+          .reply(200, { data: createMockDefinition({ name: 'my-agent', version: '1.0.0', status: 'deprecated', deprecatedAt: '2024-06-01T00:00:00Z' }) });
 
         const result = await definitionOps.deprecate(
           http,
@@ -381,16 +381,28 @@ describe('operations', () => {
       it('should record execution', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/executions', {
-            durationMs: 1500,
-            status: 'success',
+            source: 'sdk',
           })
-          .reply(201, { data: { recorded: true } });
+          .reply(201, {
+            data: {
+              recorded: true,
+              duplicate: false,
+              definition: {
+                id: '00000000-0000-0000-0000-000000000001',
+                type: 'agent',
+                name: 'my-agent',
+                version: '1.0.0',
+              },
+              executionCount: 1,
+            },
+          });
 
         const result = await executionOps.record(http, 'agent', 'my-agent', '1.0.0', {
-          durationMs: 1500,
-          status: 'success',
+          source: 'sdk',
         });
         expect(result.recorded).toBe(true);
+        expect(result.duplicate).toBe(false);
+        expect(result.executionCount).toBe(1);
       });
     });
 
@@ -398,7 +410,7 @@ describe('operations', () => {
       it('should get stats with default window', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/executions')
-          .reply(200, { data: { count: 100, avgDurationMs: 1200 } });
+          .reply(200, { data: { totalCount: 100, recentCount: 25, windowMinutes: 60 } });
 
         const result = await executionOps.getStats(
           http,
@@ -406,23 +418,24 @@ describe('operations', () => {
           'my-agent',
           '1.0.0'
         );
-        expect(result.count).toBe(100);
+        expect(result.totalCount).toBe(100);
+        expect(result.recentCount).toBe(25);
       });
 
       it('should get stats with custom window', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/executions')
-          .query({ window: '7d' })
-          .reply(200, { data: { count: 50, avgDurationMs: 1000 } });
+          .query({ window: '120' })
+          .reply(200, { data: { totalCount: 50, recentCount: 10, windowMinutes: 120 } });
 
         const result = await executionOps.getStats(
           http,
           'agent',
           'my-agent',
           '1.0.0',
-          '7d'
+          120
         );
-        expect(result.count).toBe(50);
+        expect(result.totalCount).toBe(50);
       });
     });
   });

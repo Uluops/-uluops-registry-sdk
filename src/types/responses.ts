@@ -111,16 +111,22 @@ export interface RecordExecutionBody {
  * Execution recording result
  */
 export interface RecordExecutionResult {
-  executionCount: number;
-  recentCount: number;
   recorded: boolean;
+  duplicate: boolean;
+  definition: {
+    id: string;
+    type: string;
+    name: string;
+    version: string;
+  };
+  executionCount: number;
 }
 
 /**
  * Execution statistics
  */
 export interface ExecutionStats {
-  total: number;
-  recent: number;
-  window: number;
+  totalCount: number;
+  recentCount: number;
+  windowMinutes: number;
 }

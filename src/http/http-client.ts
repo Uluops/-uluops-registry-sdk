@@ -2,6 +2,7 @@
  * HTTP client for the Registry API
  */
 
+import type { ZodType } from 'zod';
 import {
   DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT,
@@ -89,7 +90,7 @@ export class RegistryHttpClient {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     endpoint: string,
     data?: object,
-    options?: { params?: object; retries?: number; retryMutations?: boolean; headers?: Record<string, string> }
+    options?: { params?: object; retries?: number; retryMutations?: boolean; headers?: Record<string, string>; schema?: ZodType<T> }
   ): Promise<T> {
     const maxRetries = options?.retries ?? this.retries;
     const canRetry = RegistryHttpClient.IDEMPOTENT_METHODS.has(method) || (options?.retryMutations === true);
@@ -97,7 +98,11 @@ export class RegistryHttpClient {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await this.doFetch<T>(method, endpoint, data, options);
+        const result = await this.doFetch<T>(method, endpoint, data, options);
+        if (options?.schema) {
+          return options.schema.parse(result);
+        }
+        return result;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -272,29 +277,29 @@ export class RegistryHttpClient {
   /**
    * GET request helper
    */
-  async get<T>(endpoint: string, params?: object): Promise<T> {
-    return this.request<T>('GET', endpoint, params);
+  async get<T>(endpoint: string, params?: object, options?: { schema?: ZodType<T> }): Promise<T> {
+    return this.request<T>('GET', endpoint, params, options);
   }
 
   /**
    * POST request helper
    */
-  async post<T>(endpoint: string, data?: object): Promise<T> {
-    return this.request<T>('POST', endpoint, data);
+  async post<T>(endpoint: string, data?: object, options?: { schema?: ZodType<T> }): Promise<T> {
+    return this.request<T>('POST', endpoint, data, options);
   }
 
   /**
    * PUT request helper
    */
-  async put<T>(endpoint: string, data?: object): Promise<T> {
-    return this.request<T>('PUT', endpoint, data);
+  async put<T>(endpoint: string, data?: object, options?: { schema?: ZodType<T> }): Promise<T> {
+    return this.request<T>('PUT', endpoint, data, options);
   }
 
   /**
    * DELETE request helper
    */
-  async delete<T>(endpoint: string, data?: object): Promise<T> {
-    return this.request<T>('DELETE', endpoint, data);
+  async delete<T>(endpoint: string, data?: object, options?: { schema?: ZodType<T> }): Promise<T> {
+    return this.request<T>('DELETE', endpoint, data, options);
   }
 
   /**
