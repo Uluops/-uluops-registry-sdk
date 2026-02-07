@@ -1,10 +1,7 @@
 /**
- * Fetch client interface for dependency injection
+ * Fetch client interface for the Registry SDK
+ *
+ * Re-exports from @uluops/sdk-core.
  */
 
-/**
- * Minimal fetch client interface used by auth strategies
- */
-export interface FetchClient {
-  post<T>(url: string, body: object): Promise<{ data: { data: T } }>;
-}
+export type { FetchClient } from '@uluops/sdk-core/http';

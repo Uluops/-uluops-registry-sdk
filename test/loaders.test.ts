@@ -207,29 +207,14 @@ describe('loaders', () => {
       expect(result).toBeNull();
     });
 
-    it('should log warning on error when debug is enabled', () => {
-      process.env[ENV_VARS.DEBUG] = 'true';
+    it('should silently handle corrupt credentials (sdk-core uses logger.debug)', () => {
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue('invalid json');
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      loadStoredCredentials();
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to load credentials')
-      );
-      warnSpy.mockRestore();
-    });
-
-    it('should always warn on corrupt credentials regardless of debug mode', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue('invalid json');
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      loadStoredCredentials();
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to load credentials')
-      );
-      warnSpy.mockRestore();
+      // sdk-core uses a disabled logger for loadStoredCredentials errors,
+      // so no console output is produced. We just verify it returns null.
+      const result = loadStoredCredentials();
+      expect(result).toBeNull();
     });
   });
 

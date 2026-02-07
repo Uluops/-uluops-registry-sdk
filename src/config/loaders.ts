@@ -1,122 +1,54 @@
 /**
  * Configuration and credential loading for the Registry SDK
+ *
+ * Thin wrapper over @uluops/sdk-core loaders, passing registry-sdk ENV_VARS.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
-import { config as loadDotenv } from 'dotenv';
-import { ENV_VARS, CONFIG_PATHS, DEFAULT_BASE_URL, DEFAULT_AUTH_BASE_URL, API_KEY_PREFIX } from './constants.js';
-import { ValidationError } from '../errors/errors.js';
+import {
+  loadConfig as coreLoadConfig,
+  loadCredentials as coreLoadCredentials,
+  type EnvVarConfig,
+  type SdkConfig as CoreSdkConfig,
+} from '@uluops/sdk-core/config';
+
+export {
+  getGlobalConfigDir,
+  getCredentialsPath,
+  loadEnvFiles,
+  loadStoredCredentials,
+  isApiKey,
+  validateCredentials,
+  type Credentials,
+} from '@uluops/sdk-core/config';
+
+import { ENV_VARS, DEFAULT_BASE_URL, DEFAULT_AUTH_BASE_URL } from './constants.js';
 
 /**
- * Credentials for authentication
- */
-export interface Credentials {
-  apiKey?: string;
-  email?: string;
-  password?: string;
-  sessionToken?: string;
-}
-
-/**
- * Full SDK configuration
+ * Full SDK configuration for the registry-sdk.
+ * authBaseUrl is required (not optional) because the registry API
+ * delegates auth to the ops API.
  */
 export interface SdkConfig {
   baseUrl: string;
   authBaseUrl: string;
-  credentials: Credentials;
+  credentials: import('@uluops/sdk-core/config').Credentials;
   debug: boolean;
   timeout?: number;
   retries?: number;
 }
 
 /**
- * Stored credentials in credentials.json
+ * Registry-sdk ENV_VARS mapping for sdk-core
  */
-interface StoredCredentials {
-  default?: StoredProfile;
-  [profile: string]: StoredProfile | undefined;
-}
-
-interface StoredProfile {
-  type: 'api_key' | 'session';
-  apiKey?: string;
-  sessionToken?: string;
-  expiresAt?: string;
-  email?: string;
-}
-
-/**
- * Get the global config directory
- */
-export function getGlobalConfigDir(): string {
-  return join(homedir(), CONFIG_PATHS.GLOBAL_DIR);
-}
-
-/**
- * Get path to credentials file
- */
-export function getCredentialsPath(): string {
-  return join(homedir(), CONFIG_PATHS.CREDENTIALS);
-}
-
-/**
- * Load environment variables from .env files
- * Priority: local .env > global ~/.uluops/.env
- */
-export function loadEnvFiles(): void {
-  // Load local .env first (lower priority, will be overwritten)
-  const localEnvPath = CONFIG_PATHS.LOCAL_ENV;
-  if (existsSync(localEnvPath)) {
-    loadDotenv({ path: localEnvPath, override: false });
-  }
-
-  // Load global .env (even lower priority)
-  const globalEnvPath = join(homedir(), CONFIG_PATHS.GLOBAL_ENV);
-  if (existsSync(globalEnvPath)) {
-    loadDotenv({ path: globalEnvPath, override: false });
-  }
-}
-
-/**
- * Load stored credentials from credentials.json
- */
-export function loadStoredCredentials(profile = 'default'): Partial<Credentials> | null {
-  const credPath = getCredentialsPath();
-
-  if (!existsSync(credPath)) {
-    return null;
-  }
-
-  try {
-    const content = readFileSync(credPath, 'utf-8');
-    const stored = JSON.parse(content) as StoredCredentials;
-    const profileCreds = stored[profile];
-
-    if (!profileCreds) {
-      return null;
-    }
-
-    // Check if session token is expired
-    if (profileCreds.type === 'session' && profileCreds.expiresAt) {
-      const expiresAt = new Date(profileCreds.expiresAt);
-      if (expiresAt <= new Date()) {
-        return null; // Token expired
-      }
-    }
-
-    return {
-      apiKey: profileCreds.apiKey,
-      sessionToken: profileCreds.sessionToken,
-      email: profileCreds.email,
-    };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.warn(`[registry-sdk] Failed to load credentials from ${credPath}: ${msg}`);
-    return null;
-  }
-}
+const REGISTRY_ENV_VARS: EnvVarConfig = {
+  apiKey: ENV_VARS.API_KEY,
+  email: ENV_VARS.EMAIL,
+  password: ENV_VARS.PASSWORD,
+  sessionToken: ENV_VARS.SESSION_TOKEN,
+  baseUrl: ENV_VARS.BASE_URL,
+  authBaseUrl: ENV_VARS.AUTH_BASE_URL,
+  debug: ENV_VARS.DEBUG,
+};
 
 /**
  * Load credentials with priority chain
@@ -128,51 +60,8 @@ export function loadCredentials(options: {
   password?: string;
   sessionToken?: string;
   profile?: string;
-} = {}): Credentials {
-  // Load env files first
-  loadEnvFiles();
-
-  // Priority 1: Explicit parameters
-  if (options.apiKey) {
-    return { apiKey: options.apiKey };
-  }
-
-  if (options.email && options.password) {
-    return { email: options.email, password: options.password };
-  }
-
-  if (options.sessionToken) {
-    return { sessionToken: options.sessionToken };
-  }
-
-  // Priority 2: Environment variables
-  const envApiKey = process.env[ENV_VARS.API_KEY];
-  if (envApiKey) {
-    return { apiKey: envApiKey };
-  }
-
-  const envEmail = process.env[ENV_VARS.EMAIL];
-  const envPassword = process.env[ENV_VARS.PASSWORD];
-  if (envEmail && envPassword) {
-    return { email: envEmail, password: envPassword };
-  }
-
-  const envSessionToken = process.env[ENV_VARS.SESSION_TOKEN];
-  if (envSessionToken) {
-    return { sessionToken: envSessionToken };
-  }
-
-  // Priority 3: Stored credentials
-  const stored = loadStoredCredentials(options.profile);
-  if (stored?.apiKey) {
-    return { apiKey: stored.apiKey };
-  }
-  if (stored?.sessionToken) {
-    return { sessionToken: stored.sessionToken, email: stored.email };
-  }
-
-  // No credentials found
-  return {};
+} = {}): import('@uluops/sdk-core/config').Credentials {
+  return coreLoadCredentials({ ...options, envVars: REGISTRY_ENV_VARS });
 }
 
 /**
@@ -190,57 +79,21 @@ export function loadConfig(options: {
   timeout?: number;
   retries?: number;
 } = {}): SdkConfig {
-  // Load env files
-  loadEnvFiles();
-
-  // Determine base URL (registry API)
-  const baseUrl = options.baseUrl ?? process.env[ENV_VARS.BASE_URL] ?? DEFAULT_BASE_URL;
-
-  // Determine auth base URL (ops API for login/refresh)
-  const authBaseUrl = options.authBaseUrl ?? process.env[ENV_VARS.AUTH_BASE_URL] ?? DEFAULT_AUTH_BASE_URL;
-
-  // Determine debug mode
-  const debug = options.debug ?? process.env[ENV_VARS.DEBUG] === 'true';
-
-  // Load credentials
-  const credentials = loadCredentials({
-    apiKey: options.apiKey,
-    email: options.email,
-    password: options.password,
-    sessionToken: options.sessionToken,
-    profile: options.profile,
+  const coreConfig: CoreSdkConfig = coreLoadConfig({
+    ...options,
+    envVars: REGISTRY_ENV_VARS,
+    defaults: {
+      baseUrl: DEFAULT_BASE_URL,
+      authBaseUrl: DEFAULT_AUTH_BASE_URL,
+    },
   });
 
   return {
-    baseUrl,
-    authBaseUrl,
-    credentials,
-    debug,
-    timeout: options.timeout,
-    retries: options.retries,
+    baseUrl: coreConfig.baseUrl,
+    authBaseUrl: coreConfig.authBaseUrl ?? DEFAULT_AUTH_BASE_URL,
+    credentials: coreConfig.credentials,
+    debug: coreConfig.debug,
+    timeout: coreConfig.timeout,
+    retries: coreConfig.retries,
   };
-}
-
-/**
- * Check if credentials look like an API key
- */
-export function isApiKey(value: string): boolean {
-  return value.startsWith(API_KEY_PREFIX);
-}
-
-/**
- * Validate that required credentials are present
- */
-export function validateCredentials(credentials: Credentials): void {
-  const hasApiKey = !!credentials.apiKey;
-  const hasSession = !!credentials.sessionToken;
-  const hasPassword = !!credentials.email && !!credentials.password;
-
-  if (!hasApiKey && !hasSession && !hasPassword) {
-    throw new ValidationError(
-      `No credentials found. Set ${ENV_VARS.API_KEY} environment variable, ` +
-        `provide apiKey in constructor, or use email/password.`,
-      { field: 'credentials' }
-    );
-  }
 }

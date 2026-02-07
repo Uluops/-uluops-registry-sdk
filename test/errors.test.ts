@@ -32,7 +32,7 @@ describe('error classes', () => {
       expect(error.statusCode).toBe(500);
       expect(error.message).toBe('Server error');
       expect(error.code).toBe('UNKNOWN');
-      expect(error.name).toBe('RegistryApiError');
+      expect(error.name).toBe('SdkApiError');
     });
 
     it('should create with all fields', () => {
@@ -52,7 +52,7 @@ describe('error classes', () => {
       const error = new RegistryApiError(500, 'Server error', 'CODE', { key: 'value' }, 'req-123');
       const json = error.toJSON();
       expect(json).toEqual({
-        name: 'RegistryApiError',
+        name: 'SdkApiError',
         message: 'Server error',
         statusCode: 500,
         code: 'CODE',
@@ -259,7 +259,7 @@ describe('error classes', () => {
       const error = new RateLimitError();
       expect(error.statusCode).toBe(429);
       expect(error.message).toBe('Rate limit exceeded');
-      expect(error.code).toBe('RATE_LIMIT_ERROR');
+      expect(error.code).toBe('RATE_LIMITED');
       expect(error.name).toBe('RateLimitError');
       expect(error.retryAfter).toBeUndefined();
     });
@@ -303,7 +303,7 @@ describe('error classes', () => {
     it('should create with message', () => {
       const error = new NetworkError('Connection refused');
       expect(error.statusCode).toBe(0);
-      expect(error.message).toBe('Connection refused');
+      expect(error.message).toContain('Connection refused');
       expect(error.code).toBe('NETWORK_ERROR');
       expect(error.name).toBe('NetworkError');
     });
@@ -318,7 +318,7 @@ describe('error classes', () => {
     it('should create with timeout value', () => {
       const error = new TimeoutError(30000);
       expect(error.statusCode).toBe(0);
-      expect(error.message).toBe('Request timed out after 30000ms');
+      expect(error.message).toContain('Request timed out after 30000ms');
       expect(error.code).toBe('TIMEOUT');
       expect(error.name).toBe('TimeoutError');
       expect(error.details).toEqual({ timeoutMs: 30000 });

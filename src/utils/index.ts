@@ -2,7 +2,7 @@
  * Utility exports for the Registry SDK
  */
 
-export { createLogger, redactSensitive, type Logger } from './logger.js';
+export { createLogger, redactSensitive, sanitizeForLog, sanitizeForDisplay, type Logger } from './logger.js';
 
 export {
   sleep,
