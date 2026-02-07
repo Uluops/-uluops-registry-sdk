@@ -265,7 +265,7 @@ describe('error classes', () => {
     });
 
     it('should create with retry-after', () => {
-      const error = new RateLimitError(60);
+      const error = new RateLimitError(undefined, 60);
       expect(error.message).toBe('Rate limit exceeded. Retry after 60 seconds');
       expect(error.retryAfter).toBe(60);
       expect(error.details).toEqual({ retryAfter: 60 });
