@@ -139,14 +139,15 @@ describe('RegistryHttpClient', () => {
     });
 
     it('should transform 429 to RateLimitError with retry-after', { timeout: 15000 }, async () => {
-      // Use .times(3) because 429 is retryable and client retries 3 times by default
+      // Use .times(3) because 429 is retryable and client retries 3 times by default.
+      // retry-after: 1 (second) keeps the test fast now that backoff respects the header.
       nock(MOCK_BASE_URL)
         .get('/test')
         .times(3)
         .reply(
           429,
           { error: { code: 'RATE_LIMIT_ERROR', message: 'Rate limited' } },
-          { 'retry-after': '60' }
+          { 'retry-after': '1' }
         );
 
       try {
@@ -154,7 +155,7 @@ describe('RegistryHttpClient', () => {
         expect.fail('Should have thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(RateLimitError);
-        expect((error as RateLimitError).retryAfter).toBe(60);
+        expect((error as RateLimitError).retryAfter).toBe(1);
       }
     });
 

@@ -26,5 +26,11 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Ad-hoc test scripts
+test-*.mjs
+
+# Validation output artifacts
+*-features-list-*.md
+
 # TypeScript cache
 *.tsbuildinfo

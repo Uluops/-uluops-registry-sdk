@@ -91,16 +91,20 @@ describe('createLogger', () => {
     vi.restoreAllMocks();
   });
 
-  it('should create a noop logger when disabled', () => {
+  it('should suppress debug and info when disabled', () => {
     const logger = createLogger(false);
     logger.debug('test');
     logger.info('test');
-    logger.warn('test');
-    logger.error('test');
     expect(consoleSpy.debug).not.toHaveBeenCalled();
     expect(consoleSpy.info).not.toHaveBeenCalled();
-    expect(consoleSpy.warn).not.toHaveBeenCalled();
-    expect(consoleSpy.error).not.toHaveBeenCalled();
+  });
+
+  it('should still emit warn and error when disabled', () => {
+    const logger = createLogger(false);
+    logger.warn('warning');
+    logger.error('error');
+    expect(consoleSpy.warn).toHaveBeenCalledTimes(1);
+    expect(consoleSpy.error).toHaveBeenCalledTimes(1);
   });
 
   it('should log messages when enabled', () => {

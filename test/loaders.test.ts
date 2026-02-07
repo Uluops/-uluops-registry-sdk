@@ -199,22 +199,27 @@ describe('loaders', () => {
       expect(result?.sessionToken).toBe('valid-token');
     });
 
-    it('should return null on JSON parse error', () => {
+    it('should return null and warn on JSON parse error', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue('invalid json');
 
       const result = loadStoredCredentials();
       expect(result).toBeNull();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('could not read credentials');
+      warnSpy.mockRestore();
     });
 
-    it('should silently handle corrupt credentials (sdk-core uses logger.debug)', () => {
+    it('should warn on corrupt credentials and fall back', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue('invalid json');
 
-      // sdk-core uses a disabled logger for loadStoredCredentials errors,
-      // so no console output is produced. We just verify it returns null.
       const result = loadStoredCredentials();
       expect(result).toBeNull();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      warnSpy.mockRestore();
     });
   });
 
