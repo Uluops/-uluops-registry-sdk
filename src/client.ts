@@ -231,13 +231,8 @@ export class RegistryClient {
    * The registry API has no auth endpoints — login is delegated to the ops API.
    */
   async login(email: string, password: string): Promise<{ sessionToken: string; expiresAt?: string }> {
-    const authStrategy = this.http.getAuthStrategy();
-    if (authStrategy instanceof JwtSessionAuth) {
-      const token = await authStrategy.login();
-      return { sessionToken: token, expiresAt: authStrategy.getExpiresAt()?.toISOString() };
-    }
-
-    // No JwtSessionAuth strategy — create a temporary one for login
+    // Always use the provided email/password — create a temporary HTTP client
+    // so the caller's explicit credentials are never silently ignored.
     const { RegistryHttpClient: HttpClient } = await import('./http/http-client.js');
     const tempHttp = new HttpClient({
       authBaseUrl: (this.http as RegistryHttpClient & { authBaseUrl?: string })['authBaseUrl'],

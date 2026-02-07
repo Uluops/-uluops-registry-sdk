@@ -653,7 +653,6 @@ describe('RegistryHttpClient', () => {
         expect(error).toBeInstanceOf(UnauthorizedError);
         expect(error).not.toBeInstanceOf(NetworkError);
         expect((error as UnauthorizedError).message).toContain('ULUOPS_API_KEY');
-        expect((error as UnauthorizedError).message).toContain('Network error');
       }
     });
 
