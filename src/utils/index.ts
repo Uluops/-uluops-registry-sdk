@@ -7,9 +7,6 @@ export { createLogger, redactSensitive, sanitizeForLog, sanitizeForDisplay, type
 export {
   sleep,
   retry,
-  buildQueryString,
-  filterUndefined,
-  deepClone,
   parseRateLimitHeaders,
   isPlainObject,
   truncate,

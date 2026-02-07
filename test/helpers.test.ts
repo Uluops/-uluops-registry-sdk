@@ -6,9 +6,6 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   sleep,
   retry,
-  buildQueryString,
-  filterUndefined,
-  deepClone,
   isPlainObject,
   truncate,
   parseRateLimitHeaders,
@@ -81,126 +78,6 @@ describe('retry', () => {
     const fn = vi.fn().mockResolvedValue(42);
     const result = await retry(fn);
     expect(result).toBe(42);
-  });
-});
-
-describe('buildQueryString', () => {
-  it('should build query string from object', () => {
-    expect(buildQueryString({ type: 'agent', limit: 10 })).toBe('?type=agent&limit=10');
-  });
-
-  it('should filter out undefined values', () => {
-    expect(buildQueryString({ type: 'agent', status: undefined })).toBe('?type=agent');
-  });
-
-  it('should filter out null values', () => {
-    expect(buildQueryString({ type: 'agent', status: null })).toBe('?type=agent');
-  });
-
-  it('should handle arrays', () => {
-    const qs = buildQueryString({ tag: ['ai', 'ml'] });
-    expect(qs).toContain('tag=ai');
-    expect(qs).toContain('tag=ml');
-  });
-
-  it('should handle arrays with null/undefined items', () => {
-    const qs = buildQueryString({ tag: ['ai', undefined, null, 'ml'] });
-    expect(qs).toContain('tag=ai');
-    expect(qs).toContain('tag=ml');
-    expect(qs).not.toContain('undefined');
-    expect(qs).not.toContain('null');
-  });
-
-  it('should return empty string for empty object', () => {
-    expect(buildQueryString({})).toBe('');
-  });
-
-  it('should return empty string when all values are undefined', () => {
-    expect(buildQueryString({ a: undefined, b: null })).toBe('');
-  });
-
-  it('should convert numbers to strings', () => {
-    expect(buildQueryString({ offset: 0 })).toBe('?offset=0');
-  });
-
-  it('should convert booleans to strings', () => {
-    expect(buildQueryString({ active: true })).toBe('?active=true');
-  });
-});
-
-describe('filterUndefined', () => {
-  it('should remove undefined values', () => {
-    const result = filterUndefined({ a: 1, b: undefined, c: 'hello' });
-    expect(result).toEqual({ a: 1, c: 'hello' });
-  });
-
-  it('should keep null values', () => {
-    const result = filterUndefined({ a: 1, b: null });
-    expect(result).toEqual({ a: 1, b: null });
-  });
-
-  it('should keep falsy values (0, empty string, false)', () => {
-    const result = filterUndefined({ a: 0, b: '', c: false });
-    expect(result).toEqual({ a: 0, b: '', c: false });
-  });
-
-  it('should return empty object for all undefined', () => {
-    const result = filterUndefined({ a: undefined, b: undefined });
-    expect(result).toEqual({});
-  });
-
-  it('should return empty object for empty input', () => {
-    const result = filterUndefined({});
-    expect(result).toEqual({});
-  });
-});
-
-describe('deepClone', () => {
-  it('should clone primitive values', () => {
-    expect(deepClone(42)).toBe(42);
-    expect(deepClone('hello')).toBe('hello');
-    expect(deepClone(true)).toBe(true);
-    expect(deepClone(null)).toBeNull();
-  });
-
-  it('should deep clone objects', () => {
-    const original = { a: 1, b: { c: 2 } };
-    const cloned = deepClone(original);
-    expect(cloned).toEqual(original);
-    expect(cloned).not.toBe(original);
-    expect(cloned.b).not.toBe(original.b);
-  });
-
-  it('should deep clone arrays', () => {
-    const original = [1, [2, 3], { a: 4 }];
-    const cloned = deepClone(original);
-    expect(cloned).toEqual(original);
-    expect(cloned).not.toBe(original);
-    expect(cloned[1]).not.toBe(original[1]);
-    expect(cloned[2]).not.toBe(original[2]);
-  });
-
-  it('should handle nested objects', () => {
-    const original = { a: { b: { c: { d: 'deep' } } } };
-    const cloned = deepClone(original);
-    expect(cloned.a.b.c.d).toBe('deep');
-    cloned.a.b.c.d = 'modified';
-    expect(original.a.b.c.d).toBe('deep');
-  });
-
-  it('should handle deeply nested objects', () => {
-    let obj: Record<string, unknown> = { value: 'bottom' };
-    for (let i = 0; i < 55; i++) {
-      obj = { nested: obj };
-    }
-    const cloned = deepClone(obj);
-    expect(cloned).toEqual(obj);
-    expect(cloned).not.toBe(obj);
-  });
-
-  it('should clone empty objects and arrays', () => {
-    expect(deepClone({})).toEqual({});
-    expect(deepClone([])).toEqual([]);
   });
 });
 
