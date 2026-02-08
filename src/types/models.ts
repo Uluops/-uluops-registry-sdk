@@ -53,10 +53,7 @@ export interface ModelAlias {
  */
 export interface AliasResolution {
   alias: string;
-  resolved: boolean;
-  provider?: string | null;
-  modelId?: string | null;
-  deprecated: boolean;
+  target: string;
   model?: Model | null;
 }
 
