@@ -36,22 +36,11 @@ export interface VersionListItem {
 }
 
 /**
- * Version diff response
+ * Version diff response (matches actual API shape)
  */
 export interface VersionDiff {
-  from: VersionListItem;
-  to: VersionListItem;
-  changes: VersionChanges;
-}
-
-/**
- * Detailed changes between two versions
- */
-export interface VersionChanges {
-  yaml?: {
-    added: number;
-    removed: number;
-    modified: number;
-  };
-  metadata?: Record<string, { from: unknown; to: unknown }>;
+  fromVersion: string;
+  toVersion: string;
+  fromYaml: string;
+  toYaml: string;
 }
