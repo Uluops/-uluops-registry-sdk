@@ -2,7 +2,7 @@
  * Version-related types for the Registry SDK
  */
 
-import type { ChangeType, DefinitionStatus } from './enums.js';
+import type { ChangeType } from './enums.js';
 
 /**
  * Version snapshot of a definition
@@ -13,10 +13,11 @@ export interface DefinitionVersion {
   version: string;
   yaml: string;
   hash: string;
-  status: DefinitionStatus;
+  runtimeMd?: string | null;
+  translatorVersion?: string | null;
+  schemaVersion?: string | null;
   createdAt: string;
-  publishedAt?: string | null;
-  deprecatedAt?: string | null;
+  createdBy: string;
   changeType?: ChangeType | null;
   changeSummary?: string | null;
 }
@@ -25,11 +26,11 @@ export interface DefinitionVersion {
  * Lightweight version info for list responses
  */
 export interface VersionListItem {
+  id: string;
   version: string;
-  status: DefinitionStatus;
+  hash: string;
   createdAt: string;
-  publishedAt?: string | null;
-  deprecatedAt?: string | null;
+  createdBy: string;
   changeType?: ChangeType | null;
   changeSummary?: string | null;
 }
