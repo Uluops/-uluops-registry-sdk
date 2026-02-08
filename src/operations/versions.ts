@@ -8,16 +8,24 @@ import type { DefinitionType } from '../types/enums.js';
 import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
 
 /**
+ * Versions list response
+ */
+export interface VersionsListResponse {
+  versions: VersionListItem[];
+  totalVersions: number;
+}
+
+/**
  * List all versions of a definition
  */
 export async function list(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string
-): Promise<VersionListItem[]> {
+): Promise<VersionsListResponse> {
   validateDefinitionType(type);
   validateDefinitionName(name);
-  return http.get<VersionListItem[]>(`/definitions/${type}/${name}/versions`);
+  return http.get<VersionsListResponse>(`/definitions/${type}/${name}/versions`);
 }
 
 /**

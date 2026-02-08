@@ -71,7 +71,7 @@ export interface RenderPreviewBody {
  * Translator version info
  */
 export interface TranslatorVersion {
-  version: string;
+  translatorVersion: string;
   releaseDate?: string;
   schema?: string;
 }

@@ -71,6 +71,8 @@ export type {
   VersionDiff,
 } from './types/versions.js';
 
+export type { VersionsListResponse } from './operations/versions.js';
+
 export type {
   // Dependency types
   DependencyGraph,

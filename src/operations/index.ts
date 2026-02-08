@@ -43,3 +43,4 @@ export type {
   ProvidersListResponse,
   AliasesListResponse,
 } from './models.js';
+export type { VersionsListResponse } from './versions.js';

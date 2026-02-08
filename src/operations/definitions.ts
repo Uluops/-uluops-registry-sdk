@@ -20,10 +20,11 @@ import { definitionSchema } from '../types/schemas.js';
  * Paginated list response
  */
 export interface DefinitionListResponse {
-  items: DefinitionListItem[];
+  definitions: DefinitionListItem[];
   total: number;
   limit: number;
   offset: number;
+  hasMore?: boolean;
 }
 
 /**

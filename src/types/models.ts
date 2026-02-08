@@ -39,12 +39,13 @@ export interface Model {
  */
 export interface ModelAlias {
   alias: string;
-  targetProvider: string;
-  targetModelId: string;
-  scope: 'global' | 'user' | 'team';
-  deprecated: boolean;
-  createdAt: string;
-  updatedAt: string;
+  provider: string;
+  modelId: string;
+  description?: string;
+  scope?: 'global' | 'user' | 'team';
+  deprecated?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -64,8 +65,10 @@ export interface AliasResolution {
  */
 export interface Provider {
   id: string;
-  displayName: string;
-  website?: string;
+  name: string;
+  logoUrl?: string;
+  docUrl?: string;
+  apiUrl?: string;
   status: 'active' | 'inactive' | 'deprecated';
 }
 
@@ -83,9 +86,10 @@ export interface ListModelsQuery {
  * Model sync response
  */
 export interface ModelSyncResult {
-  message: string;
-  synced: number;
-  created: number;
-  updated: number;
-  deleted: number;
+  message?: string;
+  providersAdded: number;
+  providersUpdated: number;
+  modelsAdded: number;
+  modelsUpdated: number;
+  duration?: string;
 }

@@ -48,7 +48,8 @@ import type {
   UpdateDefinitionBody,
   DeprecateDefinitionBody,
 } from './types/definitions.js';
-import type { VersionListItem, VersionDiff } from './types/versions.js';
+import type { VersionDiff } from './types/versions.js';
+import type { VersionsListResponse } from './operations/versions.js';
 import type { DependencyGraph, GetDependenciesOptions } from './types/dependencies.js';
 import type {
   ForkDefinitionBody,
@@ -134,7 +135,7 @@ export class RegistryClient {
    * Version operations (list, diff)
    */
   readonly versions: {
-    list: (type: DefinitionType, name: string) => Promise<VersionListItem[]>;
+    list: (type: DefinitionType, name: string) => Promise<VersionsListResponse>;
     diff: (type: DefinitionType, name: string, from: string, to: string) => Promise<VersionDiff>;
   };
 
