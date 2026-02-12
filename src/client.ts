@@ -236,7 +236,7 @@ export class RegistryClient {
     // so the caller's explicit credentials are never silently ignored.
     const { RegistryHttpClient: HttpClient } = await import('./http/http-client.js');
     const tempHttp = new HttpClient({
-      authBaseUrl: (this.http as RegistryHttpClient & { authBaseUrl?: string })['authBaseUrl'],
+      authBaseUrl: this.http.getAuthBaseUrl(),
       email,
       password,
     });

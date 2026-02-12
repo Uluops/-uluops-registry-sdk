@@ -47,8 +47,7 @@
   "author": "UluOps <hello@uluops.ai>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uluops/uluops.git",
-    "directory": "packages/registry-sdk"
+    "url": "https://github.com/Uluops/-uluops-registry-sdk.git"
   },
   "license": "MIT",
   "dependencies": {

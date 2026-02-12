@@ -34,3 +34,5 @@ test-*.mjs
 
 # TypeScript cache
 *.tsbuildinfo
+
+docs/

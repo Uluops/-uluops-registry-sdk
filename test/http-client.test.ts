@@ -519,6 +519,38 @@ describe('RegistryHttpClient', () => {
     });
   });
 
+  describe('network error handling', () => {
+    it('should throw NetworkError on ECONNREFUSED', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .replyWithError({ code: 'ECONNREFUSED', message: 'connect ECONNREFUSED' });
+
+      await expect(client.get('/test')).rejects.toThrow(NetworkError);
+    });
+
+    it('should throw NetworkError on ECONNRESET', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .replyWithError({ code: 'ECONNRESET', message: 'socket hang up' });
+
+      await expect(client.get('/test')).rejects.toThrow(NetworkError);
+    });
+
+    it('should include base URL in NetworkError message', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .replyWithError({ code: 'ECONNREFUSED', message: 'connect ECONNREFUSED' });
+
+      try {
+        await client.get('/test');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(NetworkError);
+        expect((error as NetworkError).message).toContain(MOCK_BASE_URL);
+      }
+    });
+  });
+
   describe('timeout handling', () => {
     /** Short timeout so the test triggers an abort quickly */
     const SHORT_TIMEOUT_MS = 100;

@@ -45,6 +45,6 @@ export async function upgrade(
   body: UpgradeDefinitionBody
 ): Promise<UpgradeResult> {
   validateYamlSize(body.yaml);
-  const path = `/definitions/${type}/${name}/upgrade`;
+  const path = `${buildDefinitionPath(type, name)}/upgrade`;
   return http.post<UpgradeResult>(path, body);
 }

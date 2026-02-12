@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import nock from 'nock';
 import { RegistryClient } from '../src/client.js';
 import {
   mockEndpoint,
@@ -197,6 +198,63 @@ describe('RegistryClient', () => {
     it('should return null for getAuthType when no credentials provided', () => {
       const unauthenticatedClient = new RegistryClient();
       expect(unauthenticatedClient.getAuthType()).toBeNull();
+    });
+  });
+
+  describe('session management', () => {
+    const AUTH_BASE_URL = 'https://auth.test.uluops.ai/api/v1';
+
+    it('should login with email and password', async () => {
+      const loginClient = new RegistryClient({
+        apiKey: TEST_API_KEY,
+        authBaseUrl: AUTH_BASE_URL,
+      });
+
+      nock(AUTH_BASE_URL)
+        .post('/auth/login', { email: 'user@test.com', password: 'password123' })
+        .reply(200, {
+          data: {
+            sessionToken: 'new-session-token',
+            expiresAt: '2026-12-31T00:00:00Z',
+          },
+        });
+
+      const result = await loginClient.login('user@test.com', 'password123');
+      expect(result.sessionToken).toBe('new-session-token');
+      expect(result.expiresAt).toBe('2026-12-31T00:00:00.000Z');
+    });
+
+    it('should throw when login response missing sessionToken', async () => {
+      const loginClient = new RegistryClient({
+        apiKey: TEST_API_KEY,
+        authBaseUrl: AUTH_BASE_URL,
+      });
+
+      nock(AUTH_BASE_URL)
+        .post('/auth/login')
+        .reply(200, { data: {} });
+
+      await expect(
+        loginClient.login('user@test.com', 'wrong-password')
+      ).rejects.toThrow('Login response missing sessionToken');
+    });
+
+    it('should logout by clearing session', () => {
+      const sessionClient = new RegistryClient({ sessionToken: TEST_SESSION_TOKEN });
+      expect(sessionClient.isAuthenticated()).toBe(true);
+
+      sessionClient.logout();
+
+      expect(sessionClient.isAuthenticated()).toBe(false);
+    });
+
+    it('should be a no-op when logout called with API key auth', () => {
+      const apiClient = new RegistryClient({ apiKey: TEST_API_KEY });
+      expect(apiClient.isAuthenticated()).toBe(true);
+
+      apiClient.logout(); // Should not throw
+
+      expect(apiClient.isAuthenticated()).toBe(true);
     });
   });
 });

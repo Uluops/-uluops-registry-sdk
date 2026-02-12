@@ -58,7 +58,7 @@ describe('operations', () => {
         );
 
         await expect(userOps.batch(http, ids)).rejects.toThrow(
-          'Batch lookup supports maximum 100 user IDs'
+          'Batch lookup supports maximum 100 user IDs (received 101)'
         );
       });
 

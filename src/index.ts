@@ -1,7 +1,7 @@
 /**
  * @uluops/registry-sdk
  *
- * SDK and CLI for the UluOps Registry API - manage AI workflow definitions
+ * TypeScript SDK for the UluOps Registry API - manage AI workflow definitions
  * (agents, commands, workflows, pipelines).
  *
  * @example

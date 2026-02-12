@@ -27,7 +27,7 @@ export async function batch(
   }
 
   if (ids.length > 100) {
-    throw new Error('Batch lookup supports maximum 100 user IDs');
+    throw new Error(`Batch lookup supports maximum 100 user IDs (received ${ids.length})`);
   }
 
   // Validate all IDs
