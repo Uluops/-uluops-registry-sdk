@@ -124,7 +124,8 @@ describe('truncate', () => {
   });
 
   it('should handle very short maxLength', () => {
-    expect(truncate('hello world', 3)).toBe('...');
+    // sdk-core truncate returns first N chars when maxLength <= 3
+    expect(truncate('hello world', 3)).toBe('hel');
   });
 
   it('should handle empty string', () => {

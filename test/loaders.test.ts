@@ -1,10 +1,49 @@
 /**
  * Tests for configuration loading functions
+ *
+ * Pure re-exports (isApiKey, validateCredentials) are tested with real implementations.
+ *
+ * Functions with fs/os dependencies (getGlobalConfigDir, getCredentialsPath,
+ * loadStoredCredentials) and wrapper functions (loadCredentials, loadConfig)
+ * mock the sdk-core functions directly to avoid unreliable deep-mocking of
+ * dotenv/fs/os inside the sdk-core package boundary.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  ENV_VARS,
+  DEFAULT_BASE_URL,
+  DEFAULT_AUTH_BASE_URL,
+} from '../src/config/constants.js';
+
+// Mock sdk-core functions at the correct boundary.
+// vi.hoisted ensures mock references are available inside vi.mock factories.
+const {
+  mockCoreLoadCredentials,
+  mockCoreLoadConfig,
+  mockGetGlobalConfigDir,
+  mockGetCredentialsPath,
+  mockLoadStoredCredentials,
+} = vi.hoisted(() => ({
+  mockCoreLoadCredentials: vi.fn(),
+  mockCoreLoadConfig: vi.fn(),
+  mockGetGlobalConfigDir: vi.fn(),
+  mockGetCredentialsPath: vi.fn(),
+  mockLoadStoredCredentials: vi.fn(),
+}));
+
+vi.mock('@uluops/sdk-core/config', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    loadCredentials: mockCoreLoadCredentials,
+    loadConfig: mockCoreLoadConfig,
+    getGlobalConfigDir: mockGetGlobalConfigDir,
+    getCredentialsPath: mockGetCredentialsPath,
+    loadStoredCredentials: mockLoadStoredCredentials,
+  };
+});
+
 import {
   loadCredentials,
   loadConfig,
@@ -14,59 +53,29 @@ import {
   getGlobalConfigDir,
   getCredentialsPath,
 } from '../src/config/loaders.js';
-import { ENV_VARS, DEFAULT_BASE_URL, API_KEY_PREFIX } from '../src/config/constants.js';
-
-// Mock fs and os modules
-vi.mock('node:fs', () => ({
-  existsSync: vi.fn(),
-  readFileSync: vi.fn(),
-}));
-
-vi.mock('node:os', () => ({
-  homedir: vi.fn(() => '/home/testuser'),
-}));
-
-// Mock dotenv
-vi.mock('dotenv', () => ({
-  config: vi.fn(),
-}));
 
 describe('loaders', () => {
-  // Save only the SDK-specific env vars we'll mutate (preserves process.env proxy behavior)
-  const SDK_ENV_KEYS = [ENV_VARS.API_KEY, ENV_VARS.SESSION_TOKEN, ENV_VARS.BASE_URL, ENV_VARS.DEBUG] as const;
-  const savedEnv: Record<string, string | undefined> = {};
-
   beforeEach(() => {
     vi.clearAllMocks();
-    // Save and clear SDK env vars
-    for (const key of SDK_ENV_KEYS) {
-      savedEnv[key] = process.env[key];
-      delete process.env[key];
-    }
-  });
-
-  afterEach(() => {
-    // Restore original values
-    for (const key of SDK_ENV_KEYS) {
-      if (savedEnv[key] !== undefined) {
-        process.env[key] = savedEnv[key];
-      } else {
-        delete process.env[key];
-      }
-    }
   });
 
   describe('getGlobalConfigDir', () => {
-    it('should return global config directory path', () => {
+    it('should delegate to sdk-core getGlobalConfigDir', () => {
+      mockGetGlobalConfigDir.mockReturnValue('/home/testuser/.uluops');
+
       const dir = getGlobalConfigDir();
       expect(dir).toBe('/home/testuser/.uluops');
+      expect(mockGetGlobalConfigDir).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getCredentialsPath', () => {
-    it('should return credentials file path', () => {
+    it('should delegate to sdk-core getCredentialsPath', () => {
+      mockGetCredentialsPath.mockReturnValue('/home/testuser/.uluops/credentials.json');
+
       const path = getCredentialsPath();
       expect(path).toBe('/home/testuser/.uluops/credentials.json');
+      expect(mockGetCredentialsPath).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -98,250 +107,259 @@ describe('loaders', () => {
     });
 
     it('should include environment variable name in error message', () => {
-      expect(() => validateCredentials({})).toThrow(ENV_VARS.API_KEY);
+      expect(() => validateCredentials({})).toThrow('ULUOPS_API_KEY');
     });
   });
 
   describe('loadStoredCredentials', () => {
-    it('should return null when credentials file does not exist', () => {
-      vi.mocked(existsSync).mockReturnValue(false);
+    it('should delegate to sdk-core loadStoredCredentials', () => {
+      mockLoadStoredCredentials.mockReturnValue({ apiKey: 'ulr_stored_key' });
+
+      const result = loadStoredCredentials();
+      expect(result?.apiKey).toBe('ulr_stored_key');
+      expect(mockLoadStoredCredentials).toHaveBeenCalledTimes(1);
+    });
+
+    it('should pass profile argument through', () => {
+      mockLoadStoredCredentials.mockReturnValue({ apiKey: 'ulr_staging' });
+
+      const result = loadStoredCredentials('staging');
+      expect(result?.apiKey).toBe('ulr_staging');
+      expect(mockLoadStoredCredentials).toHaveBeenCalledWith('staging');
+    });
+
+    it('should return null when sdk-core returns null', () => {
+      mockLoadStoredCredentials.mockReturnValue(null);
 
       const result = loadStoredCredentials();
       expect(result).toBeNull();
     });
 
-    it('should load API key from default profile', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          default: {
-            type: 'api_key',
-            apiKey: 'ulr_stored_key',
-          },
-        })
-      );
-
-      const result = loadStoredCredentials();
-      expect(result?.apiKey).toBe('ulr_stored_key');
-    });
-
-    it('should load session token from default profile', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          default: {
-            type: 'session',
-            sessionToken: 'jwt-token',
-          },
-        })
-      );
+    it('should return session credentials from sdk-core', () => {
+      mockLoadStoredCredentials.mockReturnValue({ sessionToken: 'jwt-token' });
 
       const result = loadStoredCredentials();
       expect(result?.sessionToken).toBe('jwt-token');
     });
-
-    it('should load credentials from custom profile', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          default: { type: 'api_key', apiKey: 'ulr_default' },
-          staging: { type: 'api_key', apiKey: 'ulr_staging' },
-        })
-      );
-
-      const result = loadStoredCredentials('staging');
-      expect(result?.apiKey).toBe('ulr_staging');
-    });
-
-    it('should return null for non-existent profile', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          default: { type: 'api_key', apiKey: 'ulr_default' },
-        })
-      );
-
-      const result = loadStoredCredentials('nonexistent');
-      expect(result).toBeNull();
-    });
-
-    it('should return null for expired session token', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      const pastDate = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          default: {
-            type: 'session',
-            sessionToken: 'expired-token',
-            expiresAt: pastDate,
-          },
-        })
-      );
-
-      const result = loadStoredCredentials();
-      expect(result).toBeNull();
-    });
-
-    it('should return credentials for valid (non-expired) session token', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      const futureDate = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          default: {
-            type: 'session',
-            sessionToken: 'valid-token',
-            expiresAt: futureDate,
-          },
-        })
-      );
-
-      const result = loadStoredCredentials();
-      expect(result?.sessionToken).toBe('valid-token');
-    });
-
-    it('should return null and warn on JSON parse error', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue('invalid json');
-
-      const result = loadStoredCredentials();
-      expect(result).toBeNull();
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(warnSpy.mock.calls[0][0]).toContain('could not read credentials');
-      warnSpy.mockRestore();
-    });
-
-    it('should warn on corrupt credentials and fall back', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue('invalid json');
-
-      const result = loadStoredCredentials();
-      expect(result).toBeNull();
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      warnSpy.mockRestore();
-    });
   });
 
   describe('loadCredentials', () => {
-    it('should prioritize explicit apiKey over everything', () => {
-      process.env[ENV_VARS.API_KEY] = 'ulr_env_key';
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({ default: { type: 'api_key', apiKey: 'ulr_stored_key' } })
+    it('should pass REGISTRY_ENV_VARS to coreLoadCredentials', () => {
+      mockCoreLoadCredentials.mockReturnValue({});
+
+      loadCredentials();
+
+      expect(mockCoreLoadCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({
+          envVars: expect.objectContaining({
+            apiKey: ENV_VARS.API_KEY,
+            email: ENV_VARS.EMAIL,
+            password: ENV_VARS.PASSWORD,
+            sessionToken: ENV_VARS.SESSION_TOKEN,
+            baseUrl: ENV_VARS.BASE_URL,
+            debug: ENV_VARS.DEBUG,
+          }),
+        })
       );
+    });
+
+    it('should pass explicit apiKey to coreLoadCredentials', () => {
+      mockCoreLoadCredentials.mockReturnValue({ apiKey: 'ulr_explicit_key' });
 
       const result = loadCredentials({ apiKey: 'ulr_explicit_key' });
+
+      expect(mockCoreLoadCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({ apiKey: 'ulr_explicit_key' })
+      );
       expect(result.apiKey).toBe('ulr_explicit_key');
     });
 
-    it('should prioritize explicit sessionToken over env vars and stored', () => {
-      process.env[ENV_VARS.SESSION_TOKEN] = 'env-session';
+    it('should pass explicit sessionToken to coreLoadCredentials', () => {
+      mockCoreLoadCredentials.mockReturnValue({ sessionToken: 'explicit-session' });
 
       const result = loadCredentials({ sessionToken: 'explicit-session' });
+
+      expect(mockCoreLoadCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionToken: 'explicit-session' })
+      );
       expect(result.sessionToken).toBe('explicit-session');
     });
 
-    it('should use env API key when no explicit params', () => {
-      process.env[ENV_VARS.API_KEY] = 'ulr_env_key';
+    it('should pass profile to coreLoadCredentials', () => {
+      mockCoreLoadCredentials.mockReturnValue({ apiKey: 'ulr_staging' });
 
-      const result = loadCredentials();
-      expect(result.apiKey).toBe('ulr_env_key');
-    });
+      const result = loadCredentials({ profile: 'staging' });
 
-    it('should use env session token when no explicit params or API key', () => {
-      process.env[ENV_VARS.SESSION_TOKEN] = 'env-session';
-
-      const result = loadCredentials();
-      expect(result.sessionToken).toBe('env-session');
-    });
-
-    it('should prioritize env API key over session token', () => {
-      process.env[ENV_VARS.API_KEY] = 'ulr_env_key';
-      process.env[ENV_VARS.SESSION_TOKEN] = 'env-session';
-
-      const result = loadCredentials();
-      expect(result.apiKey).toBe('ulr_env_key');
-      expect(result.sessionToken).toBeUndefined();
-    });
-
-    it('should fall back to stored credentials when no env vars', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({ default: { type: 'api_key', apiKey: 'ulr_stored_key' } })
+      expect(mockCoreLoadCredentials).toHaveBeenCalledWith(
+        expect.objectContaining({ profile: 'staging' })
       );
+      expect(result.apiKey).toBe('ulr_staging');
+    });
+
+    it('should return API key credentials from coreLoadCredentials', () => {
+      mockCoreLoadCredentials.mockReturnValue({ apiKey: 'ulr_env_key' });
 
       const result = loadCredentials();
-      expect(result.apiKey).toBe('ulr_stored_key');
+
+      expect(result).toEqual({ apiKey: 'ulr_env_key' });
+    });
+
+    it('should return session credentials from coreLoadCredentials', () => {
+      mockCoreLoadCredentials.mockReturnValue({ sessionToken: 'env-session' });
+
+      const result = loadCredentials();
+
+      expect(result).toEqual({ sessionToken: 'env-session' });
     });
 
     it('should return empty object when no credentials found', () => {
-      vi.mocked(existsSync).mockReturnValue(false);
+      mockCoreLoadCredentials.mockReturnValue({});
 
       const result = loadCredentials();
+
       expect(result).toEqual({});
     });
   });
 
   describe('loadConfig', () => {
-    beforeEach(() => {
-      vi.mocked(existsSync).mockReturnValue(false);
+    it('should pass envVars and defaults to coreLoadConfig', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        authBaseUrl: DEFAULT_AUTH_BASE_URL,
+        credentials: {},
+        debug: false,
+      });
+
+      loadConfig();
+
+      expect(mockCoreLoadConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          envVars: expect.objectContaining({
+            apiKey: ENV_VARS.API_KEY,
+          }),
+          defaults: expect.objectContaining({
+            baseUrl: DEFAULT_BASE_URL,
+            authBaseUrl: DEFAULT_AUTH_BASE_URL,
+          }),
+        })
+      );
     });
 
     it('should use explicit baseUrl when provided', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: 'https://custom.api.com',
+        credentials: {},
+        debug: false,
+      });
+
       const config = loadConfig({ baseUrl: 'https://custom.api.com' });
+
       expect(config.baseUrl).toBe('https://custom.api.com');
+      expect(mockCoreLoadConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ baseUrl: 'https://custom.api.com' })
+      );
     });
 
-    it('should use env BASE_URL when no explicit value', () => {
-      process.env[ENV_VARS.BASE_URL] = 'https://env.api.com';
+    it('should use DEFAULT_BASE_URL from coreLoadConfig result', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: {},
+        debug: false,
+      });
 
       const config = loadConfig();
-      expect(config.baseUrl).toBe('https://env.api.com');
-    });
 
-    it('should use default BASE_URL when nothing provided', () => {
-      const config = loadConfig();
       expect(config.baseUrl).toBe(DEFAULT_BASE_URL);
     });
 
     it('should set debug to true when explicitly provided', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: {},
+        debug: true,
+      });
+
       const config = loadConfig({ debug: true });
+
       expect(config.debug).toBe(true);
     });
 
-    it('should set debug to true from env var', () => {
-      process.env[ENV_VARS.DEBUG] = 'true';
+    it('should set debug to false from coreLoadConfig result', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: {},
+        debug: false,
+      });
 
       const config = loadConfig();
-      expect(config.debug).toBe(true);
-    });
 
-    it('should set debug to false by default', () => {
-      const config = loadConfig();
       expect(config.debug).toBe(false);
     });
 
     it('should include timeout when provided', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: {},
+        debug: false,
+        timeout: 5000,
+      });
+
       const config = loadConfig({ timeout: 5000 });
+
       expect(config.timeout).toBe(5000);
     });
 
     it('should include retries when provided', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: {},
+        debug: false,
+        retries: 5,
+      });
+
       const config = loadConfig({ retries: 5 });
+
       expect(config.retries).toBe(5);
     });
 
     it('should load credentials with profile', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({
-          staging: { type: 'api_key', apiKey: 'ulr_staging_key' },
-        })
-      );
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: { apiKey: 'ulr_staging_key' },
+        debug: false,
+      });
 
       const config = loadConfig({ profile: 'staging' });
+
+      expect(mockCoreLoadConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ profile: 'staging' })
+      );
       expect(config.credentials.apiKey).toBe('ulr_staging_key');
+    });
+
+    it('should use DEFAULT_AUTH_BASE_URL when not in coreLoadConfig result', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        credentials: {},
+        debug: false,
+      });
+
+      const config = loadConfig();
+
+      expect(config.authBaseUrl).toBe(DEFAULT_AUTH_BASE_URL);
+    });
+
+    it('should use authBaseUrl from coreLoadConfig when present', () => {
+      mockCoreLoadConfig.mockReturnValue({
+        baseUrl: DEFAULT_BASE_URL,
+        authBaseUrl: 'https://custom-auth.api.com',
+        credentials: {},
+        debug: false,
+      });
+
+      const config = loadConfig();
+
+      expect(config.authBaseUrl).toBe('https://custom-auth.api.com');
     });
   });
 });
