@@ -28,7 +28,6 @@
 
 import { RegistryHttpClient } from './http/http-client.js';
 import { JwtSessionAuth } from './http/auth-strategy.js';
-import { loadConfig } from './config/loaders.js';
 import * as definitionsOps from './operations/definitions.js';
 import * as versionsOps from './operations/versions.js';
 import * as validationOps from './operations/validation.js';
@@ -260,28 +259,16 @@ export class RegistryClient {
   }
 
   private createHttpClient(config: RegistryClientConfig): RegistryHttpClient {
-    const sdkConfig = loadConfig({
+    return new RegistryHttpClient({
+      baseUrl: config.baseUrl,
+      authBaseUrl: config.authBaseUrl,
+      timeout: config.timeout,
+      retries: config.retries,
+      debug: config.debug,
       apiKey: config.apiKey,
       email: config.email,
       password: config.password,
       sessionToken: config.sessionToken,
-      baseUrl: config.baseUrl,
-      authBaseUrl: config.authBaseUrl,
-      debug: config.debug,
-      timeout: config.timeout,
-      retries: config.retries,
-    });
-
-    return new RegistryHttpClient({
-      baseUrl: sdkConfig.baseUrl,
-      authBaseUrl: sdkConfig.authBaseUrl,
-      timeout: sdkConfig.timeout,
-      retries: sdkConfig.retries,
-      debug: sdkConfig.debug,
-      apiKey: sdkConfig.credentials.apiKey,
-      email: sdkConfig.credentials.email,
-      password: sdkConfig.credentials.password,
-      sessionToken: sdkConfig.credentials.sessionToken,
       onTokenRefresh: config.onTokenRefresh,
     });
   }

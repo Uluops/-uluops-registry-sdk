@@ -50,11 +50,14 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 - [Environment Variables](#environment-variables)
 - [Error Handling](#error-handling)
 - [Advanced Usage](#advanced-usage)
+  - [Node.js Environment Discovery](#nodejs-environment-discovery)
+  - [Browser Usage](#browser-usage)
 - [License](#license)
 
 ## Features
 
 - **Full API Coverage**: Access all registry endpoints across 10 operation domains
+- **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
 - **Type-Safe**: Complete TypeScript definitions with Zod runtime validation
 - **Dual Authentication**: API key (preferred) and JWT session support
 - **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429)
@@ -75,7 +78,8 @@ pnpm add @uluops/registry-sdk
 ```
 
 **Requirements:**
-- Node.js 18.0.0 or higher
+- Node.js 18.0.0 or higher (server-side)
+- Any modern browser with `fetch` support (client-side)
 - TypeScript 5.0+ (for TypeScript users)
 
 ## Authentication
@@ -134,12 +138,14 @@ if (!isApiKey(key!)) {
 
 ### Credential Priority Chain
 
-The SDK loads credentials in the following order:
+When using `createClientFromEnvironment()` (see [Node.js Environment Discovery](#nodejs-environment-discovery)), credentials are loaded in the following order:
 
-1. **Constructor arguments**: `apiKey`, `sessionToken`
+1. **Explicit arguments**: `apiKey`, `sessionToken` passed to the function
 2. **Environment variables**: `ULUOPS_API_KEY`, `ULUOPS_SESSION_TOKEN`
 3. **Local `.env` file**: In the current working directory
 4. **Global credentials**: `~/.uluops/credentials.json`
+
+> **Note:** The `new RegistryClient()` constructor uses only the config you pass directly. It does not read environment variables or credential files — this keeps it browser-safe. Use `createClientFromEnvironment()` for automatic credential discovery in Node.js.
 
 ## TypeScript Support
 
@@ -172,12 +178,12 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 
 ### Package Exports
 
-| Export Path | Contents |
-|------------|----------|
-| `@uluops/registry-sdk` | Main `RegistryClient`, `RegistryHttpClient`, auth strategies |
-| `@uluops/registry-sdk/types` | All TypeScript types and Zod schemas |
-| `@uluops/registry-sdk/errors` | Error classes and utilities |
-| `@uluops/registry-sdk/config` | Configuration loaders and constants |
+| Export Path | Contents | Browser Safe |
+|------------|----------|:---:|
+| `@uluops/registry-sdk` | Main `RegistryClient`, `RegistryHttpClient`, auth strategies | Yes |
+| `@uluops/registry-sdk/types` | All TypeScript types and Zod schemas | Yes |
+| `@uluops/registry-sdk/errors` | Error classes and utilities | Yes |
+| `@uluops/registry-sdk/config` | Configuration loaders, `createClientFromEnvironment`, constants | No (Node.js) |
 
 ## API Compatibility
 
@@ -602,6 +608,8 @@ const preview = await client.render.preview('agent', {
 
 ## Environment Variables
 
+These variables are read by `createClientFromEnvironment()` and `loadConfig()` from the `/config` sub-path. The `new RegistryClient()` constructor does **not** read environment variables — pass config explicitly instead.
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `ULUOPS_API_KEY` | API key for authentication | - |
@@ -836,7 +844,24 @@ const data = await http.get<MyType>('/custom/endpoint', { param: 'value' });
 const result = await http.post<MyType>('/custom/endpoint', { body: 'data' });
 ```
 
-### Loading Credentials Programmatically
+### Node.js Environment Discovery
+
+Use `createClientFromEnvironment()` to auto-discover credentials from environment variables, `.env` files, and `~/.uluops/credentials.json`:
+
+```typescript
+import { createClientFromEnvironment } from '@uluops/registry-sdk/config';
+
+// Auto-discover all config from environment
+const client = createClientFromEnvironment();
+
+// Auto-discover with overrides
+const client = createClientFromEnvironment({
+  debug: true,
+  baseUrl: 'http://localhost:3001/api/v1',
+});
+```
+
+You can also load config manually:
 
 ```typescript
 import { loadCredentials, loadConfig } from '@uluops/registry-sdk/config';
@@ -849,6 +874,8 @@ console.log(credentials.apiKey);
 const config = loadConfig();
 console.log(config.baseUrl);
 ```
+
+> **Note:** The `/config` sub-path uses Node.js built-ins (`node:fs`, `node:path`, `node:os`) and cannot be imported in browser environments.
 
 ### Checking Rate Limits
 
@@ -864,9 +891,30 @@ if (rateLimitInfo) {
 }
 ```
 
-### CORS / Browser Usage
+### Browser Usage
 
-This SDK is designed for **server-side Node.js** environments. If you need to call the Registry API from a browser, make requests through your own backend to avoid CORS issues. The API does not set permissive `Access-Control-Allow-Origin` headers, so direct browser-to-API requests will be blocked.
+The main SDK entry point (`@uluops/registry-sdk`) is browser-safe. The `RegistryClient` constructor and all operation methods use `fetch` internally — no Node.js built-ins are required.
+
+```typescript
+// Works in Next.js, React, Vite, or any browser bundler
+import { RegistryClient } from '@uluops/registry-sdk';
+
+const client = new RegistryClient({
+  baseUrl: '/api/v1', // Or your proxy URL
+});
+
+const models = await client.models.list({ provider: 'anthropic' });
+```
+
+**Type-only imports** are also browser-safe:
+
+```typescript
+import type { Model, ModelAlias, Provider } from '@uluops/registry-sdk/types';
+```
+
+**Do not import** `@uluops/registry-sdk/config` in browser code — it uses `node:fs` for reading credential files and `.env` loading.
+
+> **CORS:** The Registry API may not set permissive `Access-Control-Allow-Origin` headers. In browser apps, proxy API requests through your own backend (e.g., Next.js API routes) to avoid CORS issues.
 
 ## License
 

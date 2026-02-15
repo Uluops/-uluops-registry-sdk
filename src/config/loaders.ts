@@ -21,6 +21,7 @@ export {
   type Credentials,
 } from '@uluops/sdk-core/config';
 
+import { RegistryClient, type RegistryClientConfig } from '../client.js';
 import { ENV_VARS, DEFAULT_BASE_URL, DEFAULT_AUTH_BASE_URL } from './constants.js';
 
 /**
@@ -96,4 +97,50 @@ export function loadConfig(options: {
     timeout: coreConfig.timeout,
     retries: coreConfig.retries,
   };
+}
+
+/**
+ * Create a RegistryClient with auto-discovery of config from environment
+ * variables, .env files, and stored credentials (~/.uluops/credentials.json).
+ *
+ * This is the Node.js-only equivalent of `new RegistryClient(config)`.
+ * The constructor itself is browser-safe (no file/env loading), while
+ * this function handles the Node.js-specific config discovery.
+ *
+ * @example
+ * ```typescript
+ * import { createClientFromEnvironment } from '@uluops/registry-sdk/config';
+ *
+ * // Auto-discover credentials from env vars / disk
+ * const client = createClientFromEnvironment();
+ *
+ * // Auto-discover with overrides
+ * const client = createClientFromEnvironment({ debug: true });
+ * ```
+ */
+export function createClientFromEnvironment(config: RegistryClientConfig = {}): RegistryClient {
+  const sdkConfig = loadConfig({
+    apiKey: config.apiKey,
+    email: config.email,
+    password: config.password,
+    sessionToken: config.sessionToken,
+    baseUrl: config.baseUrl,
+    authBaseUrl: config.authBaseUrl,
+    debug: config.debug,
+    timeout: config.timeout,
+    retries: config.retries,
+  });
+
+  return new RegistryClient({
+    baseUrl: sdkConfig.baseUrl,
+    authBaseUrl: sdkConfig.authBaseUrl,
+    timeout: sdkConfig.timeout,
+    retries: sdkConfig.retries,
+    debug: sdkConfig.debug,
+    apiKey: sdkConfig.credentials.apiKey,
+    email: sdkConfig.credentials.email,
+    password: sdkConfig.credentials.password,
+    sessionToken: sdkConfig.credentials.sessionToken,
+    onTokenRefresh: config.onTokenRefresh,
+  });
 }

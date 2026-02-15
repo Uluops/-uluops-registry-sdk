@@ -5,9 +5,7 @@
  * SDK-specific constants remain here.
  */
 
-import { createRequire } from 'node:module';
-
-// Re-export shared constants from sdk-core
+// Re-export shared constants from sdk-core (sub-path avoids pulling in loaders.js + node:fs)
 export {
   DEFAULT_TIMEOUT,
   DEFAULT_RETRY_COUNT,
@@ -20,12 +18,9 @@ export {
   HTTP_STATUS,
   ERROR_CODES,
   RETRYABLE_STATUS_CODES,
-} from '@uluops/sdk-core/config';
+} from '@uluops/sdk-core/config/constants';
 
 // --- SDK-specific constants ---
-
-const require = createRequire(import.meta.url);
-const pkg = require('../../package.json') as { version: string };
 
 /**
  * Production base URL for the registry API
@@ -70,9 +65,13 @@ export const ENV_VARS = {
 } as const;
 
 /**
- * SDK version -- read from package.json at runtime
+ * SDK version
+ *
+ * Hardcoded instead of reading package.json via createRequire(node:module)
+ * so this module can be imported in browser environments.
+ * Keep in sync with package.json "version" field.
  */
-export const SDK_VERSION: string = pkg.version;
+export const SDK_VERSION = '0.1.0';
 
 /**
  * User agent string for requests

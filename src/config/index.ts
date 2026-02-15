@@ -22,6 +22,7 @@ export {
 export {
   loadCredentials,
   loadConfig,
+  createClientFromEnvironment,
   loadEnvFiles,
   loadStoredCredentials,
   getGlobalConfigDir,
