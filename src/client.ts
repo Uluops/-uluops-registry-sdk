@@ -204,7 +204,7 @@ export class RegistryClient {
    * Render operations
    */
   readonly render: {
-    get: (type: DefinitionType, name: string, version: string) => Promise<RenderResult>;
+    get: (type: DefinitionType, name: string, version: string, options?: renderOps.RenderGetOptions) => Promise<RenderResult>;
     preview: (type: DefinitionType, body: RenderPreviewBody) => Promise<RenderResult>;
   };
 
@@ -349,7 +349,7 @@ export class RegistryClient {
 
   private bindRender(): RegistryClient['render'] {
     return {
-      get: (type, name, version) => renderOps.get(this.http, type, name, version),
+      get: (type, name, version, options?) => renderOps.get(this.http, type, name, version, options),
       preview: (type, body) => renderOps.preview(this.http, type, body),
     };
   }

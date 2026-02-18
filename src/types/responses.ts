@@ -59,12 +59,16 @@ export interface RenderResult {
   metadata?: Record<string, unknown>;
 }
 
+/** Render profile preset for controlling UluOps-specific agent prompt content. */
+export type RenderProfile = 'core' | 'uluops-full';
+
 /**
  * Preview render request body
  */
 export interface RenderPreviewBody {
   yaml: string;
   sourcePath?: string;
+  renderProfile?: RenderProfile;
 }
 
 /**
