@@ -7,7 +7,7 @@ import nock from 'nock';
 /**
  * Mock API base URL (explicit test URL, not tied to SDK defaults)
  */
-export const MOCK_BASE_URL = 'https://registry.uluops.ai/api/v1';
+export const MOCK_BASE_URL = 'https://api.uluops.ai/api/v1/registry';
 
 /**
  * Test API key (must be at least 20 chars with ulr_ prefix)

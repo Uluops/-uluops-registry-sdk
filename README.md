@@ -193,7 +193,7 @@ This SDK targets the **UluOps Registry API v1** (`/api/v1`). The SDK version fol
 - **Minor** (0.x.0): New features, backward-compatible
 - **Major** (x.0.0): Breaking changes (method signatures, removed endpoints)
 
-The base URL defaults to `https://registry.uluops.ai/api/v1` in production and `http://localhost:3001/api/v1` when `NODE_ENV=development`. Override with the `baseUrl` constructor option or `ULUOPS_BASE_URL` env var.
+The base URL defaults to `https://api.uluops.ai/api/v1/registry` in production and `http://localhost:3001/api/v1` when `NODE_ENV=development`. Override with the `baseUrl` constructor option or `ULUOPS_REGISTRY_URL` env var.
 
 ## API Reference
 
@@ -206,7 +206,7 @@ const client = new RegistryClient({
   sessionToken: 'jwt-token',   // Existing session token
 
   // Connection settings
-  baseUrl: 'https://registry.uluops.ai/api/v1',  // API base URL
+  baseUrl: 'https://api.uluops.ai/api/v1/registry',  // API base URL
   timeout: 30000,              // Request timeout in ms (default: 30000)
   retries: 3,                  // Retry count for transient errors (default: 3)
   debug: false,                // Enable debug logging
@@ -614,14 +614,14 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 |----------|-------------|---------|
 | `ULUOPS_API_KEY` | API key for authentication | - |
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
-| `ULUOPS_REGISTRY_URL` | API base URL | `https://registry.uluops.ai/api/v1` |
+| `ULUOPS_REGISTRY_URL` | API base URL | `https://api.uluops.ai/api/v1/registry` |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
 Create a `.env` file in your project:
 
 ```env
 ULUOPS_API_KEY=ulr_your-api-key-here
-ULUOPS_REGISTRY_URL=https://registry.uluops.ai/api/v1
+ULUOPS_REGISTRY_URL=https://api.uluops.ai/api/v1/registry
 ```
 
 ## Error Handling
@@ -835,7 +835,7 @@ For advanced use cases, you can use `RegistryHttpClient` directly:
 import { RegistryHttpClient } from '@uluops/registry-sdk';
 
 const http = new RegistryHttpClient({
-  baseUrl: 'https://registry.uluops.ai/api/v1',
+  baseUrl: 'https://api.uluops.ai/api/v1/registry',
   apiKey: 'ulr_...',
 });
 

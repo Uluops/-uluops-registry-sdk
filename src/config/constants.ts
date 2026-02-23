@@ -25,7 +25,7 @@ export {
 /**
  * Production base URL for the registry API
  */
-export const DEFAULT_PROD_URL = 'https://registry.uluops.ai/api/v1';
+export const DEFAULT_PROD_URL = 'https://api.uluops.ai/api/v1/registry';
 
 /**
  * Development base URL for local registry API
@@ -41,10 +41,18 @@ export const DEFAULT_BASE_URL =
   process.env.NODE_ENV === 'development' ? DEFAULT_DEV_URL : DEFAULT_PROD_URL;
 
 /**
- * Default auth base URL (ops API) for login/refresh.
+ * Production auth base URL (ops API) for login/refresh.
  * The registry API has no auth endpoints -- it delegates to ops-uluops-api.
  */
-export const DEFAULT_AUTH_BASE_URL = 'http://localhost:3100/api/v1';
+export const DEFAULT_AUTH_PROD_URL = 'https://api.uluops.ai/api/v1/ops';
+
+/**
+ * Development auth base URL (local ops API).
+ */
+export const DEFAULT_AUTH_DEV_URL = 'http://localhost:3100/api/v1';
+
+export const DEFAULT_AUTH_BASE_URL =
+  process.env.NODE_ENV === 'development' ? DEFAULT_AUTH_DEV_URL : DEFAULT_AUTH_PROD_URL;
 
 /**
  * Maximum YAML size in bytes (100KB)
