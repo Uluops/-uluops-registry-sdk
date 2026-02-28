@@ -25,7 +25,7 @@ export const DOMAINS = [
 export type Domain = (typeof DOMAINS)[number];
 
 // Agent subtypes (only for agent definitions)
-export const AGENT_TYPES = ['validator', 'executor', 'analyst', 'generator', 'explorer'] as const;
+export const AGENT_TYPES = ['validator', 'executor', 'analyst', 'generator', 'explorer', 'forecaster'] as const;
 export type AgentType = (typeof AGENT_TYPES)[number];
 
 // Ownership tiers
