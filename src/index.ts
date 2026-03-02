@@ -69,6 +69,7 @@ export type {
   DefinitionVersion,
   VersionListItem,
   VersionDiff,
+  VersionDiffSummary,
 } from './types/versions.js';
 
 export type { VersionsListResponse } from './operations/versions.js';

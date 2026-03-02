@@ -47,7 +47,7 @@ import type {
   UpdateDefinitionBody,
   DeprecateDefinitionBody,
 } from './types/definitions.js';
-import type { VersionDiff } from './types/versions.js';
+import type { VersionDiff, VersionDiffSummary } from './types/versions.js';
 import type { VersionsListResponse } from './operations/versions.js';
 import type { DependencyGraph, GetDependenciesOptions } from './types/dependencies.js';
 import type {
@@ -135,7 +135,7 @@ export class RegistryClient {
    */
   readonly versions: {
     list: (type: DefinitionType, name: string) => Promise<VersionsListResponse>;
-    diff: (type: DefinitionType, name: string, from: string, to: string) => Promise<VersionDiff>;
+    diff: (type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean }) => Promise<VersionDiff | VersionDiffSummary>;
   };
 
   /**
@@ -288,7 +288,7 @@ export class RegistryClient {
   private bindVersions(): RegistryClient['versions'] {
     return {
       list: (type, name) => versionsOps.list(this.http, type, name),
-      diff: (type, name, from, to) => versionsOps.diff(this.http, type, name, from, to),
+      diff: (type, name, from, to, options) => versionsOps.diff(this.http, type, name, from, to, options),
     };
   }
 

@@ -36,11 +36,32 @@ export interface VersionListItem {
 }
 
 /**
- * Version diff response (matches actual API shape)
+ * Full version diff response (returned when full=true)
  */
 export interface VersionDiff {
   fromVersion: string;
   toVersion: string;
   fromYaml: string;
   toYaml: string;
+  fromHash: string;
+  toHash: string;
+  hasChanges: boolean;
+}
+
+/**
+ * Summary version diff response (default, returned when full is omitted or false).
+ * Provides section-level changes without raw YAML content.
+ */
+export interface VersionDiffSummary {
+  fromVersion: string;
+  toVersion: string;
+  fromHash: string;
+  toHash: string;
+  hasChanges: boolean;
+  fromLineCount: number;
+  toLineCount: number;
+  sectionsAdded: string[];
+  sectionsRemoved: string[];
+  sectionsModified: string[];
+  sectionsUnchanged: string[];
 }

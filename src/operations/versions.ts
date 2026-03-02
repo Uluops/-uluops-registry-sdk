@@ -3,7 +3,7 @@
  */
 
 import type { RegistryHttpClient } from '../http/http-client.js';
-import type { VersionListItem, VersionDiff } from '../types/versions.js';
+import type { VersionListItem, VersionDiff, VersionDiffSummary } from '../types/versions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
 
@@ -29,22 +29,25 @@ export async function list(
 }
 
 /**
- * Compare two versions of a definition
+ * Compare two versions of a definition.
+ * Returns a summary by default. Pass full=true for raw YAML content.
  */
 export async function diff(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
   fromVersion: string,
-  toVersion: string
-): Promise<VersionDiff> {
+  toVersion: string,
+  options?: { full?: boolean }
+): Promise<VersionDiff | VersionDiffSummary> {
   validateDefinitionType(type);
   validateDefinitionName(name);
   validateVersion(fromVersion);
   validateVersion(toVersion);
 
-  return http.get<VersionDiff>(`/definitions/${type}/${name}/diff`, {
+  return http.get<VersionDiff | VersionDiffSummary>(`/definitions/${type}/${name}/diff`, {
     from: fromVersion,
     to: toVersion,
+    ...(options?.full === true && { full: 'true' }),
   });
 }
