@@ -21,6 +21,7 @@ export const DOMAINS = [
   'scientific',
   'content',
   'general',
+  'cognitive-lens',
 ] as const;
 export type Domain = (typeof DOMAINS)[number];
 
