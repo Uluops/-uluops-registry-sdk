@@ -12,6 +12,7 @@ export interface ModelCapabilities {
   tools: boolean;
   streaming: boolean;
   extendedThinking: boolean;
+  structuredOutput: boolean;
 }
 
 /**
