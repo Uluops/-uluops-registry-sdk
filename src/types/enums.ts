@@ -30,7 +30,7 @@ export const AGENT_TYPES = ['validator', 'executor', 'analyst', 'generator', 'ex
 export type AgentType = (typeof AGENT_TYPES)[number];
 
 // Ownership tiers
-export const TIERS = ['user', 'community', 'pro'] as const;
+export const TIERS = ['user', 'public', 'pro'] as const;
 export type Tier = (typeof TIERS)[number];
 
 // Visibility levels
