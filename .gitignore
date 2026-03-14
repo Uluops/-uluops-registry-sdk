@@ -11,6 +11,7 @@ coverage/
 .env
 .env.local
 .env.*.local
+.env.example
 
 # IDE
 .vscode/
@@ -36,3 +37,17 @@ test-*.mjs
 *.tsbuildinfo
 
 docs/
+
+# Claude Code context files (auto-generated, machine-local)
+**/CLAUDE.md
+!./CLAUDE.md
+
+# Claude Code session directory
+.claude/
+
+# WSL artifacts
+*:Zone.Identifier
+*.Zone.Identifier
+
+# Validation output artifacts
+*-report-*.md
