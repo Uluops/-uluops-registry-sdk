@@ -33,6 +33,12 @@ export interface Definition {
   author?: string | null;
   tags?: string[] | null;
   ownerId: string;
+  /** Canonical author ID (same value as ownerId — ownerId is deprecated) */
+  authorId?: string;
+  /** Org that owns this definition */
+  orgId?: string | null;
+  /** Org-scoped namespace (e.g., @ulu-labs/code-validator). Null if no org context. */
+  namespace?: string | null;
   tier: Tier;
   visibility: Visibility;
   runtimeMd?: string | null;
@@ -62,6 +68,8 @@ export interface DefinitionListItem {
   domain: Domain;
   agentType?: AgentType | null;
   ownerId: string;
+  authorId?: string;
+  orgId?: string | null;
   tier: Tier;
   visibility: Visibility;
   createdAt: string;
