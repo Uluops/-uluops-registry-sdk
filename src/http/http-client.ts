@@ -28,6 +28,8 @@ export interface HttpClientConfig {
   email?: string;
   password?: string;
   sessionToken?: string;
+  /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
+  orgSlug?: string;
   onTokenRefresh?: (token: string) => void;
 }
 
@@ -49,6 +51,7 @@ export class RegistryHttpClient extends HttpClient {
       defaultHeaders: {
         'Accept': 'application/json',
         'X-Content-Type-Options': 'nosniff',
+        ...(config.orgSlug ? { 'X-Org-Slug': config.orgSlug } : {}),
       },
       apiKey: config.apiKey,
       email: config.email,

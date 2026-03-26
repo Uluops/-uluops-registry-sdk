@@ -97,6 +97,8 @@ export interface RegistryClientConfig {
   password?: string;
   /** Session token from ops-uluops-api */
   sessionToken?: string;
+  /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
+  orgSlug?: string;
   /** Base URL for the registry API */
   baseUrl?: string;
   /** Base URL for the ops API (login/refresh) — defaults to localhost:3100 */
@@ -269,6 +271,7 @@ export class RegistryClient {
       email: config.email,
       password: config.password,
       sessionToken: config.sessionToken,
+      orgSlug: config.orgSlug,
       onTokenRefresh: config.onTokenRefresh,
     });
   }
