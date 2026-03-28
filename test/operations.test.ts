@@ -36,7 +36,7 @@ describe('operations', () => {
 
       it('should accept exactly 100 IDs', async () => {
         const ids = Array.from({ length: 100 }, (_, i) =>
-          `${String(i).padStart(8, '0')}-0000-0000-0000-000000000000`
+          `${String(i).padStart(8, '0')}-0000-4000-a000-000000000000`
         );
 
         const mockResponse: Record<string, unknown> = {};
@@ -54,7 +54,7 @@ describe('operations', () => {
 
       it('should reject more than 100 IDs', async () => {
         const ids = Array.from({ length: 101 }, (_, i) =>
-          `${String(i).padStart(8, '0')}-0000-0000-0000-000000000000`
+          `${String(i).padStart(8, '0')}-0000-4000-a000-000000000000`
         );
 
         await expect(userOps.batch(http, ids)).rejects.toThrow(
@@ -71,7 +71,7 @@ describe('operations', () => {
 
     describe('get', () => {
       it('should fetch user by valid UUID', async () => {
-        const id = '00000000-0000-0000-0000-000000000001';
+        const id = '00000000-0000-4000-a000-000000000001';
         nock(MOCK_BASE_URL)
           .get(`/users/${id}`)
           .reply(200, { data: { id, username: 'testuser' } });
@@ -388,7 +388,7 @@ describe('operations', () => {
               recorded: true,
               duplicate: false,
               definition: {
-                id: '00000000-0000-0000-0000-000000000001',
+                id: '00000000-0000-4000-a000-000000000001',
                 type: 'agent',
                 name: 'my-agent',
                 version: '1.0.0',
@@ -759,7 +759,7 @@ describe('operations', () => {
               recorded: false,
               duplicate: true,
               definition: {
-                id: '00000000-0000-0000-0000-000000000001',
+                id: '00000000-0000-4000-a000-000000000001',
                 type: 'agent',
                 name: 'my-agent',
                 version: '1.0.0',

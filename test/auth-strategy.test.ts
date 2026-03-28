@@ -21,7 +21,7 @@ function createMockFetchClient(): FetchClient {
       data: {
         data: {
           sessionToken: 'new-token-from-login',
-          expiresAt: '2026-03-01T00:00:00.000Z',
+          expiresAt: '2027-03-01T00:00:00.000Z',
         },
       },
     }),
@@ -166,7 +166,7 @@ describe('JwtSessionAuth', () => {
       const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass123' });
 
       await auth.login();
-      expect(auth.getExpiresAt()).toEqual(new Date('2026-03-01T00:00:00.000Z'));
+      expect(auth.getExpiresAt()).toEqual(new Date('2027-03-01T00:00:00.000Z'));
     });
 
     it('should throw when login response missing sessionToken', async () => {

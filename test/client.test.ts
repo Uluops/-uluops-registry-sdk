@@ -118,21 +118,21 @@ describe('RegistryClient', () => {
   describe('users', () => {
     it('should get a user by id', async () => {
       const mockUser = createMockUser();
-      mockEndpoint('get', '/users/00000000-0000-0000-0000-000000000001', mockUser);
+      mockEndpoint('get', '/users/00000000-0000-4000-a000-000000000001', mockUser);
 
-      const result = await client.users.get('00000000-0000-0000-0000-000000000001');
+      const result = await client.users.get('00000000-0000-4000-a000-000000000001');
       expect(result.username).toBe('testuser');
     });
 
     it('should batch lookup users', async () => {
       const mockResponse = {
-        '00000000-0000-0000-0000-000000000001': createMockUser(),
+        '00000000-0000-4000-a000-000000000001': createMockUser(),
       };
 
       mockEndpoint('post', '/users/batch', mockResponse);
 
-      const result = await client.users.batch(['00000000-0000-0000-0000-000000000001']);
-      expect(result['00000000-0000-0000-0000-000000000001']).toBeDefined();
+      const result = await client.users.batch(['00000000-0000-4000-a000-000000000001']);
+      expect(result['00000000-0000-4000-a000-000000000001']).toBeDefined();
     });
   });
 

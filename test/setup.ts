@@ -22,7 +22,7 @@ export const TEST_SESSION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIi
 /**
  * Test user ID
  */
-export const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
+export const TEST_USER_ID = '00000000-0000-4000-a000-000000000001';
 
 /**
  * Enable/disable all nock mocks
@@ -91,7 +91,7 @@ function createMock(
 }
 
 const MOCK_DEFINITION_DEFAULTS: Record<string, unknown> = {
-  id: '00000000-0000-0000-0000-000000000001',
+  id: '00000000-0000-4000-a000-000000000001',
   type: 'agent',
   name: 'test-agent',
   version: '1.0.0',
