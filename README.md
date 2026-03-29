@@ -1,3 +1,7 @@
+**[UluOps](https://uluops.ai)** · Operating Intelligence as Infrastructure
+
+---
+
 # @uluops/registry-sdk
 
 [![npm version](https://img.shields.io/npm/v/@uluops/registry-sdk.svg)](https://www.npmjs.com/package/@uluops/registry-sdk)
