@@ -6,6 +6,7 @@
  */
 
 import type { RegistryHttpClient } from '../http/http-client.js';
+import type { DefinitionType } from '../types/enums.js';
 import type {
   DefinitionEffectiveness,
   DefinitionHealth,
@@ -17,6 +18,11 @@ import type {
   DiffImpactResult,
 } from '../types/analytics.js';
 
+/** Build the analytics path prefix for definition-scoped endpoints. */
+function analyticsPath(type: DefinitionType, name: string): string {
+  return `/analytics/definitions/${type}/${name}`;
+}
+
 // ── Effectiveness ─────────────────────────────────────────────────
 
 /**
@@ -25,13 +31,13 @@ import type {
  */
 export async function getEffectiveness(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
   version?: string,
 ): Promise<DefinitionEffectiveness> {
   const query = version ? { version } : undefined;
   return http.get<DefinitionEffectiveness>(
-    `/analytics/definitions/${type}/${name}/effectiveness`,
+    `${analyticsPath(type, name)}/effectiveness`,
     query,
   );
 }
@@ -44,13 +50,13 @@ export async function getEffectiveness(
  */
 export async function getHealth(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
   version?: string,
 ): Promise<DefinitionHealth> {
   const query = version ? { version } : undefined;
   return http.get<DefinitionHealth>(
-    `/analytics/definitions/${type}/${name}/health`,
+    `${analyticsPath(type, name)}/health`,
     query,
   );
 }
@@ -73,11 +79,11 @@ export async function getEcosystemOverview(
  */
 export async function getLineage(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
 ): Promise<LineageResult> {
   return http.get<LineageResult>(
-    `/analytics/definitions/${type}/${name}/lineage`,
+    `${analyticsPath(type, name)}/lineage`,
   );
 }
 
@@ -88,11 +94,11 @@ export async function getLineage(
  */
 export async function getEvolution(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
 ): Promise<EvolutionResult> {
   return http.get<EvolutionResult>(
-    `/analytics/definitions/${type}/${name}/evolution`,
+    `${analyticsPath(type, name)}/evolution`,
   );
 }
 
@@ -103,11 +109,11 @@ export async function getEvolution(
  */
 export async function getTranslation(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
 ): Promise<TranslationAnalyticsResult> {
   return http.get<TranslationAnalyticsResult>(
-    `/analytics/definitions/${type}/${name}/translation`,
+    `${analyticsPath(type, name)}/translation`,
   );
 }
 
@@ -118,12 +124,12 @@ export async function getTranslation(
  */
 export async function compare(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
   versions: string[],
 ): Promise<CompareResult> {
   return http.get<CompareResult>(
-    `/analytics/definitions/${type}/${name}/effectiveness/compare`,
+    `${analyticsPath(type, name)}/effectiveness/compare`,
     { versions: versions.join(',') },
   );
 }
@@ -136,12 +142,12 @@ export async function compare(
  */
 export async function getDiffImpact(
   http: RegistryHttpClient,
-  type: string,
+  type: DefinitionType,
   name: string,
   fromVersion: string,
   toVersion: string,
 ): Promise<DiffImpactResult> {
   return http.get<DiffImpactResult>(
-    `/analytics/definitions/${type}/${name}/diff/${fromVersion}/${toVersion}/impact`,
+    `${analyticsPath(type, name)}/diff/${fromVersion}/${toVersion}/impact`,
   );
 }

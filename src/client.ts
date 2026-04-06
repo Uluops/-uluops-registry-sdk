@@ -227,14 +227,14 @@ export class RegistryClient {
    * Health scores are provisional pending 90-day calibration study.
    */
   readonly analytics: {
-    getEffectiveness: (type: string, name: string, version?: string) => Promise<DefinitionEffectiveness>;
-    getHealth: (type: string, name: string, version?: string) => Promise<DefinitionHealth>;
+    getEffectiveness: (type: DefinitionType, name: string, version?: string) => Promise<DefinitionEffectiveness>;
+    getHealth: (type: DefinitionType, name: string, version?: string) => Promise<DefinitionHealth>;
     getEcosystemOverview: () => Promise<EcosystemOverview>;
-    getLineage: (type: string, name: string) => Promise<LineageResult>;
-    getEvolution: (type: string, name: string) => Promise<EvolutionResult>;
-    getTranslation: (type: string, name: string) => Promise<TranslationAnalyticsResult>;
-    compare: (type: string, name: string, versions: string[]) => Promise<CompareResult>;
-    getDiffImpact: (type: string, name: string, fromVersion: string, toVersion: string) => Promise<DiffImpactResult>;
+    getLineage: (type: DefinitionType, name: string) => Promise<LineageResult>;
+    getEvolution: (type: DefinitionType, name: string) => Promise<EvolutionResult>;
+    getTranslation: (type: DefinitionType, name: string) => Promise<TranslationAnalyticsResult>;
+    compare: (type: DefinitionType, name: string, versions: string[]) => Promise<CompareResult>;
+    getDiffImpact: (type: DefinitionType, name: string, fromVersion: string, toVersion: string) => Promise<DiffImpactResult>;
   };
 
   constructor(config: RegistryClientConfig = {}) {

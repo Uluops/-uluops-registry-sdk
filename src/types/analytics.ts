@@ -98,7 +98,7 @@ export interface DefinitionHealth {
 // ── Ecosystem ─────────────────────────────────────────────────────
 
 export interface EcosystemOverview {
-  definitions: { total: number; byType: Record<string, number> };
+  definitions: { total: number; byType: Partial<Record<'agent' | 'command' | 'workflow' | 'pipeline', number>> };
   execution: { totalRuns: number | null; uniqueProjects: number | null };
   effectiveness: {
     avgHealthScore: number | null;

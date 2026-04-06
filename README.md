@@ -482,7 +482,7 @@ Re-translate a definition with the latest translator.
 
 ```typescript
 const def = await client.translation.retranslate('agent', 'my-agent', '1.0.0', {
-  force: true,
+  createNewVersion: true,
 });
 ```
 
@@ -492,7 +492,7 @@ Upgrade a legacy definition to the current format.
 
 ```typescript
 const result = await client.translation.upgrade('agent', 'legacy-agent', {
-  legacyYaml: oldFormatYaml,
+  yaml: oldFormatYaml,
 });
 ```
 
@@ -641,7 +641,7 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `ForbiddenError` | 403 | Valid credentials but insufficient permissions or subscription tier |
 | `NotFoundError` | 404 | Definition, model, or user doesn't exist |
 | `ConflictError` | 409 | Name collision, publishing already-published definition |
-| `PayloadTooLargeError` | 413 | YAML exceeds 100KB limit |
+| `PayloadTooLargeError` | 413 | YAML exceeds 150KB limit |
 | `UnprocessableError` | 422 | Valid YAML syntax but invalid semantics (missing refs, cycles) |
 | `RateLimitError` | 429 | Too many requests (100 executions/min per definition) |
 | `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
@@ -732,8 +732,8 @@ try {
   await client.definitions.create('agent', 'my-agent', { yaml: rawYaml });
 } catch (error) {
   if (error instanceof PayloadTooLargeError) {
-    // YAML > 100KB — split or compress before retrying
-    console.error('YAML too large. Max: 100KB');
+    // YAML > 150KB — split or compress before retrying
+    console.error('YAML too large. Max: 150KB');
   } else if (error instanceof ValidationError) {
     // Malformed request (e.g., missing required fields in body)
     console.error('Request validation failed:', error.details);
