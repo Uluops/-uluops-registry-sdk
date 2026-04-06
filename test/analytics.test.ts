@@ -1,0 +1,261 @@
+/**
+ * Tests for analytics operations
+ *
+ * Covers all 8 analytics functions: URL construction, query parameter forwarding,
+ * and response handling.
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import nock from 'nock';
+import { RegistryHttpClient } from '../src/http/http-client.js';
+import * as analyticsOps from '../src/operations/analytics.js';
+import { TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
+
+describe('analytics', () => {
+  let http: RegistryHttpClient;
+
+  beforeEach(() => {
+    http = new RegistryHttpClient({ apiKey: TEST_API_KEY });
+  });
+
+  // ── getEffectiveness ──────────────────────────────────────────
+
+  describe('getEffectiveness', () => {
+    it('fetches effectiveness without version', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/effectiveness')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
+            period: { start: '2026-03-01', end: '2026-04-01' },
+            metrics: { executionCount: 50, uniqueProjects: 5, uniqueUsers: 3, effectiveness: null, healthScore: 67, factorCompleteness: 40, healthFactors: [] },
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getEffectiveness(http, 'agent', 'code-validator');
+      expect(result.definition.name).toBe('code-validator');
+      expect(result.metrics.executionCount).toBe(50);
+      expect(result.stale).toBe(false);
+    });
+
+    it('appends version query param when provided', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/effectiveness')
+        .query({ version: '2.0.0' })
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator', version: '2.0.0' },
+            period: { start: '2026-03-01', end: '2026-04-01' },
+            metrics: { executionCount: 10, uniqueProjects: 2, uniqueUsers: 1, effectiveness: null, healthScore: null, factorCompleteness: 0, healthFactors: [] },
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getEffectiveness(http, 'agent', 'code-validator', '2.0.0');
+      expect(result.definition.version).toBe('2.0.0');
+    });
+
+    it('does not append version query param when omitted', async () => {
+      // nock without .query() will fail if a query string is sent
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/pipeline/ship/effectiveness')
+        .reply(200, { data: { definition: { type: 'pipeline', name: 'ship', version: '1.0.0' }, period: { start: '', end: '' }, metrics: { executionCount: 0, uniqueProjects: 0, uniqueUsers: 0, effectiveness: null, healthScore: null, factorCompleteness: 0, healthFactors: [] }, stale: false } });
+
+      await expect(analyticsOps.getEffectiveness(http, 'pipeline', 'ship')).resolves.not.toThrow();
+    });
+  });
+
+  // ── getHealth ─────────────────────────────────────────────────
+
+  describe('getHealth', () => {
+    it('fetches health grade', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/health')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
+            healthScore: 85,
+            grade: 'B',
+            provisional: true,
+            caveats: ['PROVISIONAL: weights unvalidated'],
+            issueProfile: { failureDomainDistribution: { STR: 30, SEM: 25, PRA: 25, EPI: 20 }, epistemicDensity: 45, dominantDomain: 'STR', interpretation: 'test' },
+            factors: [],
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getHealth(http, 'agent', 'code-validator');
+      expect(result.grade).toBe('B');
+      expect(result.healthScore).toBe(85);
+      expect(result.provisional).toBe(true);
+      expect(result.caveats).toHaveLength(1);
+    });
+
+    it('appends version query param when provided', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/health')
+        .query({ version: '1.2.0' })
+        .reply(200, { data: { definition: { type: 'agent', name: 'code-validator', version: '1.2.0' }, healthScore: null, grade: null, provisional: true, caveats: [], issueProfile: null, factors: [], stale: false } });
+
+      const result = await analyticsOps.getHealth(http, 'agent', 'code-validator', '1.2.0');
+      expect(result.definition.version).toBe('1.2.0');
+    });
+  });
+
+  // ── getEcosystemOverview ──────────────────────────────────────
+
+  describe('getEcosystemOverview', () => {
+    it('fetches ecosystem overview', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/ecosystem/overview')
+        .reply(200, {
+          data: {
+            definitions: { total: 42, byType: { agent: 30, command: 8, workflow: 3, pipeline: 1 } },
+            execution: { totalRuns: 1200, uniqueProjects: 15 },
+            effectiveness: { avgHealthScore: 72, ecosystemTaxonomy: null, topPerformers: [], needsAttention: [] },
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getEcosystemOverview(http);
+      expect(result.definitions.total).toBe(42);
+      expect(result.definitions.byType.agent).toBe(30);
+      expect(result.execution.totalRuns).toBe(1200);
+      expect(result.stale).toBe(false);
+    });
+  });
+
+  // ── getLineage ────────────────────────────────────────────────
+
+  describe('getLineage', () => {
+    it('fetches lineage tree', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/lineage')
+        .reply(200, {
+          data: {
+            root: { type: 'agent', name: 'code-validator', version: '1.0.0', ownerId: 'u1', relationship: 'root', healthScore: 67, translatorVersion: '4.0.0', status: 'published', createdAt: '2026-01-01', versions: [], forks: [] },
+            totalVersions: 3,
+            totalForks: 1,
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getLineage(http, 'agent', 'code-validator');
+      expect(result.root.relationship).toBe('root');
+      expect(result.totalVersions).toBe(3);
+      expect(result.totalForks).toBe(1);
+    });
+  });
+
+  // ── getEvolution ──────────────────────────────────────────────
+
+  describe('getEvolution', () => {
+    it('fetches evolution timeline with trend', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/evolution')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator' },
+            versions: [
+              { version: '1.0.0', publishedAt: '2026-01-01', translatorVersion: '3.0.0', metrics: { passRate: 70, avgScore: 75, runCount: 40, healthScore: 60 } },
+              { version: '1.1.0', publishedAt: '2026-02-01', translatorVersion: '4.0.0', metrics: { passRate: 85, avgScore: 88, runCount: 60, healthScore: 80 } },
+            ],
+            trend: 'improving',
+            trendConfidence: 'medium',
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getEvolution(http, 'agent', 'code-validator');
+      expect(result.trend).toBe('improving');
+      expect(result.trendConfidence).toBe('medium');
+      expect(result.versions).toHaveLength(2);
+    });
+  });
+
+  // ── getTranslation ────────────────────────────────────────────
+
+  describe('getTranslation', () => {
+    it('fetches translation analytics grouped by translator version', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/translation')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator' },
+            currentTranslatorVersion: '4.1.0',
+            groups: [
+              { translatorVersion: '3.0.0', isCurrent: false, versions: ['1.0.0'], aggregateMetrics: { totalRuns: 40, avgPassRate: 70, avgScore: 75 } },
+              { translatorVersion: '4.1.0', isCurrent: true, versions: ['1.1.0'], aggregateMetrics: { totalRuns: 60, avgPassRate: 85, avgScore: 88 } },
+            ],
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getTranslation(http, 'agent', 'code-validator');
+      expect(result.currentTranslatorVersion).toBe('4.1.0');
+      expect(result.groups).toHaveLength(2);
+      expect(result.groups[1]!.isCurrent).toBe(true);
+    });
+  });
+
+  // ── compare ───────────────────────────────────────────────────
+
+  describe('compare', () => {
+    it('joins versions as comma-separated query param', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/effectiveness/compare')
+        .query({ versions: '1.0.0,1.1.0,1.2.0' })
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator' },
+            versions: [
+              { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40, healthScore: 60, translatorVersion: '3.0.0' },
+              { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60, healthScore: 80, translatorVersion: '4.0.0' },
+              { version: '1.2.0', passRate: 90, avgScore: 92, runCount: 30, healthScore: 85, translatorVersion: '4.1.0' },
+            ],
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.compare(http, 'agent', 'code-validator', ['1.0.0', '1.1.0', '1.2.0']);
+      expect(result.versions).toHaveLength(3);
+      expect(result.versions[2]!.passRate).toBe(90);
+    });
+
+    it('handles two-version comparison', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/command/commit-push/effectiveness/compare')
+        .query({ versions: '1.0.0,2.0.0' })
+        .reply(200, { data: { definition: { type: 'command', name: 'commit-push' }, versions: [], stale: false } });
+
+      const result = await analyticsOps.compare(http, 'command', 'commit-push', ['1.0.0', '2.0.0']);
+      expect(result.definition.name).toBe('commit-push');
+    });
+  });
+
+  // ── getDiffImpact ─────────────────────────────────────────────
+
+  describe('getDiffImpact', () => {
+    it('constructs correct URL with both versions', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/diff/1.0.0/1.1.0/impact')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator' },
+            diff: { hasChanges: true, sectionsModified: ['agent'], fromLineCount: 100, toLineCount: 120 },
+            from: { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40 },
+            to: { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60 },
+            deltas: { passRateDelta: 15, avgScoreDelta: 13, runCountDelta: 20 },
+            caveats: ['OBSERVATIONAL: metric deltas are correlational, not causal.'],
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getDiffImpact(http, 'agent', 'code-validator', '1.0.0', '1.1.0');
+      expect(result.deltas.passRateDelta).toBe(15);
+      expect(result.caveats).toHaveLength(1);
+      expect(result.diff.hasChanges).toBe(true);
+    });
+  });
+});

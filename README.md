@@ -51,6 +51,7 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
   - [Models](#models-clientmodels)
   - [Users](#users-clientusers)
   - [Render](#render-clientrender)
+  - [Analytics](#analytics-clientanalytics)
 - [Environment Variables](#environment-variables)
 - [Error Handling](#error-handling)
 - [Advanced Usage](#advanced-usage)
@@ -60,7 +61,7 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 
 ## Features
 
-- **Full API Coverage**: Access all registry endpoints across 10 operation domains
+- **Full API Coverage**: Access all registry endpoints across 11 operation domains
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
 - **Type-Safe**: Complete TypeScript definitions with Zod runtime validation
 - **Dual Authentication**: API key (preferred) and JWT session support
@@ -606,6 +607,96 @@ Preview render without saving.
 const preview = await client.render.preview('agent', {
   yaml: rawYaml,
 });
+```
+
+### Analytics (`client.analytics`)
+
+Definition effectiveness, health grades, lineage, evolution, and cross-version comparison. Health scores are **provisional** pending a 90-day calibration study.
+
+#### `getEffectiveness(type, name, version?)`
+
+Get effectiveness metrics: pass rate, scores, taxonomy distribution, health score, and composition lift.
+
+```typescript
+const eff = await client.analytics.getEffectiveness('agent', 'code-validator');
+console.log(eff.metrics.healthScore); // 67
+console.log(eff.metrics.effectiveness?.passRate); // 49.4
+
+// Specific version
+const v2 = await client.analytics.getEffectiveness('agent', 'code-validator', '2.0.0');
+```
+
+#### `getHealth(type, name, version?)`
+
+Get health grade (A-F) and issue profile with failure domain distribution.
+
+```typescript
+const health = await client.analytics.getHealth('agent', 'code-validator');
+console.log(health.grade); // 'B'
+console.log(health.provisional); // true — weights unvalidated
+console.log(health.caveats); // ['PROVISIONAL: ...']
+```
+
+#### `getEcosystemOverview()`
+
+Get ecosystem-wide overview: definition counts, aggregate health, top performers, needs-attention list.
+
+```typescript
+const overview = await client.analytics.getEcosystemOverview();
+console.log(overview.definitions.total); // 42
+console.log(overview.effectiveness.topPerformers);
+```
+
+#### `getLineage(type, name)`
+
+Get the lineage graph: versions and forks as a tree with per-node health scores.
+
+```typescript
+const lineage = await client.analytics.getLineage('agent', 'code-validator');
+console.log(lineage.totalVersions); // 3
+console.log(lineage.totalForks); // 1
+```
+
+#### `getEvolution(type, name)`
+
+Get version-over-version metrics timeline with trend detection.
+
+```typescript
+const evo = await client.analytics.getEvolution('agent', 'code-validator');
+console.log(evo.trend); // 'improving'
+console.log(evo.trendConfidence); // 'high'
+```
+
+#### `getTranslation(type, name)`
+
+Get versions grouped by translator version with aggregate metrics.
+
+```typescript
+const translation = await client.analytics.getTranslation('agent', 'code-validator');
+for (const group of translation.groups) {
+  console.log(`${group.translatorVersion}: ${group.aggregateMetrics.avgPassRate}%`);
+}
+```
+
+#### `compare(type, name, versions)`
+
+Compare effectiveness across 2-5 definition versions side-by-side.
+
+```typescript
+const cmp = await client.analytics.compare('agent', 'code-validator', ['1.0.0', '1.1.0', '1.2.0']);
+for (const v of cmp.versions) {
+  console.log(`${v.version}: pass=${v.passRate}%, health=${v.healthScore}`);
+}
+```
+
+#### `getDiffImpact(type, name, fromVersion, toVersion)`
+
+Get structural diff combined with metric deltas between two versions. Deltas are observational, not causal.
+
+```typescript
+const impact = await client.analytics.getDiffImpact('agent', 'code-validator', '1.0.0', '1.1.0');
+console.log(impact.deltas.passRateDelta); // 15
+console.log(impact.caveats); // ['OBSERVATIONAL: ...']
 ```
 
 ---
