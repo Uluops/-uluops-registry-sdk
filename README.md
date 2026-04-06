@@ -23,7 +23,7 @@ const client = new RegistryClient({
 });
 
 // List agent definitions
-const agents = await client.definitions.list({ type: 'agent' });
+const { definitions: agents } = await client.definitions.list({ type: 'agent' });
 
 // Get a specific definition
 const def = await client.definitions.get('agent', 'code-validator', '1.0.0');
@@ -112,12 +112,12 @@ console.log(client.getAuthType()); // 'api_key'
 For interactive applications, use `login()` to obtain a session token programmatically:
 
 ```typescript
+// Login with email/password — no API key required
 const client = new RegistryClient({
-  apiKey: process.env.ULUOPS_API_KEY,
+  authBaseUrl: process.env.ULUOPS_AUTH_URL, // ops API for login
 });
-
-// Login to get a session token
 const { sessionToken, expiresAt } = await client.login('user@example.com', 'password');
+// The client is now authenticated — subsequent requests use the session token
 
 // Or pass an existing token directly
 const client2 = new RegistryClient({
@@ -222,9 +222,12 @@ const client = new RegistryClient({
   // Authentication (choose one)
   apiKey: 'ulr_...',           // API key (preferred)
   sessionToken: 'jwt-token',   // Existing session token
+  email: 'user@example.com',   // Email for session auth (requires password)
+  password: 'secret',          // Password for session auth (requires email)
 
   // Connection settings
-  baseUrl: 'https://api.uluops.ai/api/v1/registry',  // API base URL
+  baseUrl: 'https://api.uluops.ai/api/v1/registry',  // Registry API base URL
+  authBaseUrl: 'https://api.uluops.ai/api/v1/ops',    // Auth API base URL (for login/refresh)
   timeout: 30000,              // Request timeout in ms (default: 30000)
   retries: 3,                  // Retry count for transient errors (default: 3)
   debug: false,                // Enable debug logging
@@ -340,7 +343,7 @@ Manage definition version history.
 List all versions of a definition.
 
 ```typescript
-const versions = await client.versions.list('agent', 'code-validator');
+const { versions } = await client.versions.list('agent', 'code-validator');
 for (const v of versions) {
   console.log(`${v.version}: ${v.status}`);
 }
@@ -352,7 +355,7 @@ Compare two versions showing changes.
 
 ```typescript
 const diff = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0');
-console.log(diff.added, diff.removed, diff.modified);
+console.log(diff.sectionsAdded, diff.sectionsRemoved, diff.sectionsModified);
 ```
 
 ---
@@ -727,6 +730,8 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 |----------|-------------|---------|
 | `ULUOPS_API_KEY` | API key for authentication | - |
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
+| `ULUOPS_EMAIL` | Email for session-based auth | - |
+| `ULUOPS_PASSWORD` | Password for session-based auth | - |
 | `ULUOPS_REGISTRY_URL` | Registry API base URL | `https://api.uluops.ai/api/v1/registry` |
 | `ULUOPS_AUTH_URL` | Auth API base URL (for `login()`) | `https://api.uluops.ai/api/v1/ops` |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |

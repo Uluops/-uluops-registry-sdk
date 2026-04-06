@@ -112,7 +112,7 @@ export interface RegistryClientConfig {
   orgSlug?: string;
   /** Base URL for the registry API */
   baseUrl?: string;
-  /** Base URL for the ops API (login/refresh) — defaults to localhost:3100 */
+  /** Base URL for the ops API (login/refresh) — defaults to production, or localhost:3100 when NODE_ENV=development */
   authBaseUrl?: string;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
@@ -261,8 +261,8 @@ export class RegistryClient {
    * The registry API has no auth endpoints — login is delegated to the ops API.
    */
   async login(email: string, password: string): Promise<{ sessionToken: string; expiresAt?: string }> {
-    // Always use the provided email/password — create a temporary HTTP client
-    // so the caller's explicit credentials are never silently ignored.
+    // Create a temporary HTTP client with the provided credentials to perform
+    // the login call against the ops API (authBaseUrl).
     const { RegistryHttpClient: HttpClient } = await import('./http/http-client.js');
     const tempHttp = new HttpClient({
       authBaseUrl: this.http.getAuthBaseUrl(),
@@ -272,7 +272,20 @@ export class RegistryClient {
     const tempStrategy = tempHttp.getAuthStrategy();
     if (tempStrategy instanceof JwtSessionAuth) {
       const token = await tempStrategy.login();
-      return { sessionToken: token, expiresAt: tempStrategy.getExpiresAt()?.toISOString() };
+      const expiresAt = tempStrategy.getExpiresAt()?.toISOString();
+
+      // Install session auth on the main client so subsequent requests
+      // are authenticated (matches OpsClient.login() behaviour).
+      this.http.setAuthStrategy(
+        new JwtSessionAuth(
+          this.http.createFetchClient(),
+          { email, password },
+          undefined,
+          token,
+        )
+      );
+
+      return { sessionToken: token, expiresAt };
     }
 
     throw new Error('Cannot login: no session auth strategy available');
