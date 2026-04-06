@@ -47,6 +47,7 @@ export interface ConstituentAgentMetrics {
 
 export interface LiftStatistics {
   standardError: number;
+  /** 95% confidence interval — index 0 is lower bound, index 1 is upper bound. */
   ci95: [number, number];
   significant: boolean;
   sampleSizes: { pipeline: number; independent: number };
@@ -129,10 +130,19 @@ export interface LineageNode {
   forks: LineageNode[];
 }
 
+export interface LineageStatistics {
+  totalExecutions: number;
+  activeVariants: number;
+  mostForked: { name: string; version: string; forkCount: number } | null;
+  mostExecuted: { name: string; version: string; executionCount: number } | null;
+  highestEffectiveness: { name: string; version: string; healthScore: number } | null;
+}
+
 export interface LineageResult {
   root: LineageNode;
   totalVersions: number;
   totalForks: number;
+  statistics: LineageStatistics;
   stale: boolean;
 }
 
@@ -142,6 +152,8 @@ export interface EvolutionPoint {
   version: string;
   publishedAt: string | null;
   translatorVersion: string | null;
+  /** Human-readable summary of structural changes from previous version. Null for first version. */
+  changeSummary: string | null;
   metrics: {
     passRate: number;
     avgScore: number | null;
@@ -150,11 +162,19 @@ export interface EvolutionPoint {
   } | null;
 }
 
+export interface OverallTrend {
+  trajectory: 'consistent_improvement' | 'consistent_decline' | 'stable' | 'volatile' | 'insufficient_data';
+  passRateChange: string | null;
+  avgScoreChange: string | null;
+  epistemicDensityChange: string | null;
+}
+
 export interface EvolutionResult {
   definition: { type: string; name: string };
   versions: EvolutionPoint[];
   trend: 'improving' | 'declining' | 'stable' | 'insufficient_data';
   trendConfidence: 'low' | 'medium' | 'high' | null;
+  overallTrend: OverallTrend;
   stale: boolean;
 }
 
@@ -171,10 +191,18 @@ export interface TranslatorGroupMetrics {
   };
 }
 
+export interface ProjectedImprovement {
+  passRateDelta: number;
+  avgScoreDelta: number;
+}
+
 export interface TranslationAnalyticsResult {
   definition: { type: string; name: string };
   currentTranslatorVersion: string;
   groups: TranslatorGroupMetrics[];
+  upgradeAvailable: boolean;
+  projectedImprovement: ProjectedImprovement | null;
+  recommendation: string | null;
   stale: boolean;
 }
 
@@ -187,6 +215,8 @@ export interface VersionComparisonEntry {
   runCount: number;
   healthScore: number | null;
   translatorVersion: string | null;
+  failureDomainDistribution: FailureDomainDistribution | null;
+  epistemicDensity: number | null;
 }
 
 export interface CompareResult {
@@ -197,10 +227,25 @@ export interface CompareResult {
 
 // ── Diff Impact ───────────────────────────────────────────────────
 
+export interface CategorizedChange {
+  category: 'scoring' | 'criteria' | 'output' | 'metadata' | 'behavior' | 'other';
+  section: string;
+  changeType: 'added' | 'removed' | 'modified';
+}
+
+export interface TaxonomyShift {
+  from: FailureDomainDistribution;
+  to: FailureDomainDistribution;
+  delta: FailureDomainDistribution;
+  epistemicDensityDelta: number;
+}
+
 export interface DiffImpactResult {
   definition: { type: string; name: string };
   diff: {
     hasChanges: boolean;
+    sectionsAdded: string[];
+    sectionsRemoved: string[];
     sectionsModified: string[];
     fromLineCount: number;
     toLineCount: number;
@@ -212,6 +257,8 @@ export interface DiffImpactResult {
     avgScoreDelta: number | null;
     runCountDelta: number;
   };
+  categorizedChanges: CategorizedChange[];
+  taxonomyShift: TaxonomyShift | null;
   caveats: string[];
   stale: boolean;
 }
