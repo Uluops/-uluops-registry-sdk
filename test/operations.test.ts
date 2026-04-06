@@ -17,6 +17,7 @@ import * as translationOps from '../src/operations/translation.js';
 import * as modelOps from '../src/operations/models.js';
 import * as renderOps from '../src/operations/render.js';
 import { TEST_API_KEY, MOCK_BASE_URL, createMockDefinition } from './setup.js';
+import { MAX_YAML_SIZE } from '../src/config/constants.js';
 
 describe('operations', () => {
   let http: RegistryHttpClient;
@@ -106,7 +107,8 @@ describe('operations', () => {
           .reply(200, { data: { items: [], total: 0, limit: 50, offset: 0 } });
 
         const result = await definitionOps.list(http);
-        expect(result).toBeDefined();
+        expect(result).toHaveProperty('items');
+        expect(result).toHaveProperty('total', 0);
       });
     });
 
@@ -300,7 +302,8 @@ describe('operations', () => {
           '1.0.0',
           { maxDepth: 3 }
         );
-        expect(result).toBeDefined();
+        expect(result.nodes).toEqual([]);
+        expect(result.cycleDetected).toBe(false);
       });
     });
 
@@ -609,7 +612,7 @@ describe('operations', () => {
       });
 
       it('should reject oversized YAML', async () => {
-        const oversizedYaml = 'x'.repeat(153601);
+        const oversizedYaml = 'x'.repeat(MAX_YAML_SIZE + 1);
         await expect(
           renderOps.preview(http, 'agent', { yaml: oversizedYaml })
         ).rejects.toThrow('exceeds maximum size');
@@ -692,7 +695,7 @@ describe('operations', () => {
 
     describe('oversized YAML', () => {
       it('should reject oversized YAML in validation.validate', async () => {
-        const oversizedYaml = 'x'.repeat(153601);
+        const oversizedYaml = 'x'.repeat(MAX_YAML_SIZE + 1);
         await expect(
           validationOps.validate(http, 'agent', oversizedYaml)
         ).rejects.toThrow('exceeds maximum size');

@@ -4,7 +4,7 @@
  * Re-exports from @uluops/sdk-core with a convenience wrapper.
  */
 
-import { createLogger as coreCreateLogger } from '@uluops/sdk-core/utils';
+import { createLogger as coreCreateLogger, type Logger } from '@uluops/sdk-core/utils';
 
 export {
   redactSensitive,
@@ -18,6 +18,6 @@ export {
  *
  * Wraps sdk-core's createLogger with the '[registry-sdk]' prefix.
  */
-export function createLogger(enabled: boolean): import('@uluops/sdk-core/utils').Logger {
+export function createLogger(enabled: boolean): Logger {
   return coreCreateLogger('[registry-sdk]', enabled);
 }

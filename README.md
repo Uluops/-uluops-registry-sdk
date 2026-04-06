@@ -109,13 +109,26 @@ console.log(client.getAuthType()); // 'api_key'
 
 ### Session-Based Authentication
 
-For interactive applications, you can use JWT session tokens:
+For interactive applications, use `login()` to obtain a session token programmatically:
 
 ```typescript
 const client = new RegistryClient({
+  apiKey: process.env.ULUOPS_API_KEY,
+});
+
+// Login to get a session token
+const { sessionToken, expiresAt } = await client.login('user@example.com', 'password');
+
+// Or pass an existing token directly
+const client2 = new RegistryClient({
   sessionToken: 'your-jwt-token',
 });
+
+// Clear the session when done
+client.logout();
 ```
+
+The auth URL defaults to production (`https://api.uluops.ai/api/v1/ops`). For local development, set `ULUOPS_AUTH_URL` in your `.env` file or pass `authBaseUrl` to the constructor.
 
 ### Validating Credentials
 
@@ -597,6 +610,11 @@ Get the fully rendered/resolved definition.
 ```typescript
 const rendered = await client.render.get('agent', 'code-validator', '1.0.0');
 console.log(rendered.markdown);
+
+// With render profile (optional: 'core' or 'uluops-full')
+const full = await client.render.get('agent', 'code-validator', '1.0.0', {
+  renderProfile: 'uluops-full',
+});
 ```
 
 #### `preview(type, body)`
@@ -709,14 +727,18 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 |----------|-------------|---------|
 | `ULUOPS_API_KEY` | API key for authentication | - |
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
-| `ULUOPS_REGISTRY_URL` | API base URL | `https://api.uluops.ai/api/v1/registry` |
+| `ULUOPS_REGISTRY_URL` | Registry API base URL | `https://api.uluops.ai/api/v1/registry` |
+| `ULUOPS_AUTH_URL` | Auth API base URL (for `login()`) | `https://api.uluops.ai/api/v1/ops` |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
 Create a `.env` file in your project:
 
 ```env
 ULUOPS_API_KEY=ulr_your-api-key-here
-ULUOPS_REGISTRY_URL=https://api.uluops.ai/api/v1/registry
+
+# Override for local development:
+# ULUOPS_REGISTRY_URL=http://localhost:3001/api/v1
+# ULUOPS_AUTH_URL=http://localhost:3100/api/v1
 ```
 
 ## Error Handling

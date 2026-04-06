@@ -67,7 +67,7 @@ export function validateVersion(version: string): void {
  * Validate YAML content size
  */
 export function validateYamlSize(yaml: string): void {
-  const bytes = Buffer.byteLength(yaml, 'utf-8');
+  const bytes = new TextEncoder().encode(yaml).byteLength;
   if (bytes > MAX_YAML_SIZE) {
     throw new ValidationError(
       `YAML content exceeds maximum size of ${MAX_YAML_SIZE / 1024}KB ` +

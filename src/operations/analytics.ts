@@ -128,6 +128,9 @@ export async function compare(
   name: string,
   versions: string[],
 ): Promise<CompareResult> {
+  if (versions.length < 2 || versions.length > 5) {
+    throw new Error(`compare() requires 2-5 versions (received ${String(versions.length)})`);
+  }
   return http.get<CompareResult>(
     `${analyticsPath(type, name)}/effectiveness/compare`,
     { versions: versions.join(',') },

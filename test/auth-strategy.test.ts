@@ -203,11 +203,19 @@ describe('JwtSessionAuth', () => {
   });
 
   describe('expiration', () => {
-    it('should report not authenticated when token is expired', () => {
-      const httpClient = createMockFetchClient();
-      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' }, undefined, 'some-token');
-      // Force expiration by setting expiresAt to the past
-      (auth as unknown as { expiresAt: Date }).expiresAt = new Date('2020-01-01');
+    it('should report not authenticated when token is expired', async () => {
+      const httpClient: FetchClient = {
+        post: vi.fn().mockResolvedValue({
+          data: {
+            data: {
+              sessionToken: 'expired-token',
+              expiresAt: '2020-01-01T00:00:00.000Z',
+            },
+          },
+        }),
+      };
+      const auth = new JwtSessionAuth(httpClient, { email: 'test@test.com', password: 'pass' });
+      await auth.login(); // Sets token with past expiresAt
 
       expect(auth.isAuthenticated()).toBe(false);
       expect(auth.getSessionToken()).toBeNull(); // Should clear on expiration check

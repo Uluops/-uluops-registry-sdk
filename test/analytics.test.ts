@@ -232,6 +232,24 @@ describe('analytics', () => {
       const result = await analyticsOps.compare(http, 'command', 'commit-push', ['1.0.0', '2.0.0']);
       expect(result.definition.name).toBe('commit-push');
     });
+
+    it('rejects fewer than 2 versions', async () => {
+      await expect(
+        analyticsOps.compare(http, 'agent', 'code-validator', ['1.0.0'])
+      ).rejects.toThrow('requires 2-5 versions');
+    });
+
+    it('rejects more than 5 versions', async () => {
+      await expect(
+        analyticsOps.compare(http, 'agent', 'code-validator', ['1', '2', '3', '4', '5', '6'])
+      ).rejects.toThrow('requires 2-5 versions');
+    });
+
+    it('rejects empty versions array', async () => {
+      await expect(
+        analyticsOps.compare(http, 'agent', 'code-validator', [])
+      ).rejects.toThrow('requires 2-5 versions');
+    });
   });
 
   // ── getDiffImpact ─────────────────────────────────────────────
