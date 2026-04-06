@@ -55,9 +55,9 @@ export const DEFAULT_AUTH_BASE_URL =
   process.env.NODE_ENV === 'development' ? DEFAULT_AUTH_DEV_URL : DEFAULT_AUTH_PROD_URL;
 
 /**
- * Maximum YAML size in bytes (100KB)
+ * Maximum YAML size in bytes (150KB)
  */
-export const MAX_YAML_SIZE = 102400;
+export const MAX_YAML_SIZE = 153600;
 
 /**
  * Environment variable names

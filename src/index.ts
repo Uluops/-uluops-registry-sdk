@@ -110,6 +110,28 @@ export type {
 } from './types/users.js';
 
 export type {
+  // Analytics types
+  DefinitionEffectiveness,
+  EffectivenessMetrics,
+  DefinitionHealth,
+  HealthFactor,
+  FailureDomainDistribution,
+  EcosystemOverview,
+  LineageResult,
+  LineageNode,
+  EvolutionResult,
+  EvolutionPoint,
+  TranslationAnalyticsResult,
+  TranslatorGroupMetrics,
+  CompareResult,
+  VersionComparisonEntry,
+  DiffImpactResult,
+  CompositionLiftResult,
+  ConstituentAgentMetrics,
+  LiftStatistics,
+} from './types/analytics.js';
+
+export type {
   // Response types
   SingleResponse,
   PaginatedResponse,

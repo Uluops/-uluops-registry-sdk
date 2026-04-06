@@ -38,6 +38,7 @@ import * as translationOps from './operations/translation.js';
 import * as modelsOps from './operations/models.js';
 import * as usersOps from './operations/users.js';
 import * as renderOps from './operations/render.js';
+import * as analyticsOps from './operations/analytics.js';
 
 import type {
   Definition,
@@ -64,6 +65,16 @@ import type {
   ModelSyncResult,
 } from './types/models.js';
 import type { PublicUser, BatchUserResponse } from './types/users.js';
+import type {
+  DefinitionEffectiveness,
+  DefinitionHealth,
+  EcosystemOverview,
+  LineageResult,
+  EvolutionResult,
+  TranslationAnalyticsResult,
+  CompareResult,
+  DiffImpactResult,
+} from './types/analytics.js';
 import type {
   ValidationResult,
   RenderResult,
@@ -210,6 +221,22 @@ export class RegistryClient {
     preview: (type: DefinitionType, body: RenderPreviewBody) => Promise<RenderResult>;
   };
 
+  /**
+   * Analytics operations (effectiveness, health, lineage, evolution)
+   *
+   * Health scores are provisional pending 90-day calibration study.
+   */
+  readonly analytics: {
+    getEffectiveness: (type: string, name: string, version?: string) => Promise<DefinitionEffectiveness>;
+    getHealth: (type: string, name: string, version?: string) => Promise<DefinitionHealth>;
+    getEcosystemOverview: () => Promise<EcosystemOverview>;
+    getLineage: (type: string, name: string) => Promise<LineageResult>;
+    getEvolution: (type: string, name: string) => Promise<EvolutionResult>;
+    getTranslation: (type: string, name: string) => Promise<TranslationAnalyticsResult>;
+    compare: (type: string, name: string, versions: string[]) => Promise<CompareResult>;
+    getDiffImpact: (type: string, name: string, fromVersion: string, toVersion: string) => Promise<DiffImpactResult>;
+  };
+
   constructor(config: RegistryClientConfig = {}) {
     this.http = this.createHttpClient(config);
     this.definitions = this.bindDefinitions();
@@ -222,6 +249,7 @@ export class RegistryClient {
     this.models = this.bindModels();
     this.users = this.bindUsers();
     this.render = this.bindRender();
+    this.analytics = this.bindAnalytics();
   }
 
   // ============================================
@@ -354,6 +382,19 @@ export class RegistryClient {
     return {
       get: (type, name, version, options?) => renderOps.get(this.http, type, name, version, options),
       preview: (type, body) => renderOps.preview(this.http, type, body),
+    };
+  }
+
+  private bindAnalytics(): RegistryClient['analytics'] {
+    return {
+      getEffectiveness: (type, name, version) => analyticsOps.getEffectiveness(this.http, type, name, version),
+      getHealth: (type, name, version) => analyticsOps.getHealth(this.http, type, name, version),
+      getEcosystemOverview: () => analyticsOps.getEcosystemOverview(this.http),
+      getLineage: (type, name) => analyticsOps.getLineage(this.http, type, name),
+      getEvolution: (type, name) => analyticsOps.getEvolution(this.http, type, name),
+      getTranslation: (type, name) => analyticsOps.getTranslation(this.http, type, name),
+      compare: (type, name, versions) => analyticsOps.compare(this.http, type, name, versions),
+      getDiffImpact: (type, name, fromVersion, toVersion) => analyticsOps.getDiffImpact(this.http, type, name, fromVersion, toVersion),
     };
   }
 

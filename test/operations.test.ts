@@ -609,7 +609,7 @@ describe('operations', () => {
       });
 
       it('should reject oversized YAML', async () => {
-        const oversizedYaml = 'x'.repeat(102401);
+        const oversizedYaml = 'x'.repeat(153601);
         await expect(
           renderOps.preview(http, 'agent', { yaml: oversizedYaml })
         ).rejects.toThrow('exceeds maximum size');
@@ -692,7 +692,7 @@ describe('operations', () => {
 
     describe('oversized YAML', () => {
       it('should reject oversized YAML in validation.validate', async () => {
-        const oversizedYaml = 'x'.repeat(102401);
+        const oversizedYaml = 'x'.repeat(153601);
         await expect(
           validationOps.validate(http, 'agent', oversizedYaml)
         ).rejects.toThrow('exceeds maximum size');

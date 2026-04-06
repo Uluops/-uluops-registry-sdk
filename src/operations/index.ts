@@ -35,6 +35,9 @@ export * as users from './users.js';
 /** Definition rendering and preview */
 export * as render from './render.js';
 
+/** Analytics: effectiveness, health, lineage, evolution */
+export * as analytics from './analytics.js';
+
 // Re-export response types
 export type { DefinitionListResponse } from './definitions.js';
 export type { ForkListResponse } from './forks.js';

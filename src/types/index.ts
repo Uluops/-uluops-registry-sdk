@@ -14,5 +14,7 @@ export * from './models.js';
 export * from './users.js';
 export * from './responses.js';
 
+export * from './analytics.js';
+
 // Zod schemas
 export * from './schemas.js';
