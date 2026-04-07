@@ -141,6 +141,7 @@ export class RegistryClient {
     delete: (type: DefinitionType, name: string, version: string) => Promise<void>;
     publish: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
     deprecate: (type: DefinitionType, name: string, version: string, body: DeprecateDefinitionBody) => Promise<Definition>;
+    archive: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
   };
 
   /**
@@ -326,6 +327,7 @@ export class RegistryClient {
       delete: (type, name, version) => definitionsOps.remove(this.http, type, name, version),
       publish: (type, name, version) => definitionsOps.publish(this.http, type, name, version),
       deprecate: (type, name, version, body) => definitionsOps.deprecate(this.http, type, name, version, body),
+      archive: (type, name, version) => definitionsOps.archive(this.http, type, name, version),
     };
   }
 

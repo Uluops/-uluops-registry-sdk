@@ -125,3 +125,13 @@ export async function deprecate(
   const path = `${buildDefinitionPath(type, name, version)}/deprecate`;
   return http.post<Definition>(path, body, { schema: definitionSchema });
 }
+
+export async function archive(
+  http: RegistryHttpClient,
+  type: DefinitionType,
+  name: string,
+  version: string,
+): Promise<Definition> {
+  const path = `${buildDefinitionPath(type, name, version)}/archive`;
+  return http.post<Definition>(path, {}, { schema: definitionSchema });
+}

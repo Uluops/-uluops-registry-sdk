@@ -102,7 +102,7 @@ const MOCK_DEFINITION_DEFAULTS: Record<string, unknown> = {
   description: 'A test agent',
   domain: 'software',
   agentType: 'validator',
-  ownerId: TEST_USER_ID,
+  authorId: TEST_USER_ID,
   tier: 'user',
   visibility: 'private',
   executionCount: 0,

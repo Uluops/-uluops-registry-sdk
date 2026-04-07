@@ -134,7 +134,7 @@ describe('analytics', () => {
         .get('/analytics/definitions/agent/code-validator/lineage')
         .reply(200, {
           data: {
-            root: { type: 'agent', name: 'code-validator', version: '1.0.0', ownerId: 'u1', relationship: 'root', healthScore: 67, translatorVersion: '4.0.0', status: 'published', createdAt: '2026-01-01', versions: [], forks: [] },
+            root: { type: 'agent', name: 'code-validator', version: '1.0.0', authorId: 'u1', relationship: 'root', healthScore: 67, translatorVersion: '4.0.0', status: 'published', createdAt: '2026-01-01', versions: [], forks: [] },
             totalVersions: 3,
             totalForks: 1,
             stale: false,

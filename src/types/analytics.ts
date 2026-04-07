@@ -120,7 +120,7 @@ export interface LineageNode {
   type: string;
   name: string;
   version: string;
-  ownerId: string;
+  authorId: string;
   relationship: 'root' | 'version' | 'fork';
   healthScore: number | null;
   translatorVersion: string | null;
