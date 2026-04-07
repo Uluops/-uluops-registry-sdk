@@ -7,7 +7,7 @@ export const DEFINITION_TYPES = ['agent', 'command', 'workflow', 'pipeline'] as 
 export type DefinitionType = (typeof DEFINITION_TYPES)[number];
 
 // Lifecycle status
-export const DEFINITION_STATUSES = ['draft', 'published', 'deprecated'] as const;
+export const DEFINITION_STATUSES = ['draft', 'published', 'deprecated', 'archived'] as const;
 export type DefinitionStatus = (typeof DEFINITION_STATUSES)[number];
 
 // Domain categories
