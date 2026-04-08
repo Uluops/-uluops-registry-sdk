@@ -29,8 +29,8 @@ export type Domain = (typeof DOMAINS)[number];
 export const AGENT_TYPES = ['validator', 'executor', 'analyst', 'generator', 'explorer', 'forecaster'] as const;
 export type AgentType = (typeof AGENT_TYPES)[number];
 
-// Ownership tiers
-export const TIERS = ['user', 'public', 'pro'] as const;
+// Quality/provenance tiers
+export const TIERS = ['user', 'org', 'pro'] as const;
 export type Tier = (typeof TIERS)[number];
 
 // Visibility levels
