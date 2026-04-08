@@ -94,6 +94,8 @@ export interface ListDefinitionsQuery {
   authorId?: string;
   search?: string;
   tag?: string | string[];
+  /** Filter by fork status: true = only forks, false = only originals */
+  isFork?: boolean;
   limit?: number;
   offset?: number;
   sortBy?: SortField;
