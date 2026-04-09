@@ -51,7 +51,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@uluops/sdk-core": "^0.2.0",
+    "@uluops/sdk-core": "^0.3.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
