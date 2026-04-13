@@ -12,20 +12,26 @@ import { validateDefinitionType, validateDefinitionName, validateVersion } from 
  */
 export interface VersionsListResponse {
   versions: VersionListItem[];
-  totalVersions: number;
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 /**
- * List all versions of a definition
+ * List all versions of a definition with optional pagination.
  */
 export async function list(
   http: RegistryHttpClient,
   type: DefinitionType,
-  name: string
+  name: string,
+  options?: { limit?: number; offset?: number }
 ): Promise<VersionsListResponse> {
   validateDefinitionType(type);
   validateDefinitionName(name);
-  return http.get<VersionsListResponse>(`/definitions/${type}/${name}/versions`);
+  return http.get<VersionsListResponse>(`/definitions/${type}/${name}/versions`, {
+    ...(options?.limit !== undefined && { limit: String(options.limit) }),
+    ...(options?.offset !== undefined && { offset: String(options.offset) }),
+  });
 }
 
 /**

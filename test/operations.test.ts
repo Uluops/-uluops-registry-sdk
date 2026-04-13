@@ -207,14 +207,42 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent/versions')
           .reply(200, {
-            data: [
-              { version: '1.0.0', status: 'published' },
-              { version: '2.0.0', status: 'draft' },
-            ],
+            data: {
+              versions: [
+                { version: '1.0.0', hash: 'abc', createdAt: '2026-01-01', createdBy: 'user1' },
+                { version: '2.0.0', hash: 'def', createdAt: '2026-01-02', createdBy: 'user1' },
+              ],
+              total: 2,
+              limit: 50,
+              offset: 0,
+            },
           });
 
         const result = await versionOps.list(http, 'agent', 'my-agent');
-        expect(result).toHaveLength(2);
+        expect(result.versions).toHaveLength(2);
+        expect(result.total).toBe(2);
+        expect(result.limit).toBe(50);
+        expect(result.offset).toBe(0);
+      });
+
+      it('should pass pagination params', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent/versions')
+          .query({ limit: '3', offset: '5' })
+          .reply(200, {
+            data: {
+              versions: [{ version: '3.0.0', hash: 'ghi', createdAt: '2026-01-03', createdBy: 'user1' }],
+              total: 10,
+              limit: 3,
+              offset: 5,
+            },
+          });
+
+        const result = await versionOps.list(http, 'agent', 'my-agent', { limit: 3, offset: 5 });
+        expect(result.versions).toHaveLength(1);
+        expect(result.total).toBe(10);
+        expect(result.limit).toBe(3);
+        expect(result.offset).toBe(5);
       });
     });
 

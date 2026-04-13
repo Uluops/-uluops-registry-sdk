@@ -148,7 +148,7 @@ export class RegistryClient {
    * Version operations (list, diff)
    */
   readonly versions: {
-    list: (type: DefinitionType, name: string) => Promise<VersionsListResponse>;
+    list: (type: DefinitionType, name: string, options?: { limit?: number; offset?: number }) => Promise<VersionsListResponse>;
     diff: (type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }) => Promise<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff>;
   };
 
@@ -333,7 +333,7 @@ export class RegistryClient {
 
   private bindVersions(): RegistryClient['versions'] {
     return {
-      list: (type, name) => versionsOps.list(this.http, type, name),
+      list: (type, name, options) => versionsOps.list(this.http, type, name, options),
       diff: (type, name, from, to, options) => versionsOps.diff(this.http, type, name, from, to, options),
     };
   }
