@@ -3,7 +3,7 @@
  */
 
 import type { RegistryHttpClient } from '../http/http-client.js';
-import type { VersionListItem, VersionDiff, VersionDiffSummary } from '../types/versions.js';
+import type { VersionListItem, VersionDiff, VersionDiffSummary, VersionFieldDiff, VersionUnifiedDiff } from '../types/versions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
 
@@ -38,16 +38,17 @@ export async function diff(
   name: string,
   fromVersion: string,
   toVersion: string,
-  options?: { full?: boolean }
-): Promise<VersionDiff | VersionDiffSummary> {
+  options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }
+): Promise<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff> {
   validateDefinitionType(type);
   validateDefinitionName(name);
   validateVersion(fromVersion);
   validateVersion(toVersion);
 
-  return http.get<VersionDiff | VersionDiffSummary>(`/definitions/${type}/${name}/diff`, {
+  return http.get<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff>(`/definitions/${type}/${name}/diff`, {
     from: fromVersion,
     to: toVersion,
     ...(options?.full === true && { full: 'true' }),
+    ...(options?.format && options.format !== 'sections' && { format: options.format }),
   });
 }

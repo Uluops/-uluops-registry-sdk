@@ -65,3 +65,49 @@ export interface VersionDiffSummary {
   sectionsModified: string[];
   sectionsUnchanged: string[];
 }
+
+/**
+ * Field-level diff response (returned when format=fields).
+ * Includes per-field changes, classification, and suggested version bump.
+ */
+export interface VersionFieldDiff {
+  fromVersion: string;
+  toVersion: string;
+  fromHash: string;
+  toHash: string;
+  hasChanges: boolean;
+  fields: Array<{
+    path: string;
+    type: 'added' | 'removed' | 'modified' | 'moved';
+    fromPath?: string;
+    oldValue?: unknown;
+    newValue?: unknown;
+    valueDiff?: Array<[number, string]>;
+    arrayChanges?: Array<{ index: number; type: string; oldValue?: unknown; newValue?: unknown; fromIndex?: number }>;
+  }>;
+  summary: { added: number; removed: number; modified: number; unchanged: number };
+  sections: { added: string[]; removed: string[]; modified: string[]; unchanged: string[] };
+  classified: Array<{
+    path: string;
+    type: string;
+    significance: 'breaking' | 'structural' | 'cosmetic' | 'metadata';
+    reason: string;
+    oldValue?: unknown;
+    newValue?: unknown;
+  }>;
+  suggestedBump: 'major' | 'minor' | 'patch';
+}
+
+/**
+ * Unified line diff response (returned when format=unified).
+ */
+export interface VersionUnifiedDiff {
+  fromVersion: string;
+  toVersion: string;
+  fromHash: string;
+  toHash: string;
+  hasChanges: boolean;
+  unified: string;
+  fromLineCount: number;
+  toLineCount: number;
+}
