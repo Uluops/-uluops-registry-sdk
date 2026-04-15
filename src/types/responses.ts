@@ -55,6 +55,7 @@ export interface ValidationError {
  */
 export interface RenderResult {
   markdown: string;
+  promptHash?: string | null;
   variables?: string[];
   metadata?: Record<string, unknown>;
 }

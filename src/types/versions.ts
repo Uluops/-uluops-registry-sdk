@@ -13,6 +13,7 @@ export interface DefinitionVersion {
   version: string;
   yaml: string;
   hash: string;
+  promptHash?: string | null;
   runtimeMd?: string | null;
   translatorVersion?: string | null;
   schemaVersion?: string | null;
@@ -29,6 +30,7 @@ export interface VersionListItem {
   id: string;
   version: string;
   hash: string;
+  promptHash?: string | null;
   createdAt: string;
   createdBy: string;
   changeType?: ChangeType | null;
@@ -46,6 +48,9 @@ export interface VersionDiff {
   fromHash: string;
   toHash: string;
   hasChanges: boolean;
+  fromPromptHash: string | null;
+  toPromptHash: string | null;
+  hasPromptChanges: boolean;
 }
 
 /**
@@ -58,6 +63,9 @@ export interface VersionDiffSummary {
   fromHash: string;
   toHash: string;
   hasChanges: boolean;
+  fromPromptHash: string | null;
+  toPromptHash: string | null;
+  hasPromptChanges: boolean;
   fromLineCount: number;
   toLineCount: number;
   sectionsAdded: string[];
@@ -76,6 +84,9 @@ export interface VersionFieldDiff {
   fromHash: string;
   toHash: string;
   hasChanges: boolean;
+  fromPromptHash: string | null;
+  toPromptHash: string | null;
+  hasPromptChanges: boolean;
   fields: Array<{
     path: string;
     type: 'added' | 'removed' | 'modified' | 'moved';
@@ -107,6 +118,9 @@ export interface VersionUnifiedDiff {
   fromHash: string;
   toHash: string;
   hasChanges: boolean;
+  fromPromptHash: string | null;
+  toPromptHash: string | null;
+  hasPromptChanges: boolean;
   unified: string;
   fromLineCount: number;
   toLineCount: number;

@@ -23,7 +23,7 @@ export interface Definition {
   name: string;
   version: string;
   status: DefinitionStatus;
-  yaml: string;
+  yaml?: string | null;
   hash: string;
   displayName: string;
   description: string;
@@ -42,6 +42,7 @@ export interface Definition {
   tier: Tier;
   visibility: Visibility;
   runtimeMd?: string | null;
+  promptHash?: string | null;
   translatorVersion?: string | null;
   schemaVersion?: string | null;
   executionCount: number;
