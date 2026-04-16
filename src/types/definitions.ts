@@ -32,8 +32,6 @@ export interface Definition {
   agentType?: AgentType | null;
   author?: string | null;
   tags?: string[] | null;
-  /** @deprecated Use authorId */
-  ownerId?: string;
   authorId: string;
   /** Org that owns this definition */
   orgId?: string | null;
@@ -68,8 +66,6 @@ export interface DefinitionListItem {
   description: string;
   domain: Domain;
   agentType?: AgentType | null;
-  /** @deprecated Use authorId */
-  ownerId?: string;
   authorId: string;
   orgId?: string | null;
   tier: Tier;

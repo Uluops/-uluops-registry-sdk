@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.2] - 2026-04-09
+
+### Fixed
+- `definitionSchema.yaml` field changed from required (`z.string()`) to optional (`z.string().nullish()`) — the API omits `yaml` from responses unless `include_yaml: true`, causing Zod validation failures on every SDK call after Zod 3.25.x upgrade
+- Updated `Definition` interface to match: `yaml?: string | null`
+
 ## [0.1.0] - 2026-02-05
 
 ### Added

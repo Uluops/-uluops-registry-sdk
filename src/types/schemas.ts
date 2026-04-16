@@ -42,7 +42,6 @@ export const definitionSchema = z.object({
   agentType: agentTypeSchema.nullish(),
   author: z.string().nullish(),
   tags: z.array(z.string()).nullish(),
-  ownerId: z.string().optional(),
   authorId: z.string(),
   orgId: z.string().nullish(),
   namespace: z.string().nullish(),
