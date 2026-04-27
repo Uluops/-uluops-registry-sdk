@@ -140,6 +140,7 @@ export interface GetDefinitionOptions {
 export interface CreateDefinitionBody {
   yaml: string;
   visibility?: Visibility;
+  provenance?: Provenance;
 }
 
 /**
@@ -156,6 +157,7 @@ export interface UpdateDefinitionBody {
   tags?: string[];
   changeSummary?: string;
   changeType?: ChangeType;
+  provenance?: Provenance;
 }
 
 /**
