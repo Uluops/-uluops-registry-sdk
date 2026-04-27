@@ -14,6 +14,28 @@ import type {
   Visibility,
 } from './enums.js';
 
+// ── Provenance Types ──────────────────────────────────────────
+
+export type AuthorshipType = 'human' | 'agent' | 'collaborative' | 'automated';
+export type ContributorRole = 'author' | 'optimizer' | 'reviewer' | 'editor' | 'publisher';
+export type ActorType = 'human' | 'agent';
+
+export interface Contributor {
+  id: string;
+  role: ContributorRole;
+  type: ActorType;
+  name?: string;
+  agentName?: string;
+  contributedAt?: string;
+}
+
+export interface Provenance {
+  authorshipType: AuthorshipType;
+  contributors: Contributor[];
+  dialecticRounds?: number;
+  optimizationRunId?: string;
+}
+
 /**
  * Full definition entity returned from the API
  */
@@ -31,6 +53,7 @@ export interface Definition {
   subdomain?: string | null;
   agentType?: AgentType | null;
   author?: string | null;
+  provenance?: Provenance | null;
   tags?: string[] | null;
   authorId: string;
   /** Org that owns this definition */
@@ -76,6 +99,7 @@ export interface DefinitionListItem {
   executionCount: number;
   forkCount: number;
   starCount: number;
+  authorshipType?: AuthorshipType | null;
 }
 
 /**
@@ -93,6 +117,8 @@ export interface ListDefinitionsQuery {
   tag?: string | string[];
   /** Filter by fork status: true = only forks, false = only originals */
   isFork?: boolean;
+  /** Filter by authorship type */
+  authorshipType?: AuthorshipType;
   limit?: number;
   offset?: number;
   sortBy?: SortField;

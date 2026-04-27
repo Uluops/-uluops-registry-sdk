@@ -3,6 +3,7 @@
  */
 
 import type { ChangeType } from './enums.js';
+import type { Provenance } from './definitions.js';
 
 /**
  * Version snapshot of a definition
@@ -21,6 +22,7 @@ export interface DefinitionVersion {
   createdBy: string;
   changeType?: ChangeType | null;
   changeSummary?: string | null;
+  provenance?: Provenance | null;
 }
 
 /**
