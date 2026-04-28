@@ -10,6 +10,7 @@ import type {
   Domain,
   SortField,
   SortOrder,
+  SubscriptionTier,
   Tier,
   Visibility,
 } from './enums.js';
@@ -61,6 +62,10 @@ export interface Definition {
   /** Org-scoped namespace (e.g., @ulu-labs/code-validator). Null if no org context. */
   namespace?: string | null;
   tier: Tier;
+  /** Minimum subscription tier required to access content */
+  minSubscription?: SubscriptionTier | null;
+  /** True when content was stripped by content gating (yaml/runtimeMd will be null) */
+  proRestricted?: boolean;
   visibility: Visibility;
   runtimeMd?: string | null;
   promptHash?: string | null;
@@ -92,6 +97,10 @@ export interface DefinitionListItem {
   authorId: string;
   orgId?: string | null;
   tier: Tier;
+  /** Minimum subscription tier required to access content */
+  minSubscription?: SubscriptionTier | null;
+  /** True when content was stripped by content gating */
+  proRestricted?: boolean;
   visibility: Visibility;
   createdAt: string;
   updatedAt: string;

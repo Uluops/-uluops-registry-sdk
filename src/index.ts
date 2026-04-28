@@ -44,6 +44,7 @@ export type {
   DefinitionStatus,
   Domain,
   AgentType,
+  SubscriptionTier,
   Tier,
   Visibility,
   ModelTier,

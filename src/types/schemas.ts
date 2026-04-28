@@ -8,6 +8,7 @@ import {
   DEFINITION_STATUSES,
   DEFINITION_TYPES,
   DOMAINS,
+  SUBSCRIPTION_TIERS,
   TIERS,
   VISIBILITIES,
 } from './enums.js';
@@ -21,6 +22,7 @@ const definitionStatusSchema = z.enum(DEFINITION_STATUSES);
 const domainSchema = z.enum(DOMAINS);
 const agentTypeSchema = z.enum(AGENT_TYPES);
 const tierSchema = z.enum(TIERS);
+const subscriptionTierSchema = z.enum(SUBSCRIPTION_TIERS);
 const visibilitySchema = z.enum(VISIBILITIES);
 
 // ============================================================================
@@ -59,6 +61,8 @@ export const definitionSchema = z.object({
   orgId: z.string().nullish(),
   namespace: z.string().nullish(),
   tier: tierSchema,
+  minSubscription: subscriptionTierSchema.nullish(),
+  proRestricted: z.boolean().optional(),
   visibility: visibilitySchema,
   runtimeMd: z.string().nullish(),
   promptHash: z.string().nullish(),

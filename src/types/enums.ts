@@ -33,6 +33,10 @@ export type AgentType = (typeof AGENT_TYPES)[number];
 export const TIERS = ['user', 'org', 'pro'] as const;
 export type Tier = (typeof TIERS)[number];
 
+// Subscription tiers (content gating)
+export const SUBSCRIPTION_TIERS = ['free', 'hobbyist', 'plus', 'pro', 'enterprise'] as const;
+export type SubscriptionTier = (typeof SUBSCRIPTION_TIERS)[number];
+
 // Visibility levels
 export const VISIBILITIES = ['private', 'unlisted', 'public'] as const;
 export type Visibility = (typeof VISIBILITIES)[number];
