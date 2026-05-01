@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-05-01
+
+### Fixed
+- Widen `Model`, `ModelCapabilities`, `DependencyGraph`, `ForkLineage`, and `ForkListResponse` schemas and TypeScript interfaces to match actual API responses — upstream-synced models omit `displayName`, `description`, `providerModelId`, `createdAt`, `updatedAt`, and some capability flags; dependency/fork endpoints return sparse objects for definitions without relationships
+- Analytics `definitionRef.version` made optional — cross-version analytics endpoints (evolution, translation, compare) don't always include a version field
+
+## [0.16.0] - 2026-05-01
+
+### Added
+- **Zod response validation on all 39 HTTP operations** (up from 8) — every API response is now runtime-validated against a Zod schema before reaching consumer code. Coverage: 8/40 (20%) → 39/40 (98%). Only `definitions.delete` (204 void) is intentionally unvalidated.
+- `src/types/response-schemas.ts` — 41 Zod schemas covering definitions, versions, models, forks, dependencies, users, validation, render, translation, analytics, and version diffs
+- `DateTimeStringSchema` / `NullableDateTimeSchema` shared datetime primitives (ISO 8601 + bare date format)
+- Conditional schema selection for `versions.diff()` — selects the correct schema from 5 shapes based on `full` and `format` parameters
+- Recursive `lineageNodeSchema` via `z.lazy()` with explicit `z.ZodType<LineageNode>` annotation
+- `createApiResponseSchema()` and `createListResponseSchema()` factory functions for test infrastructure
+- Contract test helpers (`test/contract-helpers.ts`): 10 mock data factories with `STRICT_CONTRACTS` safeParse guard, `mockValidatedEndpoint()` / `mockValidatedListEndpoint()` nock helpers
+- Response schema unit tests (`test/response-schemas.test.ts`): 30 positive/negative schema validation tests
+- 8 `ResponseValidationError` integration tests verifying schema wiring catches malformed API responses
+
+### Changed
+- Existing test mock data updated to match Zod schema contracts — 33 mock fixtures corrected (field names, shapes, required fields)
+
+### Removed
+- Dead `src/utils/` module (3 files) — re-exported from `@uluops/sdk-core` with zero internal references
+
 ## [0.11.2] - 2026-04-09
 
 ### Fixed

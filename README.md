@@ -63,7 +63,7 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 
 - **Full API Coverage**: Access all registry endpoints across 11 operation domains
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
-- **Type-Safe**: Complete TypeScript definitions with Zod runtime validation
+- **Type-Safe**: Complete TypeScript definitions with Zod runtime validation on all 39 operations (98% coverage)
 - **Dual Authentication**: API key (preferred) and JWT session support
 - **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429)
 - **Error Hierarchy**: Typed errors for precise error handling
@@ -230,6 +230,7 @@ const client = new RegistryClient({
   authBaseUrl: 'https://api.uluops.ai/api/v1/ops',    // Auth API base URL (for login/refresh)
   timeout: 30000,              // Request timeout in ms (default: 30000)
   retries: 3,                  // Retry count for transient errors (default: 3)
+  orgSlug: 'my-org',           // Organization slug for multi-tenancy
   debug: false,                // Enable debug logging
 
   // Callbacks
@@ -332,29 +333,42 @@ const def = await client.definitions.deprecate('agent', 'my-agent', '1.0.0', {
 });
 ```
 
+#### `archive(type, name, version)`
+
+Archive a deprecated definition. This is a terminal state that removes the definition from discovery.
+
+```typescript
+await client.definitions.archive('agent', 'my-agent', '1.0.0');
+```
+
 ---
 
 ### Versions (`client.versions`)
 
 Manage definition version history.
 
-#### `list(type, name)`
+#### `list(type, name, options?)`
 
 List all versions of a definition.
 
 ```typescript
-const { versions } = await client.versions.list('agent', 'code-validator');
+const { versions } = await client.versions.list('agent', 'code-validator', {
+  limit: 20,
+  offset: 0,
+});
 for (const v of versions) {
   console.log(`${v.version}: ${v.status}`);
 }
 ```
 
-#### `diff(type, name, fromVersion, toVersion)`
+#### `diff(type, name, fromVersion, toVersion, options?)`
 
 Compare two versions showing changes.
 
 ```typescript
-const diff = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0');
+const diff = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0', {
+  format: 'unified',
+});
 console.log(diff.sectionsAdded, diff.sectionsRemoved, diff.sectionsModified);
 ```
 
@@ -426,7 +440,7 @@ Check if a definition can be forked.
 
 ```typescript
 const check = await client.forks.checkForkable('agent', 'code-validator', '1.0.0');
-if (check.forkable) {
+if (check.canFork) {
   console.log('Can fork!');
 }
 ```
@@ -437,8 +451,8 @@ Get the fork ancestry chain.
 
 ```typescript
 const lineage = await client.forks.getLineage('agent', 'my-validator', '1.0.0');
-console.log('Parent:', lineage.parent);
-console.log('Ancestors:', lineage.ancestors);
+console.log('Source:', lineage.source);
+console.log('Chain:', lineage.chain);
 ```
 
 #### `list(type, name, version)`
@@ -564,7 +578,7 @@ Resolve an alias to a concrete model.
 
 ```typescript
 const resolution = await client.models.resolveAlias('opus');
-console.log(`${resolution.provider}/${resolution.modelId}`);
+console.log(`${resolution.alias} → ${resolution.target}`);
 ```
 
 #### `sync()`
@@ -573,7 +587,7 @@ Sync model catalog from models.dev (admin only).
 
 ```typescript
 const result = await client.models.sync();
-console.log(`Synced: ${result.added} added, ${result.updated} updated`);
+console.log(`Synced: ${result.modelsAdded} added, ${result.modelsUpdated} updated`);
 ```
 
 ---
@@ -606,7 +620,7 @@ console.log(users['id1']?.username);
 
 Get rendered definition output.
 
-#### `get(type, name, version)`
+#### `get(type, name, version, options?)`
 
 Get the fully rendered/resolved definition.
 
@@ -734,6 +748,7 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 | `ULUOPS_PASSWORD` | Password for session-based auth | - |
 | `ULUOPS_REGISTRY_URL` | Registry API base URL | `https://api.uluops.ai/api/v1/registry` |
 | `ULUOPS_AUTH_URL` | Auth API base URL (for `login()`) | `https://api.uluops.ai/api/v1/ops` |
+| `ULUOPS_ORG_SLUG` | Organization slug for multi-tenancy | - |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
 Create a `.env` file in your project:
