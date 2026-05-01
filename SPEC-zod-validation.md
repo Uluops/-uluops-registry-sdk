@@ -30,7 +30,7 @@ When a Zod schema is passed via `{ schema }`, the HttpClient runs `schema.parse(
 
 Consumers should catch `ResponseValidationError` separately from `SdkApiError` (network/HTTP errors) to distinguish schema drift from connectivity issues.
 
-**If a schema proves too strict in production** (e.g., API adds a field that triggers a Zod error), widen the specific field or add `.passthrough()` to the affected schema. Never remove the schema entirely — that returns to silent `as T` casting.
+**If a schema proves too strict in production** (e.g., rejects a valid API response due to an untyped field), widen the specific field with `.nullable()` or `.optional()` as appropriate. Never remove the schema entirely — that returns to silent `as T` casting. Default `.strip()` means unknown fields don't cause failures, so this should only happen if a field's *type* changes, not if new fields are added.
 
 ## Current State
 
@@ -119,6 +119,8 @@ Low-complexity types with flat or shallow structure.
 ### Phase 2: List & Composite Response Schemas (~14 new schemas, 6 files)
 Types that embed other schemas. `providerSchema` from Phase 1 is reused here.
 
+**List response pattern** (from ops-sdk): For endpoints returning arrays, wrap inline with `z.array(itemSchema)` at the call site. For endpoints returning paginated objects (`{ definitions: [...], total, limit, offset }`), create named schemas. Also add generic factory functions `createApiResponseSchema<T>()` and `createListResponseSchema<T>()` for test infrastructure (not used in operations directly).
+
 **New schemas in `src/types/response-schemas.ts`:**
 - `definitionListItemSchema` — lighter than `definitionSchema`, subset of fields + `authorshipType?`
 - `definitionListResponseSchema` — `{ definitions: definitionListItemSchema[], total, limit, offset, hasMore? }`
@@ -131,12 +133,12 @@ Types that embed other schemas. `providerSchema` from Phase 1 is reused here.
 - `modelAliasSchema` — `{ alias, provider, modelId, description?, scope?, deprecated?, ... }`
 - `forkSchema` — `{ id, sourceDefinitionId, derivedDefinitionId, sourceVersion, createdAt }`
 - `forkResponseSchema` — `{ definition: definitionSchema, fork: forkSchema, source: definitionListItemSchema, warnings?: string[] }`
-- `forkLineageSchema` — `{ current: definitionListItemSchema, source: definitionListItemSchema.nullish(), chain: z.array(definitionListItemSchema) }`
+- `forkLineageSchema` — `{ current: definitionListItemSchema, source: definitionListItemSchema.nullable().optional(), chain: z.array(definitionListItemSchema) }`
 - `forkListResponseSchema` — `{ forks: ..., total, limit, offset }`
 - `dependencyNodeSchema` + `dependencyEdgeSchema` + `dependencyGraphSchema` — `{ nodes[], edges[], cycleDetected, cycles? }`
 - `upgradeResultSchema` — `{ definition: definitionSchema, version: string, changes: z.record(z.string(), z.unknown()) }`
 - `batchUserResponseSchema` — `z.record(z.string(), publicUserSchema.nullable())`
-- `aliasResolutionSchema` — `{ alias, target, model: modelSchema.nullish() }`
+- `aliasResolutionSchema` — `{ alias, target, model: modelSchema.nullable().optional() }`
 
 **Wire to:** `definitions.list`, `versions.list`, `models.list`, `models.get`, `models.listAliases`, `models.resolveAlias`, `forks.create`, `forks.getLineage`, `forks.list`, `dependencies.get`, `dependencies.getDependents`, `translation.upgrade`, `users.batch`
 
@@ -189,21 +191,38 @@ const schema = options?.full
 ```
 
 ### Phase 5: Tests
-For each newly-validated operation, add two test categories:
 
-1. **Schema unit tests** in `test/response-schemas.test.ts` (new file): test each schema with `safeParse` against valid data and verify rejection of malformed data. Pattern: construct minimal valid object, assert `safeParse` succeeds; omit a required field, assert `safeParse` fails.
+Following the ops-sdk test infrastructure pattern (contract-helpers + schema tests + operation tests):
 
-2. **Operation integration tests** in existing `test/operations.test.ts`: for at least one operation per file, add a nock test that returns a response missing a required field and assert `ResponseValidationError` is thrown. This verifies the schema is actually wired to the HTTP call.
+**5a. Contract helpers** in `test/contract-helpers.ts` (new file):
+- **Mock data factories**: One `createMock*()` function per response schema. Each factory accepts `overrides: Partial<z.infer<typeof Schema>>` and calls `safeParse` on the built object — bad test fixtures fail immediately at test time, not at runtime. Guard with `STRICT_CONTRACTS` env flag.
+- **Nock helpers**: `mockValidatedEndpoint()` validates mock data against the schema before registering the nock interceptor. `mockValidatedListEndpoint()` for array responses.
+- **Re-exports**: All response schemas re-exported from contract-helpers so test files need only one import.
+
+**5b. Schema unit tests** in `test/response-schemas.test.ts` (new file):
+- Test each schema with `safeParse` against valid factory data — assert success
+- Test rejection of malformed data — omit a required field, assert failure
+- Test nullable fields accept both `null` and the typed value
+
+**5c. Operation integration tests** in existing test files:
+- For each operation group, add two tests (ops-sdk pattern):
+  1. Missing required field → `rejects.toThrow(/API response validation failed/)`
+  2. Wrong field type → `rejects.toThrow(/API response validation failed/)`
+- Match on message string, not error class, for resilience
+- Add `afterEach` nock pending-interceptor check: unconsumed interceptors = broken URL in test
 
 ## Schema Design Principles
 
+Following the ops-sdk patterns exactly for cross-SDK consistency:
+
 1. **Reuse shared sub-schemas** — `definitionListItemSchema`, `failureDomainDistributionSchema`, `healthFactorSchema`, `definitionRefSchema` appear in multiple response types
 2. **Use enum schemas from existing constants** — `DEFINITION_TYPES`, `DOMAINS`, `AGENT_TYPES`, etc. already have `as const` arrays ready for `z.enum()`
-3. **Use `.nullish()` for optional nullable fields** — matches the TypeScript interface pattern used throughout
-4. **Use `z.lazy()` with explicit type annotation for recursive types** — `LineageNode` references itself; requires `const lineageNodeSchema: z.ZodType<LineageNode> = z.lazy(...)` because Zod cannot infer recursive types
+3. **Use `.nullable()` and `.optional()` separately, never `.nullish()`** — `.nullable()` = DB column allows NULL (field always present, value may be null). `.optional()` = API sometimes omits the field entirely (e.g., stripped by serializer, legacy field). `.nullable().optional()` = nullable when present but sometimes omitted. `.nullish()` is reserved for input schemas only — the API never sends `undefined`, so response schemas should not accept it.
+4. **Use `z.lazy()` for recursive types AND file-ordering breaks** — `LineageNode` is genuinely recursive and requires `const lineageNodeSchema: z.ZodType<LineageNode> = z.lazy(...)`. Also use `z.lazy()` to break forward-reference cycles when a schema defined earlier in the file embeds one defined later (ops-sdk pattern from `SaveRunResponseSchema`).
 5. **Validate at the operation layer** — pass `{ schema }` to HTTP client calls, same pattern as definitions.ts
-6. **Use `.passthrough()` on top-level response schemas** — Zod's default is `.strip()` which silently drops unknown keys. Using `.passthrough()` means API-added fields survive through to consumers, maintaining forward compatibility. Sub-schemas (e.g., `healthFactorSchema`) can use default `.strip()` since their shapes are stable.
+6. **Default `.strip()` behavior (no `.passthrough()`)** — matches ops-sdk. Unknown fields from API additions are silently stripped. This means the SDK only exposes fields it has typed, and future API additions don't cause validation failures but also don't reach consumers. This is the deliberate trade-off: strict typed contracts over forward-compatible pass-through.
 7. **New schemas go in `src/types/response-schemas.ts`** — separate from existing `schemas.ts` (which holds input/shared schemas). Matches the ops-sdk file organization.
+8. **`DateTimeStringSchema` and `NullableDateTimeSchema` shared primitives** — dual-format datetime handling: `z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}/))`. Reuse for all timestamp fields (`createdAt`, `updatedAt`, `publishedAt`, `deprecatedAt`, etc.).
 
 ## Pre-Implementation Verification
 
@@ -224,7 +243,7 @@ This prevents the scenario where schemas enforce a drifted interface and throw `
 | 2 | ~17 | 6 | Medium |
 | 3 | ~11 | 2 | High |
 | 4 | 5 | 1 | Medium |
-| 5 | 0 | 2 test files | Medium |
+| 5 | 0 | 3 test files (+1 new contract-helpers) | Medium |
 | **Total** | **~41** | **~16** | |
 
 After completion: **40/40 HTTP calls validated (100%)**, up from 8/40 (20%). The 1 void call (`definitions.remove`) is intentionally excluded.
@@ -233,6 +252,6 @@ After completion: **40/40 HTTP calls validated (100%)**, up from 8/40 (20%). The
 
 Low — all changes are additive. Adding schema validation to a call site cannot break existing behavior unless the API is already returning data that doesn't match the TypeScript types.
 
-If a mismatch is discovered, it's a **bug worth surfacing** — but it should be surfaced during the pre-implementation verification step (above), not in production. The `.passthrough()` default on top-level schemas provides a safety net against API field additions.
+If a mismatch is discovered, it's a **bug worth surfacing** — but it should be surfaced during the pre-implementation verification step (above), not in production. The default `.strip()` behavior means API-added fields are silently dropped rather than causing validation failures — this is the same trade-off the ops-sdk makes.
 
 The `schema.parse()` call in the HTTP client throws `ResponseValidationError` (from `@uluops/sdk-core/errors`) on mismatch, which is a clear signal to the consumer rather than silent corruption.
