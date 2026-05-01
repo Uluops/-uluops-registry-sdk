@@ -16,7 +16,7 @@ import * as executionOps from '../src/operations/executions.js';
 import * as translationOps from '../src/operations/translation.js';
 import * as modelOps from '../src/operations/models.js';
 import * as renderOps from '../src/operations/render.js';
-import { TEST_API_KEY, MOCK_BASE_URL, createMockDefinition } from './setup.js';
+import { TEST_API_KEY, MOCK_BASE_URL, createMockDefinition, createMockModel } from './setup.js';
 import { MAX_YAML_SIZE } from '../src/config/constants.js';
 
 describe('operations', () => {
@@ -95,19 +95,19 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/definitions')
           .query({ type: 'agent', limit: '10' })
-          .reply(200, { data: { items: [], total: 0, limit: 10, offset: 0 } });
+          .reply(200, { data: { definitions: [], total: 0, limit: 10, offset: 0 } });
 
         const result = await definitionOps.list(http, { type: 'agent', limit: 10 });
-        expect(result.items).toEqual([]);
+        expect(result.definitions).toEqual([]);
       });
 
       it('should list definitions without filters', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions')
-          .reply(200, { data: { items: [], total: 0, limit: 50, offset: 0 } });
+          .reply(200, { data: { definitions: [], total: 0, limit: 50, offset: 0 } });
 
         const result = await definitionOps.list(http);
-        expect(result).toHaveProperty('items');
+        expect(result).toHaveProperty('definitions');
         expect(result).toHaveProperty('total', 0);
       });
     });
@@ -209,8 +209,8 @@ describe('operations', () => {
           .reply(200, {
             data: {
               versions: [
-                { version: '1.0.0', hash: 'abc', createdAt: '2026-01-01', createdBy: 'user1' },
-                { version: '2.0.0', hash: 'def', createdAt: '2026-01-02', createdBy: 'user1' },
+                { id: '00000000-0000-4000-a000-000000000001', version: '1.0.0', hash: 'abc', createdAt: '2026-01-01', createdBy: 'user1' },
+                { id: '00000000-0000-4000-a000-000000000002', version: '2.0.0', hash: 'def', createdAt: '2026-01-02', createdBy: 'user1' },
               ],
               total: 2,
               limit: 50,
@@ -231,7 +231,7 @@ describe('operations', () => {
           .query({ limit: '3', offset: '5' })
           .reply(200, {
             data: {
-              versions: [{ version: '3.0.0', hash: 'ghi', createdAt: '2026-01-03', createdBy: 'user1' }],
+              versions: [{ id: '00000000-0000-4000-a000-000000000003', version: '3.0.0', hash: 'ghi', createdAt: '2026-01-03', createdBy: 'user1' }],
               total: 10,
               limit: 3,
               offset: 5,
@@ -252,7 +252,22 @@ describe('operations', () => {
           .get('/definitions/agent/my-agent/diff')
           .query({ from: '1.0.0', to: '2.0.0' })
           .reply(200, {
-            data: { added: [], removed: [], modified: ['description'] },
+            data: {
+              fromVersion: '1.0.0',
+              toVersion: '2.0.0',
+              fromHash: 'hash1',
+              toHash: 'hash2',
+              hasChanges: true,
+              fromPromptHash: null,
+              toPromptHash: null,
+              hasPromptChanges: false,
+              fromLineCount: 50,
+              toLineCount: 55,
+              sectionsAdded: [],
+              sectionsRemoved: [],
+              sectionsModified: ['description'],
+              sectionsUnchanged: ['name'],
+            },
           });
 
         const result = await versionOps.diff(
@@ -262,7 +277,7 @@ describe('operations', () => {
           '1.0.0',
           '2.0.0'
         );
-        expect(result.modified).toContain('description');
+        expect(result.sectionsModified).toContain('description');
       });
     });
   });
@@ -282,12 +297,12 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .post('/validate/agent', { yaml: 'invalid' })
           .reply(200, {
-            data: { valid: false, errors: ['Missing required field: name'] },
+            data: { valid: false, errors: [{ path: '/name', message: 'Missing required field: name' }] },
           });
 
         const result = await validationOps.validate(http, 'agent', 'invalid');
         expect(result.valid).toBe(false);
-        expect(result.errors).toContain('Missing required field: name');
+        expect(result.errors).toEqual([{ path: '/name', message: 'Missing required field: name' }]);
       });
     });
   });
@@ -299,7 +314,7 @@ describe('operations', () => {
           .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
           .reply(200, {
             data: {
-              nodes: [{ id: '1', name: 'dep1' }],
+              nodes: [{ id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'dep1', version: '1.0.0', status: 'published' }],
               edges: [],
               cycleDetected: false,
             },
@@ -340,7 +355,7 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/dependents')
           .reply(200, {
-            data: { nodes: [{ id: 'dep1' }], edges: [], cycleDetected: false },
+            data: { nodes: [{ id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'dep1', version: '1.0.0', status: 'published' }], edges: [], cycleDetected: false },
           });
 
         const result = await dependencyOps.getDependents(
@@ -359,12 +374,60 @@ describe('operations', () => {
       it('should create fork', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/original@1.0.0/fork', { newName: 'forked' })
-          .reply(201, { data: { name: 'forked', forkedFromId: 'original-id' } });
+          .reply(201, {
+            data: {
+              definition: {
+                id: '00000000-0000-4000-a000-000000000002',
+                type: 'agent',
+                name: 'forked',
+                version: '1.0.0',
+                status: 'draft',
+                hash: 'sha256:forked',
+                displayName: 'Forked Agent',
+                description: 'A forked agent',
+                domain: 'software',
+                authorId: '00000000-0000-4000-a000-000000000001',
+                tier: 'user',
+                visibility: 'private',
+                executionCount: 0,
+                forkCount: 0,
+                starCount: 0,
+                forkedFromId: '00000000-0000-4000-a000-000000000001',
+                createdAt: '2026-01-01T00:00:00Z',
+                updatedAt: '2026-01-01T00:00:00Z',
+              },
+              fork: {
+                id: '00000000-0000-4000-a000-000000000003',
+                sourceDefinitionId: '00000000-0000-4000-a000-000000000001',
+                derivedDefinitionId: '00000000-0000-4000-a000-000000000002',
+                sourceVersion: '1.0.0',
+                createdAt: '2026-01-01T00:00:00Z',
+              },
+              source: {
+                id: '00000000-0000-4000-a000-000000000001',
+                type: 'agent',
+                name: 'original',
+                version: '1.0.0',
+                status: 'published',
+                displayName: 'Original Agent',
+                description: 'The original agent',
+                domain: 'software',
+                authorId: '00000000-0000-4000-a000-000000000001',
+                tier: 'user',
+                visibility: 'public',
+                createdAt: '2026-01-01T00:00:00Z',
+                updatedAt: '2026-01-01T00:00:00Z',
+                executionCount: 10,
+                forkCount: 1,
+                starCount: 0,
+              },
+            },
+          });
 
         const result = await forkOps.create(http, 'agent', 'original', '1.0.0', {
           newName: 'forked',
         });
-        expect(result.name).toBe('forked');
+        expect(result.definition.name).toBe('forked');
       });
     });
 
@@ -372,7 +435,7 @@ describe('operations', () => {
       it('should check if forkable', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/forkable')
-          .reply(200, { data: { forkable: true } });
+          .reply(200, { data: { canFork: true } });
 
         const result = await forkOps.checkForkable(
           http,
@@ -380,7 +443,7 @@ describe('operations', () => {
           'my-agent',
           '1.0.0'
         );
-        expect(result.forkable).toBe(true);
+        expect(result.canFork).toBe(true);
       });
     });
 
@@ -388,10 +451,32 @@ describe('operations', () => {
       it('should get lineage', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/lineage')
-          .reply(200, { data: { parent: null, ancestors: [] } });
+          .reply(200, {
+            data: {
+              current: {
+                id: '00000000-0000-4000-a000-000000000001',
+                type: 'agent',
+                name: 'my-agent',
+                version: '1.0.0',
+                status: 'published',
+                displayName: 'My Agent',
+                description: 'A test agent',
+                domain: 'software',
+                authorId: '00000000-0000-4000-a000-000000000001',
+                tier: 'user',
+                visibility: 'public',
+                createdAt: '2026-01-01T00:00:00Z',
+                updatedAt: '2026-01-01T00:00:00Z',
+                executionCount: 0,
+                forkCount: 0,
+                starCount: 0,
+              },
+              chain: [],
+            },
+          });
 
         const result = await forkOps.getLineage(http, 'agent', 'my-agent', '1.0.0');
-        expect(result.parent).toBeNull();
+        expect(result.chain).toEqual([]);
       });
     });
 
@@ -399,10 +484,18 @@ describe('operations', () => {
       it('should list forks', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/forks')
-          .reply(200, { data: [{ id: 'fork1' }, { id: 'fork2' }] });
+          .reply(200, {
+            data: {
+              items: [
+                { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', status: 'published', displayName: 'Fork 1', description: 'First fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
+                { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'fork-2', version: '1.0.0', status: 'published', displayName: 'Fork 2', description: 'Second fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
+              ],
+              total: 2,
+            },
+          });
 
         const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
-        expect(result).toHaveLength(2);
+        expect(result.items).toHaveLength(2);
       });
     });
   });
@@ -476,10 +569,10 @@ describe('operations', () => {
       it('should get translator version', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/translation/version')
-          .reply(200, { data: { version: '2.0.0', schemaVersion: '1.0.0' } });
+          .reply(200, { data: { translatorVersion: '2.0.0', schema: '1.0.0' } });
 
         const result = await translationOps.getVersion(http);
-        expect(result.version).toBe('2.0.0');
+        expect(result.translatorVersion).toBe('2.0.0');
       });
     });
 
@@ -487,7 +580,7 @@ describe('operations', () => {
       it('should retranslate definition', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/retranslate')
-          .reply(200, { data: { translatorVersion: '2.0.0' } });
+          .reply(200, { data: createMockDefinition({ translatorVersion: '2.0.0' }) });
 
         const result = await translationOps.retranslate(
           http,
@@ -501,7 +594,7 @@ describe('operations', () => {
       it('should retranslate with force option', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/retranslate', { force: true })
-          .reply(200, { data: { translatorVersion: '2.0.0' } });
+          .reply(200, { data: createMockDefinition({ translatorVersion: '2.0.0' }) });
 
         const result = await translationOps.retranslate(
           http,
@@ -518,12 +611,18 @@ describe('operations', () => {
       it('should upgrade legacy definition', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/legacy-agent/upgrade', { yaml: 'old format' })
-          .reply(200, { data: { upgraded: true, yaml: 'new format' } });
+          .reply(200, {
+            data: {
+              definition: createMockDefinition({ name: 'legacy-agent', translatorVersion: '2.0.0' }),
+              version: '2.0.0',
+              changes: { translatorVersion: '1.0.0 -> 2.0.0' },
+            },
+          });
 
         const result = await translationOps.upgrade(http, 'agent', 'legacy-agent', {
           yaml: 'old format',
         });
-        expect(result.upgraded).toBe(true);
+        expect(result.version).toBe('2.0.0');
       });
     });
   });
@@ -543,7 +642,7 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/models')
           .query({ provider: 'anthropic', tier: 'premium' })
-          .reply(200, { data: { models: [{ provider: 'anthropic' }], total: 1 } });
+          .reply(200, { data: { models: [createMockModel({ provider: 'anthropic' })], aliases: [], total: 1 } });
 
         const result = await modelOps.list(http, {
           provider: 'anthropic',
@@ -557,7 +656,7 @@ describe('operations', () => {
       it('should get model', async () => {
         nock(MOCK_BASE_URL)
           .get('/models/anthropic/claude-3-opus')
-          .reply(200, { data: { provider: 'anthropic', modelId: 'claude-3-opus' } });
+          .reply(200, { data: createMockModel({ provider: 'anthropic', modelId: 'claude-3-opus' }) });
 
         const result = await modelOps.get(http, 'anthropic', 'claude-3-opus');
         expect(result.provider).toBe('anthropic');
@@ -568,10 +667,18 @@ describe('operations', () => {
       it('should list providers', async () => {
         nock(MOCK_BASE_URL)
           .get('/models/providers')
-          .reply(200, { data: [{ name: 'anthropic' }, { name: 'openai' }] });
+          .reply(200, {
+            data: {
+              providers: [
+                { id: 'anthropic', name: 'anthropic', status: 'active' },
+                { id: 'openai', name: 'openai', status: 'active' },
+              ],
+              total: 2,
+            },
+          });
 
         const result = await modelOps.listProviders(http);
-        expect(result).toHaveLength(2);
+        expect(result.providers).toHaveLength(2);
       });
     });
 
@@ -579,10 +686,18 @@ describe('operations', () => {
       it('should list aliases', async () => {
         nock(MOCK_BASE_URL)
           .get('/models/aliases')
-          .reply(200, { data: [{ alias: 'opus' }, { alias: 'sonnet' }] });
+          .reply(200, {
+            data: {
+              aliases: [
+                { alias: 'opus', provider: 'anthropic', modelId: 'claude-3-opus' },
+                { alias: 'sonnet', provider: 'anthropic', modelId: 'claude-3-sonnet' },
+              ],
+              total: 2,
+            },
+          });
 
         const result = await modelOps.listAliases(http);
-        expect(result).toHaveLength(2);
+        expect(result.aliases).toHaveLength(2);
       });
     });
 
@@ -591,11 +706,11 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/models/resolve/opus')
           .reply(200, {
-            data: { alias: 'opus', resolved: true, provider: 'anthropic' },
+            data: { alias: 'opus', target: 'anthropic/claude-3-opus' },
           });
 
         const result = await modelOps.resolveAlias(http, 'opus');
-        expect(result.resolved).toBe(true);
+        expect(result.alias).toBe('opus');
       });
     });
 
@@ -603,10 +718,10 @@ describe('operations', () => {
       it('should sync models', async () => {
         nock(MOCK_BASE_URL)
           .post('/models/sync')
-          .reply(200, { data: { added: 5, updated: 2 } });
+          .reply(200, { data: { providersAdded: 1, providersUpdated: 0, modelsAdded: 5, modelsUpdated: 2 } });
 
         const result = await modelOps.sync(http);
-        expect(result.added).toBe(5);
+        expect(result.modelsAdded).toBe(5);
       });
     });
   });
@@ -748,7 +863,10 @@ describe('operations', () => {
           .get('/definitions/agent/my-agent@1.0.0/forks')
           .reply(200, {
             data: {
-              items: [{ name: 'fork-1' }, { name: 'fork-2' }],
+              items: [
+                { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', status: 'published', displayName: 'Fork 1', description: 'First fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
+                { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'fork-2', version: '1.0.0', status: 'published', displayName: 'Fork 2', description: 'Second fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
+              ],
               total: 2,
             },
           });

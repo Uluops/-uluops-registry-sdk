@@ -123,6 +123,7 @@ const MOCK_MODEL_DEFAULTS: Record<string, unknown> = {
     tools: true,
     streaming: true,
     extendedThinking: false,
+    structuredOutput: false,
   },
   tier: 'premium',
   status: 'available',

@@ -25,7 +25,7 @@ describe('RegistryClient', () => {
   describe('definitions', () => {
     it('should list definitions', async () => {
       const mockResponse = {
-        items: [createMockDefinition()],
+        definitions: [createMockDefinition()],
         total: 1,
         limit: 50,
         offset: 0,
@@ -34,7 +34,7 @@ describe('RegistryClient', () => {
       mockEndpoint('get', '/definitions', mockResponse);
 
       const result = await client.definitions.list();
-      expect(result.items).toHaveLength(1);
+      expect(result.definitions).toHaveLength(1);
       expect(result.total).toBe(1);
     });
 
@@ -100,18 +100,15 @@ describe('RegistryClient', () => {
     it('should resolve an alias', async () => {
       const mockResolution = {
         alias: 'opus',
-        resolved: true,
-        provider: 'anthropic',
-        modelId: 'claude-3-opus',
-        deprecated: false,
+        target: 'anthropic/claude-3-opus',
         model: createMockModel(),
       };
 
       mockEndpoint('get', '/models/resolve/opus', mockResolution);
 
       const result = await client.models.resolveAlias('opus');
-      expect(result.resolved).toBe(true);
-      expect(result.provider).toBe('anthropic');
+      expect(result.alias).toBe('opus');
+      expect(result.target).toBe('anthropic/claude-3-opus');
     });
   });
 

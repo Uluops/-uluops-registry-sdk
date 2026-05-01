@@ -137,6 +137,13 @@ describe('analytics', () => {
             root: { type: 'agent', name: 'code-validator', version: '1.0.0', authorId: 'u1', relationship: 'root', healthScore: 67, translatorVersion: '4.0.0', status: 'published', createdAt: '2026-01-01', versions: [], forks: [] },
             totalVersions: 3,
             totalForks: 1,
+            statistics: {
+              totalExecutions: 100,
+              activeVariants: 3,
+              mostForked: null,
+              mostExecuted: null,
+              highestEffectiveness: null,
+            },
             stale: false,
           },
         });
@@ -156,13 +163,14 @@ describe('analytics', () => {
         .get('/analytics/definitions/agent/code-validator/evolution')
         .reply(200, {
           data: {
-            definition: { type: 'agent', name: 'code-validator' },
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             versions: [
-              { version: '1.0.0', publishedAt: '2026-01-01', translatorVersion: '3.0.0', metrics: { passRate: 70, avgScore: 75, runCount: 40, healthScore: 60 } },
-              { version: '1.1.0', publishedAt: '2026-02-01', translatorVersion: '4.0.0', metrics: { passRate: 85, avgScore: 88, runCount: 60, healthScore: 80 } },
+              { version: '1.0.0', publishedAt: '2026-01-01', translatorVersion: '3.0.0', changeSummary: null, metrics: { passRate: 70, avgScore: 75, runCount: 40, healthScore: 60 } },
+              { version: '1.1.0', publishedAt: '2026-02-01', translatorVersion: '4.0.0', changeSummary: null, metrics: { passRate: 85, avgScore: 88, runCount: 60, healthScore: 80 } },
             ],
             trend: 'improving',
             trendConfidence: 'medium',
+            overallTrend: { trajectory: 'consistent_improvement', passRateChange: null, avgScoreChange: null, epistemicDensityChange: null },
             stale: false,
           },
         });
@@ -182,12 +190,15 @@ describe('analytics', () => {
         .get('/analytics/definitions/agent/code-validator/translation')
         .reply(200, {
           data: {
-            definition: { type: 'agent', name: 'code-validator' },
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             currentTranslatorVersion: '4.1.0',
             groups: [
               { translatorVersion: '3.0.0', isCurrent: false, versions: ['1.0.0'], aggregateMetrics: { totalRuns: 40, avgPassRate: 70, avgScore: 75 } },
               { translatorVersion: '4.1.0', isCurrent: true, versions: ['1.1.0'], aggregateMetrics: { totalRuns: 60, avgPassRate: 85, avgScore: 88 } },
             ],
+            upgradeAvailable: false,
+            projectedImprovement: null,
+            recommendation: null,
             stale: false,
           },
         });
@@ -208,11 +219,11 @@ describe('analytics', () => {
         .query({ versions: '1.0.0,1.1.0,1.2.0' })
         .reply(200, {
           data: {
-            definition: { type: 'agent', name: 'code-validator' },
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             versions: [
-              { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40, healthScore: 60, translatorVersion: '3.0.0' },
-              { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60, healthScore: 80, translatorVersion: '4.0.0' },
-              { version: '1.2.0', passRate: 90, avgScore: 92, runCount: 30, healthScore: 85, translatorVersion: '4.1.0' },
+              { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40, healthScore: 60, translatorVersion: '3.0.0', failureDomainDistribution: null, epistemicDensity: null },
+              { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60, healthScore: 80, translatorVersion: '4.0.0', failureDomainDistribution: null, epistemicDensity: null },
+              { version: '1.2.0', passRate: 90, avgScore: 92, runCount: 30, healthScore: 85, translatorVersion: '4.1.0', failureDomainDistribution: null, epistemicDensity: null },
             ],
             stale: false,
           },
@@ -227,7 +238,7 @@ describe('analytics', () => {
       nock(MOCK_BASE_URL)
         .get('/analytics/definitions/command/commit-push/effectiveness/compare')
         .query({ versions: '1.0.0,2.0.0' })
-        .reply(200, { data: { definition: { type: 'command', name: 'commit-push' }, versions: [], stale: false } });
+        .reply(200, { data: { definition: { type: 'command', name: 'commit-push', version: '1.0.0' }, versions: [], stale: false } });
 
       const result = await analyticsOps.compare(http, 'command', 'commit-push', ['1.0.0', '2.0.0']);
       expect(result.definition.name).toBe('commit-push');
@@ -260,11 +271,13 @@ describe('analytics', () => {
         .get('/analytics/definitions/agent/code-validator/diff/1.0.0/1.1.0/impact')
         .reply(200, {
           data: {
-            definition: { type: 'agent', name: 'code-validator' },
-            diff: { hasChanges: true, sectionsModified: ['agent'], fromLineCount: 100, toLineCount: 120 },
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
+            diff: { hasChanges: true, sectionsAdded: [], sectionsRemoved: [], sectionsModified: ['agent'], fromLineCount: 100, toLineCount: 120 },
             from: { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40 },
             to: { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60 },
             deltas: { passRateDelta: 15, avgScoreDelta: 13, runCountDelta: 20 },
+            categorizedChanges: [],
+            taxonomyShift: null,
             caveats: ['OBSERVATIONAL: metric deltas are correlational, not causal.'],
             stale: false,
           },
