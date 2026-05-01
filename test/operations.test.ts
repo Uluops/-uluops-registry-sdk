@@ -1023,9 +1023,9 @@ describe('operations', () => {
       await expect(forkOps.checkForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
     });
 
-    it('dependencies.get rejects missing cycleDetected', async () => {
+    it('dependencies.get rejects wrong type for nodes', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
-        data: { nodes: [], edges: [] },
+        data: { nodes: 'not-an-array', edges: [], cycleDetected: false },
       });
       await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
     });

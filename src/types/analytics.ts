@@ -63,7 +63,7 @@ export interface CompositionLiftResult {
 }
 
 export interface DefinitionEffectiveness {
-  definition: { type: string; name: string; version: string };
+  definition: { type: string; name: string; version?: string };
   period: { start: string; end: string };
   metrics: {
     executionCount: number;
@@ -81,7 +81,7 @@ export interface DefinitionEffectiveness {
 // ── Health ─────────────────────────────────────────────────────────
 
 export interface DefinitionHealth {
-  definition: { type: string; name: string; version: string };
+  definition: { type: string; name: string; version?: string };
   healthScore: number | null;
   grade: string | null;
   provisional: boolean;

@@ -215,8 +215,8 @@ describe('dependencyGraphSchema', () => {
     expect(dependencyGraphSchema.safeParse(createMockDependencyGraph()).success).toBe(true);
   });
 
-  it('rejects missing cycleDetected', () => {
-    expect(dependencyGraphSchema.safeParse({ nodes: [], edges: [] }).success).toBe(false);
+  it('rejects wrong type for nodes', () => {
+    expect(dependencyGraphSchema.safeParse({ nodes: 'not-an-array' }).success).toBe(false);
   });
 });
 

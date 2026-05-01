@@ -19,8 +19,9 @@ import { forkResponseSchema, forkableCheckSchema, forkLineageSchema, forkListRes
  * Fork list response
  */
 export interface ForkListResponse {
-  items: DefinitionListItem[];
-  total: number;
+  items?: DefinitionListItem[];
+  forks?: DefinitionListItem[];
+  total?: number;
 }
 
 /**

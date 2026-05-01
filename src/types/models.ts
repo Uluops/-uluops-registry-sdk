@@ -8,11 +8,11 @@ import type { ModelStatus, ModelTier } from './enums.js';
  * Model capabilities flags
  */
 export interface ModelCapabilities {
-  vision: boolean;
-  tools: boolean;
-  streaming: boolean;
-  extendedThinking: boolean;
-  structuredOutput: boolean;
+  vision?: boolean;
+  tools?: boolean;
+  streaming?: boolean;
+  extendedThinking?: boolean;
+  structuredOutput?: boolean;
 }
 
 /**
@@ -21,9 +21,9 @@ export interface ModelCapabilities {
 export interface Model {
   provider: string;
   modelId: string;
-  displayName: string;
-  description: string;
-  providerModelId: string;
+  displayName?: string;
+  description?: string;
+  providerModelId?: string;
   capabilities: ModelCapabilities;
   tier: ModelTier;
   status: ModelStatus;
@@ -31,8 +31,8 @@ export interface Model {
   releaseDate?: string | null;
   deprecationDate?: string | null;
   successor?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

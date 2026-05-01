@@ -28,9 +28,9 @@ export interface DependencyEdge {
  * Full dependency graph
  */
 export interface DependencyGraph {
-  nodes: DependencyNode[];
-  edges: DependencyEdge[];
-  cycleDetected: boolean;
+  nodes?: DependencyNode[];
+  edges?: DependencyEdge[];
+  cycleDetected?: boolean;
   cycles?: string[][];
 }
 

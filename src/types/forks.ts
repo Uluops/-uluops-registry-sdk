@@ -49,9 +49,9 @@ export interface ForkableCheck {
  * Fork lineage response
  */
 export interface ForkLineage {
-  current: DefinitionListItem;
+  current?: DefinitionListItem;
   source?: DefinitionListItem | null;
-  chain: DefinitionListItem[];
+  chain?: DefinitionListItem[];
 }
 
 /**

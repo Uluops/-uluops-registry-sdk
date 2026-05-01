@@ -193,22 +193,22 @@ export const versionsListResponseSchema = z.object({
   offset: z.number().int().nonnegative(),
 });
 
-/** Model capabilities */
+/** Model capabilities — all fields optional for upstream-synced models */
 export const modelCapabilitiesSchema = z.object({
-  vision: z.boolean(),
-  tools: z.boolean(),
-  streaming: z.boolean(),
-  extendedThinking: z.boolean(),
-  structuredOutput: z.boolean(),
+  vision: z.boolean().optional(),
+  tools: z.boolean().optional(),
+  streaming: z.boolean().optional(),
+  extendedThinking: z.boolean().optional(),
+  structuredOutput: z.boolean().optional(),
 });
 
-/** Model entity */
+/** Model entity — many fields optional for upstream-synced models */
 export const modelSchema = z.object({
   provider: z.string(),
   modelId: z.string(),
-  displayName: z.string(),
-  description: z.string(),
-  providerModelId: z.string(),
+  displayName: z.string().optional(),
+  description: z.string().optional(),
+  providerModelId: z.string().optional(),
   capabilities: modelCapabilitiesSchema,
   tier: modelTierResponseSchema,
   status: modelStatusResponseSchema,
@@ -216,8 +216,8 @@ export const modelSchema = z.object({
   releaseDate: z.string().nullable().optional(),
   deprecationDate: z.string().nullable().optional(),
   successor: z.string().nullable().optional(),
-  createdAt: DateTimeStringSchema,
-  updatedAt: DateTimeStringSchema,
+  createdAt: DateTimeStringSchema.optional(),
+  updatedAt: DateTimeStringSchema.optional(),
 });
 
 /** Model alias */
@@ -322,15 +322,16 @@ export const forkResponseSchema = z.object({
 
 /** GET /definitions/{type}/{name}/{version}/lineage (forks) */
 export const forkLineageSchema = z.object({
-  current: definitionListItemSchema,
+  current: definitionListItemSchema.optional(),
   source: definitionListItemSchema.nullable().optional(),
-  chain: z.array(definitionListItemSchema),
+  chain: z.array(definitionListItemSchema).optional(),
 });
 
 /** GET /definitions/{type}/{name}/{version}/forks */
 export const forkListResponseSchema = z.object({
-  items: z.array(definitionListItemSchema),
-  total: z.number().int().nonnegative(),
+  items: z.array(definitionListItemSchema).optional(),
+  total: z.number().int().nonnegative().optional(),
+  forks: z.array(definitionListItemSchema).optional(),
 });
 
 /** Dependency graph node */
@@ -351,9 +352,9 @@ export const dependencyEdgeSchema = z.object({
 
 /** GET /definitions/{type}/{name}/{version}/dependencies|dependents */
 export const dependencyGraphSchema = z.object({
-  nodes: z.array(dependencyNodeSchema),
-  edges: z.array(dependencyEdgeSchema),
-  cycleDetected: z.boolean(),
+  nodes: z.array(dependencyNodeSchema).optional(),
+  edges: z.array(dependencyEdgeSchema).optional(),
+  cycleDetected: z.boolean().optional(),
   cycles: z.array(z.array(z.string())).optional(),
 });
 
@@ -392,11 +393,11 @@ export const healthFactorSchema = z.object({
   }).optional(),
 });
 
-/** Definition reference — shared across analytics types */
+/** Definition reference — shared across analytics types. Version is optional for cross-version analytics. */
 export const definitionRefSchema = z.object({
   type: z.string(),
   name: z.string(),
-  version: z.string(),
+  version: z.string().optional(),
 });
 
 /** Effectiveness metrics */
