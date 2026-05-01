@@ -11,6 +11,14 @@ import type {
   ListModelsQuery,
   ModelSyncResult,
 } from '../types/models.js';
+import {
+  modelsListResponseSchema,
+  modelSchema,
+  providersListResponseSchema,
+  aliasesListResponseSchema,
+  aliasResolutionSchema,
+  modelSyncResultSchema,
+} from '../types/response-schemas.js';
 
 /**
  * Models list response
@@ -44,7 +52,7 @@ export async function list(
   http: RegistryHttpClient,
   query?: ListModelsQuery
 ): Promise<ModelsListResponse> {
-  return http.get<ModelsListResponse>('/models', query);
+  return http.get<ModelsListResponse>('/models', query, { schema: modelsListResponseSchema });
 }
 
 /**
@@ -55,21 +63,21 @@ export async function get(
   provider: string,
   modelId: string
 ): Promise<Model> {
-  return http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`);
+  return http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined, { schema: modelSchema });
 }
 
 /**
  * List all providers
  */
 export async function listProviders(http: RegistryHttpClient): Promise<ProvidersListResponse> {
-  return http.get<ProvidersListResponse>('/models/providers');
+  return http.get<ProvidersListResponse>('/models/providers', undefined, { schema: providersListResponseSchema });
 }
 
 /**
  * List all model aliases
  */
 export async function listAliases(http: RegistryHttpClient): Promise<AliasesListResponse> {
-  return http.get<AliasesListResponse>('/models/aliases');
+  return http.get<AliasesListResponse>('/models/aliases', undefined, { schema: aliasesListResponseSchema });
 }
 
 /**
@@ -79,7 +87,7 @@ export async function resolveAlias(
   http: RegistryHttpClient,
   alias: string
 ): Promise<AliasResolution> {
-  return http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`);
+  return http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined, { schema: aliasResolutionSchema });
 }
 
 /**
@@ -87,5 +95,5 @@ export async function resolveAlias(
  * Requires admin role or pro subscription
  */
 export async function sync(http: RegistryHttpClient): Promise<ModelSyncResult> {
-  return http.post<ModelSyncResult>('/models/sync');
+  return http.post<ModelSyncResult>('/models/sync', undefined, { schema: modelSyncResultSchema });
 }

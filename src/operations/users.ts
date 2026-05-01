@@ -5,13 +5,14 @@
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { PublicUser, BatchUserResponse } from '../types/users.js';
 import { validateUuid } from '../config/validators.js';
+import { publicUserSchema, batchUserResponseSchema } from '../types/response-schemas.js';
 
 /**
  * Get public user information by ID
  */
 export async function get(http: RegistryHttpClient, id: string): Promise<PublicUser> {
   validateUuid(id, 'userId');
-  return http.get<PublicUser>(`/users/${id}`);
+  return http.get<PublicUser>(`/users/${id}`, undefined, { schema: publicUserSchema });
 }
 
 /**
@@ -35,5 +36,5 @@ export async function batch(
     validateUuid(id, 'userId');
   }
 
-  return http.post<BatchUserResponse>('/users/batch', { ids });
+  return http.post<BatchUserResponse>('/users/batch', { ids }, { schema: batchUserResponseSchema });
 }

@@ -6,6 +6,7 @@ import type { RegistryHttpClient } from '../http/http-client.js';
 import type { ValidationResult } from '../types/responses.js';
 import type { DefinitionType } from '../types/enums.js';
 import { validateDefinitionType, validateYamlSize } from '../config/validators.js';
+import { validationResultSchema } from '../types/response-schemas.js';
 
 /**
  * Validate YAML content without storing
@@ -18,5 +19,5 @@ export async function validate(
   validateDefinitionType(type);
   validateYamlSize(yaml);
 
-  return http.post<ValidationResult>(`/validate/${type}`, { yaml });
+  return http.post<ValidationResult>(`/validate/${type}`, { yaml }, { schema: validationResultSchema });
 }

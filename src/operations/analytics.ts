@@ -17,6 +17,16 @@ import type {
   CompareResult,
   DiffImpactResult,
 } from '../types/analytics.js';
+import {
+  definitionEffectivenessSchema,
+  definitionHealthSchema,
+  ecosystemOverviewSchema,
+  lineageResultSchema,
+  evolutionResultSchema,
+  translationAnalyticsResultSchema,
+  compareResultSchema,
+  diffImpactResultSchema,
+} from '../types/response-schemas.js';
 
 /** Build the analytics path prefix for definition-scoped endpoints. */
 function analyticsPath(type: DefinitionType, name: string): string {
@@ -39,6 +49,7 @@ export async function getEffectiveness(
   return http.get<DefinitionEffectiveness>(
     `${analyticsPath(type, name)}/effectiveness`,
     query,
+    { schema: definitionEffectivenessSchema },
   );
 }
 
@@ -58,6 +69,7 @@ export async function getHealth(
   return http.get<DefinitionHealth>(
     `${analyticsPath(type, name)}/health`,
     query,
+    { schema: definitionHealthSchema },
   );
 }
 
@@ -69,7 +81,7 @@ export async function getHealth(
 export async function getEcosystemOverview(
   http: RegistryHttpClient,
 ): Promise<EcosystemOverview> {
-  return http.get<EcosystemOverview>('/analytics/ecosystem/overview');
+  return http.get<EcosystemOverview>('/analytics/ecosystem/overview', undefined, { schema: ecosystemOverviewSchema });
 }
 
 // ── Lineage ───────────────────────────────────────────────────────
@@ -84,6 +96,8 @@ export async function getLineage(
 ): Promise<LineageResult> {
   return http.get<LineageResult>(
     `${analyticsPath(type, name)}/lineage`,
+    undefined,
+    { schema: lineageResultSchema },
   );
 }
 
@@ -99,6 +113,8 @@ export async function getEvolution(
 ): Promise<EvolutionResult> {
   return http.get<EvolutionResult>(
     `${analyticsPath(type, name)}/evolution`,
+    undefined,
+    { schema: evolutionResultSchema },
   );
 }
 
@@ -114,6 +130,8 @@ export async function getTranslation(
 ): Promise<TranslationAnalyticsResult> {
   return http.get<TranslationAnalyticsResult>(
     `${analyticsPath(type, name)}/translation`,
+    undefined,
+    { schema: translationAnalyticsResultSchema },
   );
 }
 
@@ -134,6 +152,7 @@ export async function compare(
   return http.get<CompareResult>(
     `${analyticsPath(type, name)}/effectiveness/compare`,
     { versions: versions.join(',') },
+    { schema: compareResultSchema },
   );
 }
 
@@ -152,5 +171,7 @@ export async function getDiffImpact(
 ): Promise<DiffImpactResult> {
   return http.get<DiffImpactResult>(
     `${analyticsPath(type, name)}/diff/${fromVersion}/${toVersion}/impact`,
+    undefined,
+    { schema: diffImpactResultSchema },
   );
 }

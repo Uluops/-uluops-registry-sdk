@@ -13,6 +13,7 @@ import type {
 import type { DefinitionListItem } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
+import { forkResponseSchema, forkableCheckSchema, forkLineageSchema, forkListResponseSchema } from '../types/response-schemas.js';
 
 /**
  * Fork list response
@@ -33,7 +34,7 @@ export async function create(
   body: ForkDefinitionBody
 ): Promise<ForkResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/fork`;
-  return http.post<ForkResponse>(path, body);
+  return http.post<ForkResponse>(path, body, { schema: forkResponseSchema });
 }
 
 /**
@@ -47,7 +48,7 @@ export async function checkForkable(
   options?: CheckForkableOptions
 ): Promise<ForkableCheck> {
   const path = `${buildDefinitionPath(type, name, version)}/forkable`;
-  return http.get<ForkableCheck>(path, options);
+  return http.get<ForkableCheck>(path, options, { schema: forkableCheckSchema });
 }
 
 /**
@@ -60,7 +61,7 @@ export async function getLineage(
   version: string
 ): Promise<ForkLineage> {
   const path = `${buildDefinitionPath(type, name, version)}/lineage`;
-  return http.get<ForkLineage>(path);
+  return http.get<ForkLineage>(path, undefined, { schema: forkLineageSchema });
 }
 
 /**
@@ -73,5 +74,5 @@ export async function list(
   version: string
 ): Promise<ForkListResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/forks`;
-  return http.get<ForkListResponse>(path);
+  return http.get<ForkListResponse>(path, undefined, { schema: forkListResponseSchema });
 }

@@ -6,6 +6,7 @@ import type { RegistryHttpClient } from '../http/http-client.js';
 import type { DependencyGraph, GetDependenciesOptions } from '../types/dependencies.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
+import { dependencyGraphSchema } from '../types/response-schemas.js';
 
 /**
  * Get the dependency graph for a definition
@@ -18,7 +19,7 @@ export async function get(
   options?: GetDependenciesOptions
 ): Promise<DependencyGraph> {
   const path = `${buildDefinitionPath(type, name, version)}/dependencies`;
-  return http.get<DependencyGraph>(path, options);
+  return http.get<DependencyGraph>(path, options, { schema: dependencyGraphSchema });
 }
 
 /**
@@ -31,5 +32,5 @@ export async function getDependents(
   version: string
 ): Promise<DependencyGraph> {
   const path = `${buildDefinitionPath(type, name, version)}/dependents`;
-  return http.get<DependencyGraph>(path);
+  return http.get<DependencyGraph>(path, undefined, { schema: dependencyGraphSchema });
 }

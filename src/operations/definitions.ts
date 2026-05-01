@@ -15,6 +15,7 @@ import type {
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateYamlSize, validatePagination } from '../config/validators.js';
 import { definitionSchema } from '../types/schemas.js';
+import { definitionListResponseSchema } from '../types/response-schemas.js';
 
 /**
  * Paginated list response
@@ -37,7 +38,7 @@ export async function list(
   if (query) {
     validatePagination(query.limit, query.offset);
   }
-  return http.get<DefinitionListResponse>('/definitions', query);
+  return http.get<DefinitionListResponse>('/definitions', query, { schema: definitionListResponseSchema });
 }
 
 /**
@@ -126,6 +127,10 @@ export async function deprecate(
   return http.post<Definition>(path, body, { schema: definitionSchema });
 }
 
+/**
+ * Archive a deprecated definition
+ * This is a terminal state that removes the definition from discovery
+ */
 export async function archive(
   http: RegistryHttpClient,
   type: DefinitionType,

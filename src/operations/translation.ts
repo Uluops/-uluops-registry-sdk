@@ -12,12 +12,14 @@ import type {
 import type { Definition } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateYamlSize } from '../config/validators.js';
+import { definitionSchema } from '../types/schemas.js';
+import { translatorVersionSchema, upgradeResultSchema } from '../types/response-schemas.js';
 
 /**
  * Get the current translator version
  */
 export async function getVersion(http: RegistryHttpClient): Promise<TranslatorVersion> {
-  return http.get<TranslatorVersion>('/definitions/translation/version');
+  return http.get<TranslatorVersion>('/definitions/translation/version', undefined, { schema: translatorVersionSchema });
 }
 
 /**
@@ -32,7 +34,7 @@ export async function retranslate(
   options?: RetranslateOptions
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/retranslate`;
-  return http.post<Definition>(path, options);
+  return http.post<Definition>(path, options, { schema: definitionSchema });
 }
 
 /**
@@ -46,5 +48,5 @@ export async function upgrade(
 ): Promise<UpgradeResult> {
   validateYamlSize(body.yaml);
   const path = `${buildDefinitionPath(type, name)}/upgrade`;
-  return http.post<UpgradeResult>(path, body);
+  return http.post<UpgradeResult>(path, body, { schema: upgradeResultSchema });
 }

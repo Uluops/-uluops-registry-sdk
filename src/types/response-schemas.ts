@@ -1,0 +1,788 @@
+/**
+ * Zod Response Validation Schemas
+ *
+ * Runtime validation for API responses. All schemas validate the inner
+ * payload after the HttpClient auto-unwraps the { data: T } envelope.
+ *
+ * Conventions (matching ops-sdk):
+ * - .nullable() = DB allows NULL, field always present
+ * - .optional() = API sometimes omits the field
+ * - .nullable().optional() = nullable when present, sometimes omitted
+ * - No .nullish() in response schemas (API never sends undefined)
+ * - Default .strip() behavior (unknown fields silently dropped)
+ */
+
+import { z } from 'zod';
+import {
+  DEFINITION_TYPES,
+  DEFINITION_STATUSES,
+  DOMAINS,
+  AGENT_TYPES,
+  TIERS,
+  SUBSCRIPTION_TIERS,
+  VISIBILITIES,
+  MODEL_TIERS,
+  MODEL_STATUSES,
+  CHANGE_TYPES,
+} from './enums.js';
+
+// ============================================================================
+// Shared Primitives
+// ============================================================================
+
+/** Accepts ISO 8601 with offset or bare YYYY-MM-DD date strings. */
+export const DateTimeStringSchema = z.string()
+  .datetime({ offset: true })
+  .or(z.string().regex(/^\d{4}-\d{2}-\d{2}/));
+
+export const NullableDateTimeSchema = DateTimeStringSchema.nullable();
+
+// Enum schemas for response validation
+const definitionTypeResponseSchema = z.enum(DEFINITION_TYPES);
+const definitionStatusResponseSchema = z.enum(DEFINITION_STATUSES);
+const domainResponseSchema = z.enum(DOMAINS);
+const agentTypeResponseSchema = z.enum(AGENT_TYPES);
+const tierResponseSchema = z.enum(TIERS);
+const subscriptionTierResponseSchema = z.enum(SUBSCRIPTION_TIERS);
+const visibilityResponseSchema = z.enum(VISIBILITIES);
+const modelTierResponseSchema = z.enum(MODEL_TIERS);
+const modelStatusResponseSchema = z.enum(MODEL_STATUSES);
+const changeTypeResponseSchema = z.enum(CHANGE_TYPES);
+
+// ============================================================================
+// Phase 1: Simple Response Schemas
+// ============================================================================
+
+/** Validation error detail */
+const validationErrorSchema = z.object({
+  path: z.string(),
+  message: z.string(),
+  code: z.string().optional(),
+});
+
+/** POST /validate/{type} */
+export const validationResultSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(validationErrorSchema).optional(),
+});
+
+/** Target adapter warning */
+const targetWarningSchema = z.object({
+  field: z.string(),
+  reason: z.string(),
+  level: z.enum(['info', 'warn', 'error']),
+});
+
+/** GET /definitions/{type}/{name}/{version}/render, POST /render/{type}/preview */
+export const renderResultSchema = z.object({
+  markdown: z.string(),
+  promptHash: z.string().nullable().optional(),
+  variables: z.array(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  target: z.string().optional(),
+  warnings: z.array(targetWarningSchema).optional(),
+});
+
+/** GET /definitions/translation/version */
+export const translatorVersionSchema = z.object({
+  translatorVersion: z.string(),
+  releaseDate: z.string().optional(),
+  schema: z.string().optional(),
+});
+
+/** GET /definitions/{type}/{name}/{version}/forkable */
+export const forkableCheckSchema = z.object({
+  canFork: z.boolean(),
+  reason: z.string().optional(),
+  requiresSubscription: z.boolean().optional(),
+});
+
+/** GET /users/{id} */
+export const publicUserSchema = z.object({
+  id: z.string(),
+  username: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  websiteUrl: z.string().nullable().optional(),
+  avatar: z.string().nullable().optional(),
+  avatarMimeType: z.string().nullable().optional(),
+});
+
+/** POST /models/sync */
+export const modelSyncResultSchema = z.object({
+  message: z.string().optional(),
+  providersAdded: z.number().int().nonnegative(),
+  providersUpdated: z.number().int().nonnegative(),
+  modelsAdded: z.number().int().nonnegative(),
+  modelsUpdated: z.number().int().nonnegative(),
+  duration: z.string().optional(),
+});
+
+/** Provider entity */
+export const providerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  logoUrl: z.string().optional(),
+  docUrl: z.string().optional(),
+  apiUrl: z.string().optional(),
+  status: z.enum(['active', 'inactive', 'deprecated']),
+});
+
+/** GET /models/providers */
+export const providersListResponseSchema = z.object({
+  providers: z.array(providerSchema),
+  total: z.number().int().nonnegative(),
+});
+
+// ============================================================================
+// Phase 2: List & Composite Response Schemas
+// ============================================================================
+
+/** Lightweight definition for list responses */
+export const definitionListItemSchema = z.object({
+  id: z.string().uuid(),
+  type: definitionTypeResponseSchema,
+  name: z.string(),
+  version: z.string(),
+  status: definitionStatusResponseSchema,
+  displayName: z.string(),
+  description: z.string(),
+  domain: domainResponseSchema,
+  agentType: agentTypeResponseSchema.nullable().optional(),
+  authorId: z.string(),
+  orgId: z.string().nullable().optional(),
+  tier: tierResponseSchema,
+  minSubscription: subscriptionTierResponseSchema.nullable().optional(),
+  proRestricted: z.boolean().optional(),
+  visibility: visibilityResponseSchema,
+  createdAt: DateTimeStringSchema,
+  updatedAt: DateTimeStringSchema,
+  publishedAt: NullableDateTimeSchema.optional(),
+  executionCount: z.number().int().nonnegative(),
+  forkCount: z.number().int().nonnegative(),
+  starCount: z.number().int().nonnegative(),
+  authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']).nullable().optional(),
+});
+
+/** GET /definitions */
+export const definitionListResponseSchema = z.object({
+  definitions: z.array(definitionListItemSchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+  hasMore: z.boolean().optional(),
+});
+
+/** Version list item */
+export const versionListItemSchema = z.object({
+  id: z.string().uuid(),
+  version: z.string(),
+  hash: z.string(),
+  promptHash: z.string().nullable().optional(),
+  createdAt: DateTimeStringSchema,
+  createdBy: z.string(),
+  changeType: changeTypeResponseSchema.nullable().optional(),
+  changeSummary: z.string().nullable().optional(),
+});
+
+/** GET /definitions/{type}/{name}/versions */
+export const versionsListResponseSchema = z.object({
+  versions: z.array(versionListItemSchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+/** Model capabilities */
+export const modelCapabilitiesSchema = z.object({
+  vision: z.boolean(),
+  tools: z.boolean(),
+  streaming: z.boolean(),
+  extendedThinking: z.boolean(),
+  structuredOutput: z.boolean(),
+});
+
+/** Model entity */
+export const modelSchema = z.object({
+  provider: z.string(),
+  modelId: z.string(),
+  displayName: z.string(),
+  description: z.string(),
+  providerModelId: z.string(),
+  capabilities: modelCapabilitiesSchema,
+  tier: modelTierResponseSchema,
+  status: modelStatusResponseSchema,
+  regions: z.array(z.string()).nullable().optional(),
+  releaseDate: z.string().nullable().optional(),
+  deprecationDate: z.string().nullable().optional(),
+  successor: z.string().nullable().optional(),
+  createdAt: DateTimeStringSchema,
+  updatedAt: DateTimeStringSchema,
+});
+
+/** Model alias */
+export const modelAliasSchema = z.object({
+  alias: z.string(),
+  provider: z.string(),
+  modelId: z.string(),
+  description: z.string().optional(),
+  scope: z.enum(['global', 'user', 'team']).optional(),
+  deprecated: z.boolean().optional(),
+  createdAt: DateTimeStringSchema.optional(),
+  updatedAt: DateTimeStringSchema.optional(),
+});
+
+/** GET /models */
+export const modelsListResponseSchema = z.object({
+  models: z.array(modelSchema),
+  aliases: z.array(modelAliasSchema),
+  total: z.number().int().nonnegative(),
+});
+
+/** GET /models/aliases */
+export const aliasesListResponseSchema = z.object({
+  aliases: z.array(modelAliasSchema),
+  total: z.number().int().nonnegative(),
+});
+
+/** GET /models/resolve/{alias} */
+export const aliasResolutionSchema = z.object({
+  alias: z.string(),
+  target: z.string(),
+  model: modelSchema.nullable().optional(),
+});
+
+/** Fork record */
+export const forkSchema = z.object({
+  id: z.string().uuid(),
+  sourceDefinitionId: z.string().uuid(),
+  derivedDefinitionId: z.string().uuid(),
+  sourceVersion: z.string(),
+  createdAt: DateTimeStringSchema,
+});
+
+/** POST /definitions/{type}/{name}/{version}/fork */
+export const forkResponseSchema = z.object({
+  definition: z.lazy(() => {
+    // Forward reference to definitionSchema from schemas.ts — import at use site
+    // to avoid circular dependency. Using inline shape matching definitionSchema.
+    return z.object({
+      id: z.string().uuid(),
+      type: definitionTypeResponseSchema,
+      name: z.string(),
+      version: z.string(),
+      status: definitionStatusResponseSchema,
+      yaml: z.string().nullable().optional(),
+      hash: z.string(),
+      displayName: z.string(),
+      description: z.string(),
+      domain: domainResponseSchema,
+      subdomain: z.string().nullable().optional(),
+      agentType: agentTypeResponseSchema.nullable().optional(),
+      author: z.string().nullable().optional(),
+      provenance: z.object({
+        authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']),
+        contributors: z.array(z.object({
+          id: z.string(),
+          role: z.enum(['author', 'optimizer', 'reviewer', 'editor', 'publisher']),
+          type: z.enum(['human', 'agent']),
+          name: z.string().optional(),
+          agentName: z.string().optional(),
+          contributedAt: z.string().optional(),
+        })),
+        dialecticRounds: z.number().int().nonnegative().optional(),
+        optimizationRunId: z.string().optional(),
+      }).nullable().optional(),
+      tags: z.array(z.string()).nullable().optional(),
+      authorId: z.string(),
+      orgId: z.string().nullable().optional(),
+      namespace: z.string().nullable().optional(),
+      tier: tierResponseSchema,
+      minSubscription: subscriptionTierResponseSchema.nullable().optional(),
+      proRestricted: z.boolean().optional(),
+      visibility: visibilityResponseSchema,
+      runtimeMd: z.string().nullable().optional(),
+      promptHash: z.string().nullable().optional(),
+      translatorVersion: z.string().nullable().optional(),
+      schemaVersion: z.string().nullable().optional(),
+      executionCount: z.number().int().nonnegative(),
+      forkCount: z.number().int().nonnegative(),
+      starCount: z.number().int().nonnegative(),
+      forkedFromId: z.string().uuid().nullable().optional(),
+      createdAt: DateTimeStringSchema,
+      updatedAt: DateTimeStringSchema,
+      publishedAt: NullableDateTimeSchema.optional(),
+      deprecatedAt: NullableDateTimeSchema.optional(),
+    });
+  }),
+  fork: forkSchema,
+  source: definitionListItemSchema,
+  warnings: z.array(z.string()).optional(),
+});
+
+/** GET /definitions/{type}/{name}/{version}/lineage (forks) */
+export const forkLineageSchema = z.object({
+  current: definitionListItemSchema,
+  source: definitionListItemSchema.nullable().optional(),
+  chain: z.array(definitionListItemSchema),
+});
+
+/** GET /definitions/{type}/{name}/{version}/forks */
+export const forkListResponseSchema = z.object({
+  items: z.array(definitionListItemSchema),
+  total: z.number().int().nonnegative(),
+});
+
+/** Dependency graph node */
+export const dependencyNodeSchema = z.object({
+  id: z.string().uuid(),
+  type: definitionTypeResponseSchema,
+  name: z.string(),
+  version: z.string(),
+  status: definitionStatusResponseSchema,
+});
+
+/** Dependency graph edge */
+export const dependencyEdgeSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  type: z.string(),
+});
+
+/** GET /definitions/{type}/{name}/{version}/dependencies|dependents */
+export const dependencyGraphSchema = z.object({
+  nodes: z.array(dependencyNodeSchema),
+  edges: z.array(dependencyEdgeSchema),
+  cycleDetected: z.boolean(),
+  cycles: z.array(z.array(z.string())).optional(),
+});
+
+/** POST /definitions/{type}/{name}/upgrade */
+export const upgradeResultSchema = z.object({
+  definition: z.lazy(() => forkResponseSchema.shape.definition),
+  version: z.string(),
+  changes: z.record(z.string(), z.unknown()),
+});
+
+/** POST /users/batch */
+export const batchUserResponseSchema = z.record(z.string(), publicUserSchema.nullable());
+
+// ============================================================================
+// Phase 3: Analytics Response Schemas
+// ============================================================================
+
+/** Failure domain distribution — shared across analytics types */
+export const failureDomainDistributionSchema = z.object({
+  STR: z.number(),
+  SEM: z.number(),
+  PRA: z.number(),
+  EPI: z.number(),
+});
+
+/** Health factor — shared across effectiveness and health */
+export const healthFactorSchema = z.object({
+  factor: z.string(),
+  score: z.number(),
+  weight: z.number(),
+  status: z.enum(['excellent', 'good', 'needs_attention', 'critical']),
+  detail: z.string(),
+  raw: z.object({
+    value: z.number(),
+    threshold: z.number(),
+  }).optional(),
+});
+
+/** Definition reference — shared across analytics types */
+export const definitionRefSchema = z.object({
+  type: z.string(),
+  name: z.string(),
+  version: z.string(),
+});
+
+/** Effectiveness metrics */
+const effectivenessMetricsSchema = z.object({
+  passRate: z.number(),
+  avgScore: z.number(),
+  scoreStdDev: z.number().nullable(),
+  issueYield: z.number(),
+  falsePositiveRate: z.number(),
+  resolutionRate: z.number(),
+  regressionRate: z.number().nullable(),
+  avgResolutionTimeHours: z.number().nullable(),
+  failureDomainDistribution: failureDomainDistributionSchema,
+  epistemicDensity: z.number(),
+});
+
+/** Constituent agent metrics for composition lift */
+const constituentAgentMetricsSchema = z.object({
+  type: z.string(),
+  name: z.string(),
+  independentAvgScore: z.number().nullable(),
+  independentRunCount: z.number().int().nonnegative(),
+});
+
+/** Lift statistics */
+const liftStatisticsSchema = z.object({
+  standardError: z.number(),
+  ci95: z.tuple([z.number(), z.number()]),
+  significant: z.boolean(),
+  sampleSizes: z.object({
+    pipeline: z.number().int().nonnegative(),
+    independent: z.number().int().nonnegative(),
+  }),
+});
+
+/** Composition lift result */
+const compositionLiftResultSchema = z.object({
+  compositionLift: z.number().nullable(),
+  pipelineAvgScore: z.number().nullable(),
+  independentMeanScore: z.number().nullable(),
+  constituentAgents: z.array(constituentAgentMetricsSchema),
+  statistics: liftStatisticsSchema.nullable(),
+  caveats: z.array(z.string()),
+});
+
+/** GET /analytics/definitions/{type}/{name}/effectiveness */
+export const definitionEffectivenessSchema = z.object({
+  definition: definitionRefSchema,
+  period: z.object({
+    start: z.string(),
+    end: z.string(),
+  }),
+  metrics: z.object({
+    executionCount: z.number().int().nonnegative(),
+    uniqueProjects: z.number().int().nonnegative(),
+    uniqueUsers: z.number().int().nonnegative(),
+    effectiveness: effectivenessMetricsSchema.nullable(),
+    healthScore: z.number().nullable(),
+    factorCompleteness: z.number(),
+    healthFactors: z.array(healthFactorSchema),
+    compositionLift: compositionLiftResultSchema.nullable().optional(),
+  }),
+  stale: z.boolean(),
+});
+
+/** GET /analytics/definitions/{type}/{name}/health */
+export const definitionHealthSchema = z.object({
+  definition: definitionRefSchema,
+  healthScore: z.number().nullable(),
+  grade: z.string().nullable(),
+  provisional: z.boolean(),
+  caveats: z.array(z.string()),
+  issueProfile: z.object({
+    failureDomainDistribution: failureDomainDistributionSchema,
+    epistemicDensity: z.number(),
+    dominantDomain: z.string(),
+    interpretation: z.string(),
+  }).nullable(),
+  factors: z.array(healthFactorSchema),
+  stale: z.boolean(),
+});
+
+/** GET /analytics/ecosystem/overview */
+export const ecosystemOverviewSchema = z.object({
+  definitions: z.object({
+    total: z.number().int().nonnegative(),
+    byType: z.record(z.string(), z.number()).transform(v => v as Partial<Record<'agent' | 'command' | 'workflow' | 'pipeline', number>>),
+  }),
+  execution: z.object({
+    totalRuns: z.number().nullable(),
+    uniqueProjects: z.number().nullable(),
+  }),
+  effectiveness: z.object({
+    avgHealthScore: z.number().nullable(),
+    ecosystemTaxonomy: z.object({
+      totalIssues: z.number().int().nonnegative(),
+      failureDomainDistribution: failureDomainDistributionSchema,
+      avgEpistemicDensity: z.number(),
+    }).nullable(),
+    topPerformers: z.array(z.object({
+      type: z.string(),
+      name: z.string(),
+      healthScore: z.number(),
+      epistemicDensity: z.number(),
+    })),
+    needsAttention: z.array(z.object({
+      type: z.string(),
+      name: z.string(),
+      healthScore: z.number(),
+      reason: z.string(),
+    })),
+  }),
+  stale: z.boolean(),
+});
+
+/** Lineage node — recursive via z.lazy() */
+import type { LineageNode } from './analytics.js';
+
+export const lineageNodeSchema: z.ZodType<LineageNode> = z.lazy(() => z.object({
+  type: z.string(),
+  name: z.string(),
+  version: z.string(),
+  authorId: z.string(),
+  relationship: z.enum(['root', 'version', 'fork']),
+  healthScore: z.number().nullable(),
+  translatorVersion: z.string().nullable(),
+  status: z.string(),
+  createdAt: z.string().nullable(),
+  versions: z.array(lineageNodeSchema),
+  forks: z.array(lineageNodeSchema),
+}));
+
+/** Lineage statistics */
+const lineageStatisticsSchema = z.object({
+  totalExecutions: z.number().int().nonnegative(),
+  activeVariants: z.number().int().nonnegative(),
+  mostForked: z.object({
+    name: z.string(),
+    version: z.string(),
+    forkCount: z.number().int().nonnegative(),
+  }).nullable(),
+  mostExecuted: z.object({
+    name: z.string(),
+    version: z.string(),
+    executionCount: z.number().int().nonnegative(),
+  }).nullable(),
+  highestEffectiveness: z.object({
+    name: z.string(),
+    version: z.string(),
+    healthScore: z.number(),
+  }).nullable(),
+});
+
+/** GET /analytics/definitions/{type}/{name}/lineage */
+export const lineageResultSchema = z.object({
+  root: lineageNodeSchema,
+  totalVersions: z.number().int().nonnegative(),
+  totalForks: z.number().int().nonnegative(),
+  statistics: lineageStatisticsSchema,
+  stale: z.boolean(),
+});
+
+/** Evolution data point */
+const evolutionPointSchema = z.object({
+  version: z.string(),
+  publishedAt: z.string().nullable(),
+  translatorVersion: z.string().nullable(),
+  changeSummary: z.string().nullable(),
+  metrics: z.object({
+    passRate: z.number(),
+    avgScore: z.number().nullable(),
+    runCount: z.number().int().nonnegative(),
+    healthScore: z.number().nullable(),
+  }).nullable(),
+});
+
+/** Overall trend */
+const overallTrendSchema = z.object({
+  trajectory: z.enum(['consistent_improvement', 'consistent_decline', 'stable', 'volatile', 'insufficient_data']),
+  passRateChange: z.string().nullable(),
+  avgScoreChange: z.string().nullable(),
+  epistemicDensityChange: z.string().nullable(),
+});
+
+/** GET /analytics/definitions/{type}/{name}/evolution */
+export const evolutionResultSchema = z.object({
+  definition: definitionRefSchema,
+  versions: z.array(evolutionPointSchema),
+  trend: z.enum(['improving', 'declining', 'stable', 'insufficient_data']),
+  trendConfidence: z.enum(['low', 'medium', 'high']).nullable(),
+  overallTrend: overallTrendSchema,
+  stale: z.boolean(),
+});
+
+/** Translator group metrics */
+const translatorGroupMetricsSchema = z.object({
+  translatorVersion: z.string(),
+  isCurrent: z.boolean(),
+  versions: z.array(z.string()),
+  aggregateMetrics: z.object({
+    totalRuns: z.number().int().nonnegative(),
+    avgPassRate: z.number().nullable(),
+    avgScore: z.number().nullable(),
+  }),
+});
+
+/** Projected improvement */
+const projectedImprovementSchema = z.object({
+  passRateDelta: z.number(),
+  avgScoreDelta: z.number(),
+});
+
+/** GET /analytics/definitions/{type}/{name}/translation */
+export const translationAnalyticsResultSchema = z.object({
+  definition: definitionRefSchema,
+  currentTranslatorVersion: z.string(),
+  groups: z.array(translatorGroupMetricsSchema),
+  upgradeAvailable: z.boolean(),
+  projectedImprovement: projectedImprovementSchema.nullable(),
+  recommendation: z.string().nullable(),
+  stale: z.boolean(),
+});
+
+/** Version comparison entry */
+const versionComparisonEntrySchema = z.object({
+  version: z.string(),
+  passRate: z.number(),
+  avgScore: z.number().nullable(),
+  runCount: z.number().int().nonnegative(),
+  healthScore: z.number().nullable(),
+  translatorVersion: z.string().nullable(),
+  failureDomainDistribution: failureDomainDistributionSchema.nullable(),
+  epistemicDensity: z.number().nullable(),
+});
+
+/** GET /analytics/definitions/{type}/{name}/effectiveness/compare */
+export const compareResultSchema = z.object({
+  definition: definitionRefSchema,
+  versions: z.array(versionComparisonEntrySchema),
+  stale: z.boolean(),
+});
+
+/** Categorized change */
+const categorizedChangeSchema = z.object({
+  category: z.enum(['scoring', 'criteria', 'output', 'metadata', 'behavior', 'other']),
+  section: z.string(),
+  changeType: z.enum(['added', 'removed', 'modified']),
+});
+
+/** Taxonomy shift */
+const taxonomyShiftSchema = z.object({
+  from: failureDomainDistributionSchema,
+  to: failureDomainDistributionSchema,
+  delta: failureDomainDistributionSchema,
+  epistemicDensityDelta: z.number(),
+});
+
+/** GET /analytics/definitions/{type}/{name}/diff/{from}/{to}/impact */
+export const diffImpactResultSchema = z.object({
+  definition: definitionRefSchema,
+  diff: z.object({
+    hasChanges: z.boolean(),
+    sectionsAdded: z.array(z.string()),
+    sectionsRemoved: z.array(z.string()),
+    sectionsModified: z.array(z.string()),
+    fromLineCount: z.number().int().nonnegative(),
+    toLineCount: z.number().int().nonnegative(),
+  }),
+  from: z.object({
+    version: z.string(),
+    passRate: z.number(),
+    avgScore: z.number().nullable(),
+    runCount: z.number().int().nonnegative(),
+  }),
+  to: z.object({
+    version: z.string(),
+    passRate: z.number(),
+    avgScore: z.number().nullable(),
+    runCount: z.number().int().nonnegative(),
+  }),
+  deltas: z.object({
+    passRateDelta: z.number().nullable(),
+    avgScoreDelta: z.number().nullable(),
+    runCountDelta: z.number().int(),
+  }),
+  categorizedChanges: z.array(categorizedChangeSchema),
+  taxonomyShift: taxonomyShiftSchema.nullable(),
+  caveats: z.array(z.string()),
+  stale: z.boolean(),
+});
+
+// ============================================================================
+// Phase 4: Version Diff Schemas
+// ============================================================================
+
+/** Shared base fields for all version diff shapes */
+const versionDiffBaseSchema = z.object({
+  fromVersion: z.string(),
+  toVersion: z.string(),
+  fromHash: z.string(),
+  toHash: z.string(),
+  hasChanges: z.boolean(),
+  fromPromptHash: z.string().nullable(),
+  toPromptHash: z.string().nullable(),
+  hasPromptChanges: z.boolean(),
+});
+
+/** Full version diff (full=true) */
+export const versionDiffSchema = versionDiffBaseSchema.extend({
+  fromYaml: z.string(),
+  toYaml: z.string(),
+});
+
+/** Summary version diff (default) */
+export const versionDiffSummarySchema = versionDiffBaseSchema.extend({
+  fromLineCount: z.number().int().nonnegative(),
+  toLineCount: z.number().int().nonnegative(),
+  sectionsAdded: z.array(z.string()),
+  sectionsRemoved: z.array(z.string()),
+  sectionsModified: z.array(z.string()),
+  sectionsUnchanged: z.array(z.string()),
+});
+
+/** Field-level diff (format=fields) */
+export const versionFieldDiffSchema = versionDiffBaseSchema.extend({
+  fields: z.array(z.object({
+    path: z.string(),
+    type: z.enum(['added', 'removed', 'modified', 'moved']),
+    fromPath: z.string().optional(),
+    oldValue: z.unknown().optional(),
+    newValue: z.unknown().optional(),
+    valueDiff: z.array(z.tuple([z.number(), z.string()])).optional(),
+    arrayChanges: z.array(z.object({
+      index: z.number().int(),
+      type: z.string(),
+      oldValue: z.unknown().optional(),
+      newValue: z.unknown().optional(),
+      fromIndex: z.number().int().optional(),
+    })).optional(),
+  })),
+  summary: z.object({
+    added: z.number().int().nonnegative(),
+    removed: z.number().int().nonnegative(),
+    modified: z.number().int().nonnegative(),
+    unchanged: z.number().int().nonnegative(),
+  }),
+  sections: z.object({
+    added: z.array(z.string()),
+    removed: z.array(z.string()),
+    modified: z.array(z.string()),
+    unchanged: z.array(z.string()),
+  }),
+  classified: z.array(z.object({
+    path: z.string(),
+    type: z.string(),
+    significance: z.enum(['breaking', 'structural', 'cosmetic', 'metadata']),
+    reason: z.string(),
+    oldValue: z.unknown().optional(),
+    newValue: z.unknown().optional(),
+  })),
+  suggestedBump: z.enum(['major', 'minor', 'patch']),
+});
+
+/** Unified line diff (format=unified) */
+export const versionUnifiedDiffSchema = versionDiffBaseSchema.extend({
+  unified: z.string(),
+  fromLineCount: z.number().int().nonnegative(),
+  toLineCount: z.number().int().nonnegative(),
+});
+
+// ============================================================================
+// Generic Factory Functions (for test infrastructure)
+// ============================================================================
+
+/** Wrap a schema in { data: T, message? } envelope for test validation */
+export function createApiResponseSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+  return z.object({
+    data: dataSchema,
+    message: z.string().optional(),
+  });
+}
+
+/** Wrap an item schema in { data: T[], count? } for list test validation */
+export function createListResponseSchema<T extends z.ZodTypeAny>(itemSchema: T) {
+  return z.object({
+    data: z.array(itemSchema),
+    count: z.number().int().nonnegative().optional(),
+  });
+}
