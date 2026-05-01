@@ -963,4 +963,71 @@ describe('operations', () => {
       });
     });
   });
+
+  // ========================================================================
+  // Response Validation Error Tests
+  // Verify that Zod schema validation is wired and catches malformed responses
+  // ========================================================================
+
+  describe('response validation', () => {
+    it('definitions.list rejects malformed response', async () => {
+      nock(MOCK_BASE_URL).get('/definitions').reply(200, { data: { definitions: 'not-an-array' } });
+      await expect(definitionOps.list(http)).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('definitions.get rejects response with wrong type for executionCount', async () => {
+      nock(MOCK_BASE_URL).get('/definitions/agent/test').reply(200, {
+        data: { ...createMockDefinition(), executionCount: 'not-a-number' },
+      });
+      await expect(definitionOps.get(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('versions.list rejects missing versions array', async () => {
+      nock(MOCK_BASE_URL).get('/definitions/agent/test/versions').reply(200, {
+        data: { total: 0, limit: 20, offset: 0 },
+      });
+      await expect(versionOps.list(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('models.get rejects missing capabilities', async () => {
+      nock(MOCK_BASE_URL).get('/models/anthropic/claude-3-opus').reply(200, {
+        data: { provider: 'anthropic', modelId: 'claude-3-opus' },
+      });
+      await expect(modelOps.get(http, 'anthropic', 'claude-3-opus')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('analytics.getEffectiveness rejects missing stale field', async () => {
+      nock(MOCK_BASE_URL).get('/analytics/definitions/agent/test/effectiveness').reply(200, {
+        data: {
+          definition: { type: 'agent', name: 'test', version: '1.0.0' },
+          period: { start: '2026-01-01', end: '2026-02-01' },
+          metrics: { executionCount: 0, uniqueProjects: 0, uniqueUsers: 0, effectiveness: null, healthScore: null, factorCompleteness: 0, healthFactors: [] },
+        },
+      });
+      await expect(
+        (await import('../src/operations/analytics.js')).getEffectiveness(http, 'agent', 'test'),
+      ).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('render.get rejects missing markdown', async () => {
+      nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/render').reply(200, {
+        data: { target: 'opencode' },
+      });
+      await expect(renderOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('forks.checkForkable rejects wrong type for canFork', async () => {
+      nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/forkable').reply(200, {
+        data: { canFork: 'yes' },
+      });
+      await expect(forkOps.checkForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('dependencies.get rejects missing cycleDetected', async () => {
+      nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
+        data: { nodes: [], edges: [] },
+      });
+      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+    });
+  });
 });
