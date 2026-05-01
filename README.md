@@ -632,6 +632,12 @@ console.log(rendered.markdown);
 const full = await client.render.get('agent', 'code-validator', '1.0.0', {
   renderProfile: 'uluops-full',
 });
+
+// Multi-target render (for OpenCode, Codex, Gemini adapters)
+const adapted = await client.render.get('agent', 'code-validator', '1.0.0', {
+  target: 'opencode',    // Target harness format
+  model: 'gpt-5.3',      // Model override for target envelope
+});
 ```
 
 #### `preview(type, body)`
@@ -1013,20 +1019,6 @@ console.log(config.baseUrl);
 ```
 
 > **Note:** The `/config` sub-path uses Node.js built-ins (`node:fs`, `node:path`, `node:os`) and cannot be imported in browser environments.
-
-### Checking Rate Limits
-
-```typescript
-const client = new RegistryClient({ apiKey: 'ulr_...' });
-
-await client.definitions.list();
-
-const rateLimitInfo = client.getHttpClient().getRateLimitInfo();
-if (rateLimitInfo) {
-  console.log(`Remaining: ${rateLimitInfo.remaining}/${rateLimitInfo.limit}`);
-  console.log(`Resets at: ${rateLimitInfo.resetAt}`);
-}
-```
 
 ### Browser Usage
 
