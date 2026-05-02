@@ -27,7 +27,7 @@ export async function get(
   version: string,
   options?: RenderGetOptions,
 ): Promise<RenderResult> {
-  const path = `${buildDefinitionPath(type, name, version)}/render`;
+  const path = `${buildDefinitionPath(type, name, version, { allowLatest: true })}/render`;
   const params: Record<string, string> = {};
   if (options?.renderProfile) params.renderProfile = options.renderProfile;
   if (options?.target) params.target = options.target;

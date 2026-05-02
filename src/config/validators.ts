@@ -47,7 +47,9 @@ export function validateDefinitionName(name: string): void {
 }
 
 /**
- * Validate version format (semver)
+ * Validate version format (strict semver only).
+ * Use for write operations (publish, create). For read operations that
+ * accept "latest", use buildDefinitionPath which handles the alias.
  */
 export function validateVersion(version: string): void {
   if (!version || typeof version !== 'string') {
@@ -115,11 +117,16 @@ export function parseDefinitionRef(ref: string): { name: string; version?: strin
 export function buildDefinitionPath(
   type: DefinitionType,
   name: string,
-  version?: string
+  version?: string,
+  options?: { allowLatest?: boolean },
 ): string {
   validateDefinitionType(type);
   validateDefinitionName(name);
   if (version) {
+    if (version === 'latest' && options?.allowLatest) {
+      // Omit version from path — API resolves to latest published
+      return `/definitions/${type}/${name}`;
+    }
     validateVersion(version);
     return `/definitions/${type}/${name}@${version}`;
   }

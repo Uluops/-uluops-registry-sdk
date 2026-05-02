@@ -622,19 +622,23 @@ Get rendered definition output.
 
 #### `get(type, name, version, options?)`
 
-Get the fully rendered/resolved definition.
+Get the fully rendered/resolved definition. Pass `"latest"` as the version to resolve to the most recent published version.
 
 ```typescript
-const rendered = await client.render.get('agent', 'code-validator', '1.0.0');
+// Get latest published version
+const rendered = await client.render.get('agent', 'code-validator', 'latest');
 console.log(rendered.markdown);
 
+// Get specific version
+const specific = await client.render.get('agent', 'code-validator', '1.5.0');
+
 // With render profile (optional: 'core' or 'uluops-full')
-const full = await client.render.get('agent', 'code-validator', '1.0.0', {
+const full = await client.render.get('agent', 'code-validator', 'latest', {
   renderProfile: 'uluops-full',
 });
 
 // Multi-target render (for OpenCode, Codex, Gemini adapters)
-const adapted = await client.render.get('agent', 'code-validator', '1.0.0', {
+const adapted = await client.render.get('agent', 'code-validator', 'latest', {
   target: 'opencode',    // Target harness format
   model: 'gpt-5.3',      // Model override for target envelope
 });
