@@ -71,9 +71,12 @@ export type {
   VersionListItem,
   VersionDiff,
   VersionDiffSummary,
+  VersionFieldDiff,
+  VersionUnifiedDiff,
 } from './types/versions.js';
 
 export type { VersionsListResponse } from './operations/versions.js';
+export type { RenderGetOptions } from './operations/render.js';
 
 export type {
   // Dependency types
@@ -145,6 +148,8 @@ export type {
   ValidationResult,
   RenderResult,
   RenderPreviewBody,
+  RenderProfile,
+  TargetWarning,
   TranslatorVersion,
   RetranslateOptions,
   UpgradeDefinitionBody,

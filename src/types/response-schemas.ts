@@ -403,7 +403,7 @@ export const definitionRefSchema = z.object({
 /** Effectiveness metrics */
 const effectivenessMetricsSchema = z.object({
   passRate: z.number(),
-  avgScore: z.number(),
+  runAvgScore: z.number(),
   scoreStdDev: z.number().nullable(),
   issueYield: z.number(),
   falsePositiveRate: z.number(),
@@ -568,7 +568,7 @@ const evolutionPointSchema = z.object({
   changeSummary: z.string().nullable(),
   metrics: z.object({
     passRate: z.number(),
-    avgScore: z.number().nullable(),
+    runAvgScore: z.number().nullable(),
     runCount: z.number().int().nonnegative(),
     healthScore: z.number().nullable(),
   }).nullable(),
@@ -578,7 +578,7 @@ const evolutionPointSchema = z.object({
 const overallTrendSchema = z.object({
   trajectory: z.enum(['consistent_improvement', 'consistent_decline', 'stable', 'volatile', 'insufficient_data']),
   passRateChange: z.string().nullable(),
-  avgScoreChange: z.string().nullable(),
+  runAvgScoreChange: z.string().nullable(),
   epistemicDensityChange: z.string().nullable(),
 });
 
@@ -600,14 +600,14 @@ const translatorGroupMetricsSchema = z.object({
   aggregateMetrics: z.object({
     totalRuns: z.number().int().nonnegative(),
     avgPassRate: z.number().nullable(),
-    avgScore: z.number().nullable(),
+    runAvgScore: z.number().nullable(),
   }),
 });
 
 /** Projected improvement */
 const projectedImprovementSchema = z.object({
   passRateDelta: z.number(),
-  avgScoreDelta: z.number(),
+  runAvgScoreDelta: z.number(),
 });
 
 /** GET /analytics/definitions/{type}/{name}/translation */
@@ -625,7 +625,7 @@ export const translationAnalyticsResultSchema = z.object({
 const versionComparisonEntrySchema = z.object({
   version: z.string(),
   passRate: z.number(),
-  avgScore: z.number().nullable(),
+  runAvgScore: z.number().nullable(),
   runCount: z.number().int().nonnegative(),
   healthScore: z.number().nullable(),
   translatorVersion: z.string().nullable(),
@@ -669,18 +669,18 @@ export const diffImpactResultSchema = z.object({
   from: z.object({
     version: z.string(),
     passRate: z.number(),
-    avgScore: z.number().nullable(),
+    runAvgScore: z.number().nullable(),
     runCount: z.number().int().nonnegative(),
   }),
   to: z.object({
     version: z.string(),
     passRate: z.number(),
-    avgScore: z.number().nullable(),
+    runAvgScore: z.number().nullable(),
     runCount: z.number().int().nonnegative(),
   }),
   deltas: z.object({
     passRateDelta: z.number().nullable(),
-    avgScoreDelta: z.number().nullable(),
+    runAvgScoreDelta: z.number().nullable(),
     runCountDelta: z.number().int(),
   }),
   categorizedChanges: z.array(categorizedChangeSchema),

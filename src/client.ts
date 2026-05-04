@@ -112,7 +112,7 @@ export interface RegistryClientConfig {
   orgSlug?: string;
   /** Base URL for the registry API */
   baseUrl?: string;
-  /** Base URL for the ops API (login/refresh) — defaults to production, or localhost:3100 when NODE_ENV=development */
+  /** Base URL for the ops API (login/refresh) — defaults to https://api.uluops.ai/api/v1/ops, or localhost:3100 in development */
   authBaseUrl?: string;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
@@ -141,6 +141,10 @@ export class RegistryClient {
     delete: (type: DefinitionType, name: string, version: string) => Promise<void>;
     publish: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
     deprecate: (type: DefinitionType, name: string, version: string, body: DeprecateDefinitionBody) => Promise<Definition>;
+    /**
+     * Archive a deprecated definition.
+     * This is a terminal state that removes the definition from discovery.
+     */
     archive: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
   };
 
@@ -327,6 +331,10 @@ export class RegistryClient {
       delete: (type, name, version) => definitionsOps.remove(this.http, type, name, version),
       publish: (type, name, version) => definitionsOps.publish(this.http, type, name, version),
       deprecate: (type, name, version, body) => definitionsOps.deprecate(this.http, type, name, version, body),
+      /**
+       * Archive a deprecated definition.
+       * This is a terminal state that removes the definition from discovery.
+       */
       archive: (type, name, version) => definitionsOps.archive(this.http, type, name, version),
     };
   }

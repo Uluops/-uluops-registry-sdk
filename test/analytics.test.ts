@@ -165,12 +165,12 @@ describe('analytics', () => {
           data: {
             definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             versions: [
-              { version: '1.0.0', publishedAt: '2026-01-01', translatorVersion: '3.0.0', changeSummary: null, metrics: { passRate: 70, avgScore: 75, runCount: 40, healthScore: 60 } },
-              { version: '1.1.0', publishedAt: '2026-02-01', translatorVersion: '4.0.0', changeSummary: null, metrics: { passRate: 85, avgScore: 88, runCount: 60, healthScore: 80 } },
+              { version: '1.0.0', publishedAt: '2026-01-01', translatorVersion: '3.0.0', changeSummary: null, metrics: { passRate: 70, runAvgScore: 75, runCount: 40, healthScore: 60 } },
+              { version: '1.1.0', publishedAt: '2026-02-01', translatorVersion: '4.0.0', changeSummary: null, metrics: { passRate: 85, runAvgScore: 88, runCount: 60, healthScore: 80 } },
             ],
             trend: 'improving',
             trendConfidence: 'medium',
-            overallTrend: { trajectory: 'consistent_improvement', passRateChange: null, avgScoreChange: null, epistemicDensityChange: null },
+            overallTrend: { trajectory: 'consistent_improvement', passRateChange: null, runAvgScoreChange: null, epistemicDensityChange: null },
             stale: false,
           },
         });
@@ -193,8 +193,8 @@ describe('analytics', () => {
             definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             currentTranslatorVersion: '4.1.0',
             groups: [
-              { translatorVersion: '3.0.0', isCurrent: false, versions: ['1.0.0'], aggregateMetrics: { totalRuns: 40, avgPassRate: 70, avgScore: 75 } },
-              { translatorVersion: '4.1.0', isCurrent: true, versions: ['1.1.0'], aggregateMetrics: { totalRuns: 60, avgPassRate: 85, avgScore: 88 } },
+              { translatorVersion: '3.0.0', isCurrent: false, versions: ['1.0.0'], aggregateMetrics: { totalRuns: 40, avgPassRate: 70, runAvgScore: 75 } },
+              { translatorVersion: '4.1.0', isCurrent: true, versions: ['1.1.0'], aggregateMetrics: { totalRuns: 60, avgPassRate: 85, runAvgScore: 88 } },
             ],
             upgradeAvailable: false,
             projectedImprovement: null,
@@ -221,9 +221,9 @@ describe('analytics', () => {
           data: {
             definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             versions: [
-              { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40, healthScore: 60, translatorVersion: '3.0.0', failureDomainDistribution: null, epistemicDensity: null },
-              { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60, healthScore: 80, translatorVersion: '4.0.0', failureDomainDistribution: null, epistemicDensity: null },
-              { version: '1.2.0', passRate: 90, avgScore: 92, runCount: 30, healthScore: 85, translatorVersion: '4.1.0', failureDomainDistribution: null, epistemicDensity: null },
+              { version: '1.0.0', passRate: 70, runAvgScore: 75, runCount: 40, healthScore: 60, translatorVersion: '3.0.0', failureDomainDistribution: null, epistemicDensity: null },
+              { version: '1.1.0', passRate: 85, runAvgScore: 88, runCount: 60, healthScore: 80, translatorVersion: '4.0.0', failureDomainDistribution: null, epistemicDensity: null },
+              { version: '1.2.0', passRate: 90, runAvgScore: 92, runCount: 30, healthScore: 85, translatorVersion: '4.1.0', failureDomainDistribution: null, epistemicDensity: null },
             ],
             stale: false,
           },
@@ -273,9 +273,9 @@ describe('analytics', () => {
           data: {
             definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
             diff: { hasChanges: true, sectionsAdded: [], sectionsRemoved: [], sectionsModified: ['agent'], fromLineCount: 100, toLineCount: 120 },
-            from: { version: '1.0.0', passRate: 70, avgScore: 75, runCount: 40 },
-            to: { version: '1.1.0', passRate: 85, avgScore: 88, runCount: 60 },
-            deltas: { passRateDelta: 15, avgScoreDelta: 13, runCountDelta: 20 },
+            from: { version: '1.0.0', passRate: 70, runAvgScore: 75, runCount: 40 },
+            to: { version: '1.1.0', passRate: 85, runAvgScore: 88, runCount: 60 },
+            deltas: { passRateDelta: 15, runAvgScoreDelta: 13, runCountDelta: 20 },
             categorizedChanges: [],
             taxonomyShift: null,
             caveats: ['OBSERVATIONAL: metric deltas are correlational, not causal.'],

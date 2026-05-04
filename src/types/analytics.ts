@@ -27,7 +27,7 @@ export interface HealthFactor {
 
 export interface EffectivenessMetrics {
   passRate: number;
-  avgScore: number;
+  runAvgScore: number;
   scoreStdDev: number | null;
   issueYield: number;
   falsePositiveRate: number;
@@ -156,7 +156,7 @@ export interface EvolutionPoint {
   changeSummary: string | null;
   metrics: {
     passRate: number;
-    avgScore: number | null;
+    runAvgScore: number | null;
     runCount: number;
     healthScore: number | null;
   } | null;
@@ -165,7 +165,7 @@ export interface EvolutionPoint {
 export interface OverallTrend {
   trajectory: 'consistent_improvement' | 'consistent_decline' | 'stable' | 'volatile' | 'insufficient_data';
   passRateChange: string | null;
-  avgScoreChange: string | null;
+  runAvgScoreChange: string | null;
   epistemicDensityChange: string | null;
 }
 
@@ -187,13 +187,13 @@ export interface TranslatorGroupMetrics {
   aggregateMetrics: {
     totalRuns: number;
     avgPassRate: number | null;
-    avgScore: number | null;
+    runAvgScore: number | null;
   };
 }
 
 export interface ProjectedImprovement {
   passRateDelta: number;
-  avgScoreDelta: number;
+  runAvgScoreDelta: number;
 }
 
 export interface TranslationAnalyticsResult {
@@ -211,7 +211,7 @@ export interface TranslationAnalyticsResult {
 export interface VersionComparisonEntry {
   version: string;
   passRate: number;
-  avgScore: number | null;
+  runAvgScore: number | null;
   runCount: number;
   healthScore: number | null;
   translatorVersion: string | null;
@@ -250,11 +250,11 @@ export interface DiffImpactResult {
     fromLineCount: number;
     toLineCount: number;
   };
-  from: { version: string; passRate: number; avgScore: number | null; runCount: number };
-  to: { version: string; passRate: number; avgScore: number | null; runCount: number };
+  from: { version: string; passRate: number; runAvgScore: number | null; runCount: number };
+  to: { version: string; passRate: number; runAvgScore: number | null; runCount: number };
   deltas: {
     passRateDelta: number | null;
-    avgScoreDelta: number | null;
+    runAvgScoreDelta: number | null;
     runCountDelta: number;
   };
   categorizedChanges: CategorizedChange[];

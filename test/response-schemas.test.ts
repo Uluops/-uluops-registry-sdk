@@ -309,7 +309,7 @@ describe('evolutionResultSchema', () => {
       trendConfidence: null,
       overallTrend: {
         trajectory: 'insufficient_data',
-        passRateChange: null, avgScoreChange: null, epistemicDensityChange: null,
+        passRateChange: null, runAvgScoreChange: null, epistemicDensityChange: null,
       },
       stale: false,
     });
@@ -320,7 +320,7 @@ describe('evolutionResultSchema', () => {
     const result = evolutionResultSchema.safeParse({
       definition: { type: 'agent', name: 'test', version: '1.0.0' },
       versions: [], trend: 'unknown', trendConfidence: null,
-      overallTrend: { trajectory: 'stable', passRateChange: null, avgScoreChange: null, epistemicDensityChange: null },
+      overallTrend: { trajectory: 'stable', passRateChange: null, runAvgScoreChange: null, epistemicDensityChange: null },
       stale: false,
     });
     expect(result.success).toBe(false);

@@ -53,11 +53,22 @@ export interface ValidationError {
 /**
  * Rendered definition response
  */
+/** Warning from a target adapter about lossy or unmappable fields. */
+export interface TargetWarning {
+  field: string;
+  reason: string;
+  level: 'info' | 'warn' | 'error';
+}
+
 export interface RenderResult {
   markdown: string;
   promptHash?: string | null;
   variables?: string[];
   metadata?: Record<string, unknown>;
+  /** Which target was rendered (only present when target param was specified) */
+  target?: string;
+  /** Adapter warnings about lossy mappings (only present for target rendering) */
+  warnings?: TargetWarning[];
 }
 
 /** Render profile preset for controlling UluOps-specific agent prompt content. */
