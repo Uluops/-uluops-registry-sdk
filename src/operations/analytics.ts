@@ -7,6 +7,7 @@
 
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { DefinitionType } from '../types/enums.js';
+import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
 import type {
   DefinitionEffectiveness,
   DefinitionHealth,
@@ -30,6 +31,8 @@ import {
 
 /** Build the analytics path prefix for definition-scoped endpoints. */
 function analyticsPath(type: DefinitionType, name: string): string {
+  validateDefinitionType(type);
+  validateDefinitionName(name);
   return `/analytics/definitions/${type}/${name}`;
 }
 
@@ -169,6 +172,8 @@ export async function getDiffImpact(
   fromVersion: string,
   toVersion: string,
 ): Promise<DiffImpactResult> {
+  validateVersion(fromVersion);
+  validateVersion(toVersion);
   return http.get<DiffImpactResult>(
     `${analyticsPath(type, name)}/diff/${fromVersion}/${toVersion}/impact`,
     undefined,

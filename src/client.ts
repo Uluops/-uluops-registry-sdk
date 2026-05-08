@@ -281,10 +281,11 @@ export class RegistryClient {
 
       // Install session auth on the main client so subsequent requests
       // are authenticated (matches OpsClient.login() behaviour).
+      // Password omitted — token is already obtained; no re-login needed.
       this.http.setAuthStrategy(
         new JwtSessionAuth(
           this.http.createFetchClient(),
-          { email, password },
+          { email, password: '' },
           undefined,
           token,
         )
