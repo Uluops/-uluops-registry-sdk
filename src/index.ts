@@ -63,6 +63,11 @@ export type {
   CreateDefinitionBody,
   UpdateDefinitionBody,
   DeprecateDefinitionBody,
+  Provenance,
+  AuthorshipType,
+  ContributorRole,
+  ActorType,
+  Contributor,
 } from './types/definitions.js';
 
 export type {
@@ -77,6 +82,13 @@ export type {
 
 export type { VersionsListResponse } from './operations/versions.js';
 export type { RenderGetOptions } from './operations/render.js';
+export type { DefinitionListResponse } from './operations/definitions.js';
+export type { ForkListResponse } from './operations/forks.js';
+export type {
+  ModelsListResponse,
+  ProvidersListResponse,
+  AliasesListResponse,
+} from './operations/models.js';
 
 export type {
   // Dependency types

@@ -177,7 +177,7 @@ export class RegistryClient {
   readonly forks: {
     create: (type: DefinitionType, name: string, version: string, body: ForkDefinitionBody) => Promise<ForkResponse>;
     checkForkable: (type: DefinitionType, name: string, version: string, options?: CheckForkableOptions) => Promise<ForkableCheck>;
-    getLineage: (type: DefinitionType, name: string, version: string) => Promise<ForkLineage>;
+    getAncestry: (type: DefinitionType, name: string, version: string) => Promise<ForkLineage>;
     list: (type: DefinitionType, name: string, version: string) => Promise<ForkListResponse>;
   };
 
@@ -364,7 +364,7 @@ export class RegistryClient {
     return {
       create: (type, name, version, body) => forksOps.create(this.http, type, name, version, body),
       checkForkable: (type, name, version, options) => forksOps.checkForkable(this.http, type, name, version, options),
-      getLineage: (type, name, version) => forksOps.getLineage(this.http, type, name, version),
+      getAncestry: (type, name, version) => forksOps.getAncestry(this.http, type, name, version),
       list: (type, name, version) => forksOps.list(this.http, type, name, version),
     };
   }

@@ -7,8 +7,7 @@
 
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { DefinitionType } from '../types/enums.js';
-import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
-import type {
+import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';import type {
   DefinitionEffectiveness,
   DefinitionHealth,
   EcosystemOverview,
@@ -48,6 +47,7 @@ export async function getEffectiveness(
   name: string,
   version?: string,
 ): Promise<DefinitionEffectiveness> {
+  if (version) validateVersion(version);
   const query = version ? { version } : undefined;
   return http.get<DefinitionEffectiveness>(
     `${analyticsPath(type, name)}/effectiveness`,
@@ -68,6 +68,7 @@ export async function getHealth(
   name: string,
   version?: string,
 ): Promise<DefinitionHealth> {
+  if (version) validateVersion(version);
   const query = version ? { version } : undefined;
   return http.get<DefinitionHealth>(
     `${analyticsPath(type, name)}/health`,
@@ -152,6 +153,7 @@ export async function compare(
   if (versions.length < 2 || versions.length > 5) {
     throw new Error(`compare() requires 2-5 versions (received ${String(versions.length)})`);
   }
+  for (const v of versions) validateVersion(v);
   return http.get<CompareResult>(
     `${analyticsPath(type, name)}/effectiveness/compare`,
     { versions: versions.join(',') },

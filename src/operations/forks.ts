@@ -53,9 +53,9 @@ export async function checkForkable(
 }
 
 /**
- * Get the fork lineage (ancestry chain) of a definition
+ * Get the fork ancestry chain of a definition
  */
-export async function getLineage(
+export async function getAncestry(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,

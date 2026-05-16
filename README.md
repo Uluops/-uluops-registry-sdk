@@ -430,7 +430,7 @@ Fork a definition to a new name.
 
 ```typescript
 const forked = await client.forks.create('agent', 'code-validator', '1.0.0', {
-  newName: 'my-code-validator',
+  name: 'my-code-validator',
 });
 ```
 
@@ -445,12 +445,12 @@ if (check.canFork) {
 }
 ```
 
-#### `getLineage(type, name, version)`
+#### `getAncestry(type, name, version)`
 
 Get the fork ancestry chain.
 
 ```typescript
-const lineage = await client.forks.getLineage('agent', 'my-validator', '1.0.0');
+const lineage = await client.forks.getAncestry('agent', 'my-validator', '1.0.0');
 console.log('Source:', lineage.source);
 console.log('Chain:', lineage.chain);
 ```

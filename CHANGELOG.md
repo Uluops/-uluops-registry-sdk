@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-05-09
+
+### Added
+- Export `Provenance`, `AuthorshipType`, `ContributorRole`, `ActorType`, `Contributor` types from main entry — consumers can now construct provenance objects for create/update without `as any`
+- Export `DefinitionListResponse`, `ForkListResponse`, `ModelsListResponse`, `ProvidersListResponse`, `AliasesListResponse` operation response types from main entry
+- Export all 11 error type guards (`isUnauthorizedError`, `isForbiddenError`, `isPayloadTooLargeError`, `isServiceUnavailableError`, `isNetworkError`, `isTimeoutError`) — previously only 5 of 11 were exported
+- Export Zod response validation schemas from `@uluops/registry-sdk/types` subpath (41 schemas in `response-schemas.ts`)
+- `ForkDefinitionBody.targetOrgSlug` — optional field for cross-org forking (matches API schema)
+- Input validation on `models.get()` — rejects empty provider/modelId
+- Input validation on `models.resolveAlias()` — rejects empty alias
+- Input validation on `analytics.compare()` — validates each version string format
+- Input validation on `analytics.getEffectiveness()` and `analytics.getHealth()` — validates optional version param
+- Input validation on `versions.list()` — validates pagination params (limit/offset)
+- `prepublishOnly` script validates `SDK_VERSION` matches `package.json` version
+
+### Fixed
+- `SDK_VERSION` constant updated from 0.16.1 to 0.18.0 (was 2 versions behind `package.json`)
+- Fork test and README corrected: `newName` → `name` to match API schema and TypeScript type
+- `forkResponseSchema` refactored to reuse `definitionSchema` instead of inline 30-field duplicate that had drifted (`.nullish()` vs `.nullable().optional()`)
+
 ## [0.17.0] - 2026-05-02
 
 ### Added

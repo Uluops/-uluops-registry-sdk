@@ -167,6 +167,8 @@ export interface UpdateDefinitionBody {
   changeSummary?: string;
   changeType?: ChangeType;
   provenance?: Provenance;
+  tier?: Tier;
+  minSubscription?: SubscriptionTier;
 }
 
 /**

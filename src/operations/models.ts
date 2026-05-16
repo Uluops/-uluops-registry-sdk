@@ -11,6 +11,7 @@ import type {
   ListModelsQuery,
   ModelSyncResult,
 } from '../types/models.js';
+import { ValidationError } from '../errors/errors.js';
 import {
   modelsListResponseSchema,
   modelSchema,
@@ -63,6 +64,12 @@ export async function get(
   provider: string,
   modelId: string
 ): Promise<Model> {
+  if (!provider || typeof provider !== 'string') {
+    throw new ValidationError('Provider is required', { field: 'provider' });
+  }
+  if (!modelId || typeof modelId !== 'string') {
+    throw new ValidationError('Model ID is required', { field: 'modelId' });
+  }
   return http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined, { schema: modelSchema });
 }
 
@@ -87,6 +94,9 @@ export async function resolveAlias(
   http: RegistryHttpClient,
   alias: string
 ): Promise<AliasResolution> {
+  if (!alias || typeof alias !== 'string') {
+    throw new ValidationError('Alias is required', { field: 'alias' });
+  }
   return http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined, { schema: aliasResolutionSchema });
 }
 

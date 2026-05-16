@@ -24,6 +24,7 @@ export interface ForkDefinitionBody {
   visibility?: Visibility;
   displayName?: string;
   description?: string;
+  targetOrgSlug?: string;
 }
 
 /**

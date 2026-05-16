@@ -199,6 +199,17 @@ describe('operations', () => {
         expect(result.status).toBe('deprecated');
       });
     });
+
+    describe('archive', () => {
+      it('should archive a deprecated definition', async () => {
+        nock(MOCK_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/archive')
+          .reply(200, { data: createMockDefinition({ name: 'my-agent', version: '1.0.0', status: 'archived' }) });
+
+        const result = await definitionOps.archive(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.name).toBe('my-agent');
+      });
+    });
   });
 
   describe('versions', () => {
@@ -373,7 +384,7 @@ describe('operations', () => {
     describe('create', () => {
       it('should create fork', async () => {
         nock(MOCK_BASE_URL)
-          .post('/definitions/agent/original@1.0.0/fork', { newName: 'forked' })
+          .post('/definitions/agent/original@1.0.0/fork', { name: 'forked' })
           .reply(201, {
             data: {
               definition: {
@@ -425,7 +436,7 @@ describe('operations', () => {
           });
 
         const result = await forkOps.create(http, 'agent', 'original', '1.0.0', {
-          newName: 'forked',
+          name: 'forked',
         });
         expect(result.definition.name).toBe('forked');
       });
@@ -447,8 +458,8 @@ describe('operations', () => {
       });
     });
 
-    describe('getLineage', () => {
-      it('should get lineage', async () => {
+    describe('getAncestry', () => {
+      it('should get ancestry', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/lineage')
           .reply(200, {
@@ -475,7 +486,7 @@ describe('operations', () => {
             },
           });
 
-        const result = await forkOps.getLineage(http, 'agent', 'my-agent', '1.0.0');
+        const result = await forkOps.getAncestry(http, 'agent', 'my-agent', '1.0.0');
         expect(result.chain).toEqual([]);
       });
     });

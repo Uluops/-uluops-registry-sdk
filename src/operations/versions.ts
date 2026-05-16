@@ -5,7 +5,7 @@
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { VersionListItem, VersionDiff, VersionDiffSummary, VersionFieldDiff, VersionUnifiedDiff } from '../types/versions.js';
 import type { DefinitionType } from '../types/enums.js';
-import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
+import { validateDefinitionType, validateDefinitionName, validateVersion, validatePagination } from '../config/validators.js';
 import {
   versionsListResponseSchema,
   versionDiffSchema,
@@ -35,6 +35,7 @@ export async function list(
 ): Promise<VersionsListResponse> {
   validateDefinitionType(type);
   validateDefinitionName(name);
+  if (options) validatePagination(options.limit, options.offset);
   return http.get<VersionsListResponse>(`/definitions/${type}/${name}/versions`, {
     ...(options?.limit !== undefined && { limit: String(options.limit) }),
     ...(options?.offset !== undefined && { offset: String(options.offset) }),

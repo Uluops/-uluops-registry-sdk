@@ -73,7 +73,7 @@ Consumers should catch `ResponseValidationError` separately from `SdkApiError` (
 | **translation.ts** | `upgrade` | `UpgradeResult` | Medium — embeds `Definition` + `changes: Record<string, unknown>` |
 | **forks.ts** | `create` | `ForkResponse` | Medium — `{ definition: Definition, fork: Fork, source: DefinitionListItem, warnings? }` |
 | **forks.ts** | `checkForkable` | `ForkableCheck` | Low |
-| **forks.ts** | `getLineage` | `ForkLineage` | Medium — `{ current: DefinitionListItem, source?: DefinitionListItem \| null, chain: DefinitionListItem[] }` |
+| **forks.ts** | `getAncestry` | `ForkLineage` | Medium — `{ current: DefinitionListItem, source?: DefinitionListItem \| null, chain: DefinitionListItem[] }` |
 | **forks.ts** | `list` | `ForkListResponse` | Medium — contains list items |
 | **dependencies.ts** | `get` | `DependencyGraph` | Medium — nodes + edges |
 | **dependencies.ts** | `getDependents` | `DependencyGraph` | Medium (same schema) |
@@ -140,7 +140,7 @@ Types that embed other schemas. `providerSchema` from Phase 1 is reused here.
 - `batchUserResponseSchema` — `z.record(z.string(), publicUserSchema.nullable())`
 - `aliasResolutionSchema` — `{ alias, target, model: modelSchema.nullable().optional() }`
 
-**Wire to:** `definitions.list`, `versions.list`, `models.list`, `models.get`, `models.listAliases`, `models.resolveAlias`, `forks.create`, `forks.getLineage`, `forks.list`, `dependencies.get`, `dependencies.getDependents`, `translation.upgrade`, `users.batch`
+**Wire to:** `definitions.list`, `versions.list`, `models.list`, `models.get`, `models.listAliases`, `models.resolveAlias`, `forks.create`, `forks.getAncestry`, `forks.list`, `dependencies.get`, `dependencies.getDependents`, `translation.upgrade`, `users.batch`
 
 ### Phase 3: Analytics Schemas (~11 new schemas, 2 files)
 The most complex schemas — deeply nested metrics objects.

@@ -25,6 +25,7 @@ import {
   MODEL_STATUSES,
   CHANGE_TYPES,
 } from './enums.js';
+import { definitionSchema } from './schemas.js';
 
 // ============================================================================
 // Shared Primitives
@@ -263,58 +264,7 @@ export const forkSchema = z.object({
 
 /** POST /definitions/{type}/{name}/{version}/fork */
 export const forkResponseSchema = z.object({
-  definition: z.lazy(() => {
-    // Forward reference to definitionSchema from schemas.ts — import at use site
-    // to avoid circular dependency. Using inline shape matching definitionSchema.
-    return z.object({
-      id: z.string().uuid(),
-      type: definitionTypeResponseSchema,
-      name: z.string(),
-      version: z.string(),
-      status: definitionStatusResponseSchema,
-      yaml: z.string().nullable().optional(),
-      hash: z.string(),
-      displayName: z.string(),
-      description: z.string(),
-      domain: domainResponseSchema,
-      subdomain: z.string().nullable().optional(),
-      agentType: agentTypeResponseSchema.nullable().optional(),
-      author: z.string().nullable().optional(),
-      provenance: z.object({
-        authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']),
-        contributors: z.array(z.object({
-          id: z.string(),
-          role: z.enum(['author', 'optimizer', 'reviewer', 'editor', 'publisher']),
-          type: z.enum(['human', 'agent']),
-          name: z.string().optional(),
-          agentName: z.string().optional(),
-          contributedAt: z.string().optional(),
-        })),
-        dialecticRounds: z.number().int().nonnegative().optional(),
-        optimizationRunId: z.string().optional(),
-      }).nullable().optional(),
-      tags: z.array(z.string()).nullable().optional(),
-      authorId: z.string(),
-      orgId: z.string().nullable().optional(),
-      namespace: z.string().nullable().optional(),
-      tier: tierResponseSchema,
-      minSubscription: subscriptionTierResponseSchema.nullable().optional(),
-      proRestricted: z.boolean().optional(),
-      visibility: visibilityResponseSchema,
-      runtimeMd: z.string().nullable().optional(),
-      promptHash: z.string().nullable().optional(),
-      translatorVersion: z.string().nullable().optional(),
-      schemaVersion: z.string().nullable().optional(),
-      executionCount: z.number().int().nonnegative(),
-      forkCount: z.number().int().nonnegative(),
-      starCount: z.number().int().nonnegative(),
-      forkedFromId: z.string().uuid().nullable().optional(),
-      createdAt: DateTimeStringSchema,
-      updatedAt: DateTimeStringSchema,
-      publishedAt: NullableDateTimeSchema.optional(),
-      deprecatedAt: NullableDateTimeSchema.optional(),
-    });
-  }),
+  definition: definitionSchema,
   fork: forkSchema,
   source: definitionListItemSchema,
   warnings: z.array(z.string()).optional(),
@@ -360,7 +310,7 @@ export const dependencyGraphSchema = z.object({
 
 /** POST /definitions/{type}/{name}/upgrade */
 export const upgradeResultSchema = z.object({
-  definition: z.lazy(() => forkResponseSchema.shape.definition),
+  definition: definitionSchema,
   version: z.string(),
   changes: z.record(z.string(), z.unknown()),
 });

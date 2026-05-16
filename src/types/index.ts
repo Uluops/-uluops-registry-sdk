@@ -18,3 +18,6 @@ export * from './analytics.js';
 
 // Zod schemas
 export * from './schemas.js';
+
+// Zod response validation schemas
+export * from './response-schemas.js';
