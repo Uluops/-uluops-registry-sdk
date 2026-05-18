@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.3] - 2026-05-18
+
+### Added
+- `getGlobalConfigDir`, `getCredentialsPath`, `loadStoredCredentials`, `loadEnvFiles` now exported from `/config` sub-path — previously documented in README but missing from the barrel
+- `rimraf dist` clean step before `tsc` in build script — prevents stale `.d.ts` artifacts from surviving deleted source files
+
+### Fixed
+- README translation.getVersion() example used `version.version` instead of `version.translatorVersion`
+
 ## [0.21.2] - 2026-05-18
 
 ### Added

@@ -581,7 +581,7 @@ Get the current translator version.
 
 ```typescript
 const version = await client.translation.getVersion();
-console.log(`Translator: ${version.version}`);
+console.log(`Translator: ${version.translatorVersion}`);
 ```
 
 #### `retranslate(type, name, version, options?)`

@@ -40,6 +40,10 @@ export {
   createClientFromEnvironment,
   isApiKey,
   validateCredentials,
+  getGlobalConfigDir,
+  getCredentialsPath,
+  loadStoredCredentials,
+  loadEnvFiles,
   type Credentials,
   type SdkConfig,
 } from './loaders.js';
