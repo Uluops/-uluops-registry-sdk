@@ -41,7 +41,7 @@ export async function record(
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
  * @param version - Semver version
- * @param window - Time window in minutes (1-10080, default 60)
+ * @param window - Time window in minutes (1-43200, default 60)
  * @returns Execution statistics (count, averages, distribution)
  */
 export async function getStats(

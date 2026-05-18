@@ -210,7 +210,7 @@ export class RegistryClient {
   readonly executions: {
     /** Record an execution of a definition. Idempotent if runId already recorded. */
     record: (type: DefinitionType, name: string, version: string, body: RecordExecutionBody) => Promise<RecordExecutionResult>;
-    /** Get execution statistics for a definition. @param window - Time window in minutes (1-10080, default 60). */
+    /** Get execution statistics for a definition. @param window - Time window in minutes (1-43200, default 60). */
     getStats: (type: DefinitionType, name: string, version: string, window?: number) => Promise<ExecutionStats>;
   };
 
