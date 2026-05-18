@@ -46,7 +46,7 @@ export async function star(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
-  return http.post<StarResult>(path, undefined, { schema: starResultSchema });
+  return http.post<StarResult>(path, undefined, { schema: starResultSchema, retryMutations: true });
 }
 
 /**
@@ -65,5 +65,7 @@ export async function unstar(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
+  // Note: delete() does not support retryMutations in sdk-core's type signature.
+  // Unstar is idempotent but not retried on transient errors.
   return http.delete<StarResult>(path, undefined, { schema: starResultSchema });
 }

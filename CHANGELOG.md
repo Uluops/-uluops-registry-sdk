@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-05-18
+
+### Added
+- Function overloads on `versions.diff()` — callers now get narrowed return types (`VersionDiff`, `VersionFieldDiff`, `VersionUnifiedDiff`, or `VersionDiffSummary`) based on options passed
+- `retryMutations: true` on `executions.record()` and `stars.star()` — idempotent POST operations now retry on transient 502/503 errors
+- `validateShortString()` input validation on `target` and `model` parameters in render operations
+- `npm audit --audit-level=high --omit=dev` gate in `prepublishOnly` script
+- 5 analytics validation rejection tests (getEffectiveness, getHealth, compare, getDiffImpact)
+
+### Fixed
+- Login temp client now forwards user-configured timeout instead of using default
+- Replaced unnecessary dynamic import in `login()` with existing static import
+- YAML boundary test used wrong value (102400 → MAX_YAML_SIZE)
+- `files` field now includes README.md and CHANGELOG.md in published tarball
+- `archived` status value added to README definitions.list() param table
+- `ValidationFieldError` type added to README TypeScript Support section
+- npm audit fix: resolved all devDependency CVEs (flatted, minimatch, picomatch, rollup, vite)
+
 ## [0.20.0] - 2026-05-18
 
 ### Added

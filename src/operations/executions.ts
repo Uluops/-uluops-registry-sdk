@@ -31,7 +31,7 @@ export async function record(
   body: RecordExecutionBody
 ): Promise<RecordExecutionResult> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;
-  return http.post<RecordExecutionResult>(path, body, { schema: recordExecutionResultSchema });
+  return http.post<RecordExecutionResult>(path, body, { schema: recordExecutionResultSchema, retryMutations: true });
 }
 
 /**

@@ -162,7 +162,12 @@ export class RegistryClient {
     /** List all versions of a definition with optional pagination. */
     list: (type: DefinitionType, name: string, options?: { limit?: number; offset?: number }) => Promise<VersionsListResponse>;
     /** Compare two versions. Returns summary by default; pass full=true for raw YAML or format for fields/unified. */
-    diff: (type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }) => Promise<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff>;
+    diff: {
+      (type: DefinitionType, name: string, from: string, to: string, options: { full: true }): Promise<VersionDiff>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { format: 'fields' }): Promise<VersionFieldDiff>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { format: 'unified' }): Promise<VersionUnifiedDiff>;
+      (type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }): Promise<VersionDiffSummary>;
+    };
   };
 
   /**
@@ -321,8 +326,7 @@ export class RegistryClient {
   async login(email: string, password: string): Promise<{ sessionToken: string; expiresAt?: string }> {
     // Create a temporary HTTP client with the provided credentials to perform
     // the login call against the ops API (authBaseUrl).
-    const { RegistryHttpClient: HttpClient } = await import('./http/http-client.js');
-    const tempHttp = new HttpClient({
+    const tempHttp = new RegistryHttpClient({
       authBaseUrl: this.http.getAuthBaseUrl(),
       timeout: this.configTimeout,
       email,
@@ -397,7 +401,11 @@ export class RegistryClient {
   private bindVersions(): RegistryClient['versions'] {
     return {
       list: (type, name, options) => versionsOps.list(this.http, type, name, options),
-      diff: (type, name, from, to, options) => versionsOps.diff(this.http, type, name, from, to, options),
+      // SAFETY: versionsOps.diff has matching overloads — the implementation signature
+      // returns the union, but callers see the narrowed overload signatures from the
+      // RegistryClient['versions']['diff'] type.
+      diff: ((type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }) =>
+        versionsOps.diff(this.http, type, name, from, to, options)) as RegistryClient['versions']['diff'],
     };
   }
 

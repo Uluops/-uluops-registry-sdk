@@ -51,6 +51,14 @@ export async function list(
 /**
  * Compare two versions of a definition.
  * Returns a summary by default. Pass full=true for raw YAML content.
+ */
+export async function diff(http: RegistryHttpClient, type: DefinitionType, name: string, fromVersion: string, toVersion: string, options: { full: true }): Promise<VersionDiff>;
+export async function diff(http: RegistryHttpClient, type: DefinitionType, name: string, fromVersion: string, toVersion: string, options: { format: 'fields' }): Promise<VersionFieldDiff>;
+export async function diff(http: RegistryHttpClient, type: DefinitionType, name: string, fromVersion: string, toVersion: string, options: { format: 'unified' }): Promise<VersionUnifiedDiff>;
+export async function diff(http: RegistryHttpClient, type: DefinitionType, name: string, fromVersion: string, toVersion: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }): Promise<VersionDiffSummary>;
+/**
+ * Compare two versions of a definition.
+ * Returns a summary by default. Pass full=true for raw YAML content.
  *
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
