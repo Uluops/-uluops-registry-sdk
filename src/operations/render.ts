@@ -5,7 +5,7 @@
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { RenderResult, RenderPreviewBody, RenderProfile } from '../types/responses.js';
 import type { DefinitionType } from '../types/enums.js';
-import { buildDefinitionPath, validateDefinitionType, validateYamlSize } from '../config/validators.js';
+import { buildDefinitionPath, validateDefinitionType, validateYamlSize, validateShortString } from '../config/validators.js';
 import { renderResultSchema } from '../types/response-schemas.js';
 
 /** Options for getting rendered markdown. */
@@ -37,8 +37,14 @@ export async function get(
   const path = `${buildDefinitionPath(type, name, version, { allowLatest: true })}/render`;
   const params: Record<string, string> = {};
   if (options?.renderProfile) params.renderProfile = options.renderProfile;
-  if (options?.target) params.target = options.target;
-  if (options?.model) params.model = options.model;
+  if (options?.target) {
+    validateShortString(options.target, 'target');
+    params.target = options.target;
+  }
+  if (options?.model) {
+    validateShortString(options.model, 'model');
+    params.model = options.model;
+  }
   return http.get<RenderResult>(path, Object.keys(params).length > 0 ? params : undefined, { schema: renderResultSchema });
 }
 

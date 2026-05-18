@@ -147,6 +147,26 @@ export function validateUuid(id: string, fieldName = 'id'): void {
 }
 
 /**
+ * Validate a short string parameter (target harness, model override, etc.)
+ * Must be alphanumeric with hyphens, dots, and underscores. Max 100 chars.
+ */
+export function validateShortString(value: string, fieldName: string): void {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 100) {
+    throw new ValidationError(
+      `${fieldName} must be a non-empty string of at most 100 characters`,
+      { field: fieldName, value, maxLength: 100 }
+    );
+  }
+  const pattern = /^[a-zA-Z0-9._-]+$/;
+  if (!pattern.test(value)) {
+    throw new ValidationError(
+      `${fieldName} contains invalid characters. Only letters, numbers, dots, hyphens, and underscores are allowed.`,
+      { field: fieldName, value }
+    );
+  }
+}
+
+/**
  * Validate pagination parameters
  */
 export function validatePagination(limit?: number, offset?: number): void {
