@@ -89,6 +89,34 @@ describe('RegistryHttpClient', () => {
       const result = await client.get<{ authenticated: boolean }>('/test');
       expect(result.authenticated).toBe(true);
     });
+
+    it('should include X-Org-Slug header when orgSlug is configured', async () => {
+      const orgClient = new RegistryHttpClient({
+        apiKey: TEST_API_KEY,
+        orgSlug: 'my-org',
+      });
+
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .matchHeader('X-Org-Slug', 'my-org')
+        .reply(200, { data: { ok: true } });
+
+      const result = await orgClient.get<{ ok: boolean }>('/test');
+      expect(result.ok).toBe(true);
+    });
+
+    it('should not include X-Org-Slug header when orgSlug is omitted', async () => {
+      let capturedHeaders: Record<string, string | string[]> = {};
+      nock(MOCK_BASE_URL)
+        .get('/test')
+        .reply(function () {
+          capturedHeaders = this.req.headers;
+          return [200, JSON.stringify({ data: { ok: true } }), { 'content-type': 'application/json' }];
+        });
+
+      await client.get<{ ok: boolean }>('/test');
+      expect(capturedHeaders['x-org-slug']).toBeUndefined();
+    });
   });
 
   describe('error transformation', () => {

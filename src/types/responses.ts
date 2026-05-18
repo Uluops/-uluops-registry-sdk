@@ -38,13 +38,16 @@ export interface ErrorResponse {
  */
 export interface ValidationResult {
   valid: boolean;
-  errors?: ValidationError[];
+  errors?: ValidationFieldError[];
 }
 
 /**
- * Individual validation error
+ * Individual field-level validation error from the API.
+ *
+ * Renamed from `ValidationError` to avoid collision with the SDK's
+ * `ValidationError` error class (thrown on invalid input).
  */
-export interface ValidationError {
+export interface ValidationFieldError {
   path: string;
   message: string;
   code?: string;

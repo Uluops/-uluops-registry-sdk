@@ -258,20 +258,24 @@ describe('operations', () => {
     });
 
     describe('diff', () => {
-      it('should diff versions', async () => {
+      const diffBase = {
+        fromVersion: '1.0.0',
+        toVersion: '2.0.0',
+        fromHash: 'hash1',
+        toHash: 'hash2',
+        hasChanges: true,
+        fromPromptHash: null,
+        toPromptHash: null,
+        hasPromptChanges: false,
+      };
+
+      it('should diff versions (default summary format)', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent/diff')
           .query({ from: '1.0.0', to: '2.0.0' })
           .reply(200, {
             data: {
-              fromVersion: '1.0.0',
-              toVersion: '2.0.0',
-              fromHash: 'hash1',
-              toHash: 'hash2',
-              hasChanges: true,
-              fromPromptHash: null,
-              toPromptHash: null,
-              hasPromptChanges: false,
+              ...diffBase,
               fromLineCount: 50,
               toLineCount: 55,
               sectionsAdded: [],
@@ -281,14 +285,74 @@ describe('operations', () => {
             },
           });
 
-        const result = await versionOps.diff(
-          http,
-          'agent',
-          'my-agent',
-          '1.0.0',
-          '2.0.0'
-        );
+        const result = await versionOps.diff(http, 'agent', 'my-agent', '1.0.0', '2.0.0');
         expect(result.sectionsModified).toContain('description');
+      });
+
+      it('should request full YAML diff with full=true', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent/diff')
+          .query({ from: '1.0.0', to: '2.0.0', full: 'true' })
+          .reply(200, {
+            data: { ...diffBase, fromYaml: 'name: old', toYaml: 'name: new' },
+          });
+
+        const result = await versionOps.diff(http, 'agent', 'my-agent', '1.0.0', '2.0.0', { full: true });
+        expect(result.fromYaml).toBe('name: old');
+        expect(result.toYaml).toBe('name: new');
+      });
+
+      it('should request field-level diff with format=fields', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent/diff')
+          .query({ from: '1.0.0', to: '2.0.0', format: 'fields' })
+          .reply(200, {
+            data: {
+              ...diffBase,
+              fields: [{ path: 'description', type: 'modified', oldValue: 'old', newValue: 'new' }],
+              summary: { added: 0, removed: 0, modified: 1, unchanged: 5 },
+              sections: { added: [], removed: [], modified: ['description'], unchanged: ['name'] },
+              classified: [{ path: 'description', type: 'modified', significance: 'cosmetic', reason: 'text change' }],
+              suggestedBump: 'patch',
+            },
+          });
+
+        const result = await versionOps.diff(http, 'agent', 'my-agent', '1.0.0', '2.0.0', { format: 'fields' });
+        expect(result.fields).toHaveLength(1);
+        expect(result.fields[0].type).toBe('modified');
+        expect(result.suggestedBump).toBe('patch');
+      });
+
+      it('should request unified diff with format=unified', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent/diff')
+          .query({ from: '1.0.0', to: '2.0.0', format: 'unified' })
+          .reply(200, {
+            data: { ...diffBase, unified: '--- a\n+++ b\n@@ -1 +1 @@\n-old\n+new', fromLineCount: 1, toLineCount: 1 },
+          });
+
+        const result = await versionOps.diff(http, 'agent', 'my-agent', '1.0.0', '2.0.0', { format: 'unified' });
+        expect(result.unified).toContain('---');
+      });
+
+      it('should not send format param for format=sections (default)', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent/diff')
+          .query({ from: '1.0.0', to: '2.0.0' })
+          .reply(200, {
+            data: {
+              ...diffBase,
+              fromLineCount: 50,
+              toLineCount: 55,
+              sectionsAdded: [],
+              sectionsRemoved: [],
+              sectionsModified: [],
+              sectionsUnchanged: ['name'],
+            },
+          });
+
+        const result = await versionOps.diff(http, 'agent', 'my-agent', '1.0.0', '2.0.0', { format: 'sections' });
+        expect(result.sectionsUnchanged).toContain('name');
       });
     });
   });
@@ -746,6 +810,49 @@ describe('operations', () => {
 
         const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0');
         expect(result.markdown).toBe('# My Agent');
+      });
+
+      it('should pass target query param', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/render')
+          .query({ target: 'opencode' })
+          .reply(200, { data: { markdown: '# My Agent', target: 'opencode', warnings: [] } });
+
+        const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0', { target: 'opencode' });
+        expect(result.markdown).toBe('# My Agent');
+        expect(result.target).toBe('opencode');
+      });
+
+      it('should pass model query param with target', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/render')
+          .query({ target: 'opencode', model: 'gpt-5.3' })
+          .reply(200, { data: { markdown: '# My Agent', target: 'opencode' } });
+
+        const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0', {
+          target: 'opencode',
+          model: 'gpt-5.3',
+        });
+        expect(result.markdown).toBe('# My Agent');
+      });
+
+      it('should accept "latest" as version (omits version from path)', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent/render')
+          .reply(200, { data: { markdown: '# Latest' } });
+
+        const result = await renderOps.get(http, 'agent', 'my-agent', 'latest');
+        expect(result.markdown).toBe('# Latest');
+      });
+
+      it('should pass renderProfile query param', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/render')
+          .query({ renderProfile: 'core' })
+          .reply(200, { data: { markdown: '# Core' } });
+
+        const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0', { renderProfile: 'core' });
+        expect(result.markdown).toBe('# Core');
       });
     });
 

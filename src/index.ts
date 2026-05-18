@@ -158,6 +158,7 @@ export type {
   PaginatedResponse,
   ErrorResponse,
   ValidationResult,
+  ValidationFieldError,
   RenderResult,
   RenderPreviewBody,
   RenderProfile,
