@@ -8,18 +8,28 @@
 // ── Shared ────────────────────────────────────────────────────────
 
 export interface FailureDomainDistribution {
+  /** Structural issues (missing components, malformed output) */
   STR: number;
+  /** Semantic issues (incorrect meaning, wrong values) */
   SEM: number;
+  /** Practical issues (inefficiency, fragility, poor DX) */
   PRA: number;
+  /** Epistemic issues (overconfidence, ungrounded claims) */
   EPI: number;
 }
 
 export interface HealthFactor {
+  /** Factor name (e.g., 'pass_rate', 'issue_yield', 'resolution_rate') */
   factor: string;
+  /** Normalized score for this factor (0–100) */
   score: number;
+  /** Weight in the composite health score calculation */
   weight: number;
+  /** Qualitative status derived from the score */
   status: 'excellent' | 'good' | 'needs_attention' | 'critical';
+  /** Human-readable explanation of the score */
   detail: string;
+  /** Raw value and threshold used to compute the score */
   raw?: { value: number; threshold: number };
 }
 
@@ -49,26 +59,39 @@ export interface EffectivenessMetrics {
 }
 
 export interface ConstituentAgentMetrics {
+  /** Definition type (agent, command, workflow, pipeline) */
   type: string;
+  /** Agent name */
   name: string;
+  /** Mean score when run independently (outside pipeline); null if never run independently */
   independentAvgScore: number | null;
+  /** Number of independent (non-pipeline) runs */
   independentRunCount: number;
 }
 
 export interface LiftStatistics {
+  /** Standard error of the lift measurement */
   standardError: number;
-  /** 95% confidence interval — index 0 is lower bound, index 1 is upper bound. */
+  /** 95% confidence interval — index 0 is lower bound, index 1 is upper bound */
   ci95: [number, number];
+  /** Whether the lift is statistically significant */
   significant: boolean;
+  /** Sample sizes used for the comparison */
   sampleSizes: { pipeline: number; independent: number };
 }
 
 export interface CompositionLiftResult {
+  /** Score difference between pipeline and independent mean (positive = pipeline is better) */
   compositionLift: number | null;
+  /** Mean score when agents run as part of this pipeline */
   pipelineAvgScore: number | null;
+  /** Mean score across constituent agents' independent runs */
   independentMeanScore: number | null;
+  /** Per-agent independent performance data */
   constituentAgents: ConstituentAgentMetrics[];
+  /** Statistical significance test results; null if insufficient data */
   statistics: LiftStatistics | null;
+  /** Explanatory notes about data limitations or methodology */
   caveats: string[];
 }
 

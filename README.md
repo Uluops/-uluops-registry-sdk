@@ -240,6 +240,16 @@ const client = new RegistryClient({
 });
 ```
 
+### Client Instance Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `isAuthenticated()` | `boolean` | Check if credentials are configured and valid |
+| `getAuthType()` | `'api_key' \| 'session' \| null` | Get the authentication strategy in use |
+| `login(email, password)` | `Promise<LoginResult>` | Login with email/password via the ops API |
+| `logout()` | `void` | Clear the local session token (no server-side revocation) |
+| `getHttpClient()` | `RegistryHttpClient` | Access the underlying HTTP client for custom requests |
+
 ---
 
 ### Definitions (`client.definitions`)

@@ -52,8 +52,15 @@ const REGISTRY_ENV_VARS: EnvVarConfig = {
 };
 
 /**
- * Load credentials with priority chain
- * Priority: explicit params > env vars > stored credentials
+ * Load credentials with priority chain.
+ * Priority: explicit params > env vars > stored credentials (~/.uluops/credentials.json).
+ *
+ * @example
+ * ```typescript
+ * const creds = loadCredentials(); // auto-discover from env/disk
+ * const creds = loadCredentials({ apiKey: 'ulr_...' }); // explicit override
+ * console.log(creds.apiKey ?? creds.sessionToken); // whichever was found
+ * ```
  */
 export function loadCredentials(options: {
   apiKey?: string;
@@ -66,7 +73,15 @@ export function loadCredentials(options: {
 }
 
 /**
- * Load full SDK configuration
+ * Load full SDK configuration from env vars, .env files, and stored credentials.
+ * Returns a complete config object ready for `new RegistryClient()`.
+ *
+ * @example
+ * ```typescript
+ * const config = loadConfig(); // auto-discover everything
+ * const config = loadConfig({ debug: true, timeout: 60000 }); // with overrides
+ * // config.credentials.apiKey, config.baseUrl, config.authBaseUrl, etc.
+ * ```
  */
 export function loadConfig(options: {
   apiKey?: string;

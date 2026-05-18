@@ -514,7 +514,15 @@ export class RegistryClient {
   }
 
   /**
-   * Get the underlying HTTP client (for advanced use cases)
+   * Get the underlying HTTP client for advanced use cases such as
+   * making requests to custom endpoints not covered by the operation namespaces.
+   *
+   * @returns The {@link RegistryHttpClient} instance used by this client
+   * @example
+   * ```typescript
+   * const http = client.getHttpClient();
+   * const data = await http.get<MyType>('/custom/endpoint');
+   * ```
    */
   getHttpClient(): RegistryHttpClient {
     return this.http;
