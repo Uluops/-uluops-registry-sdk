@@ -13,8 +13,15 @@ import { buildDefinitionPath } from '../config/validators.js';
 import { recordExecutionResultSchema, executionStatsSchema } from '../types/schemas.js';
 
 /**
- * Record an execution of a definition
- * Idempotent: if runId is provided and already recorded, returns existing count
+ * Record an execution of a definition.
+ * Idempotent: if runId is provided and already recorded, returns existing count.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version that was executed
+ * @param body - Execution details (runId, model, durationMs, score, decision)
+ * @returns Execution result with updated count
  */
 export async function record(
   http: RegistryHttpClient,
@@ -28,8 +35,14 @@ export async function record(
 }
 
 /**
- * Get execution statistics for a definition
- * @param window Time window in minutes (1-10080, default 60)
+ * Get execution statistics for a definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version
+ * @param window - Time window in minutes (1-10080, default 60)
+ * @returns Execution statistics (count, averages, distribution)
  */
 export async function getStats(
   http: RegistryHttpClient,

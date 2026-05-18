@@ -9,7 +9,14 @@ import { buildDefinitionPath } from '../config/validators.js';
 import { dependencyGraphSchema } from '../types/response-schemas.js';
 
 /**
- * Get the dependency graph for a definition
+ * Get the dependency graph for a definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version
+ * @param options - Options (e.g., depth limit)
+ * @returns Dependency graph with nodes and edges
  */
 export async function get(
   http: RegistryHttpClient,
@@ -23,7 +30,13 @@ export async function get(
 }
 
 /**
- * Get definitions that depend on this definition
+ * Get definitions that depend on this definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version
+ * @returns Reverse dependency graph showing dependents
  */
 export async function getDependents(
   http: RegistryHttpClient,

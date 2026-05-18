@@ -136,17 +136,21 @@ export class RegistryClient {
    * Definition operations (CRUD, publish, deprecate)
    */
   readonly definitions: {
+    /** List definitions with optional filters and pagination. */
     list: (query?: ListDefinitionsQuery) => Promise<DefinitionListResponse>;
+    /** Get a single definition by type and name. Omit version for latest published. */
     get: (type: DefinitionType, name: string, version?: string, options?: GetDefinitionOptions) => Promise<Definition>;
+    /** Create a new draft definition from YAML. */
     create: (type: DefinitionType, name: string, body: CreateDefinitionBody) => Promise<Definition>;
+    /** Update a draft definition. */
     update: (type: DefinitionType, name: string, version: string, body: UpdateDefinitionBody) => Promise<Definition>;
+    /** Delete a draft definition. */
     delete: (type: DefinitionType, name: string, version: string) => Promise<void>;
+    /** Publish a draft, making it discoverable. */
     publish: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
+    /** Deprecate a published definition with reason and optional replacement. */
     deprecate: (type: DefinitionType, name: string, version: string, body: DeprecateDefinitionBody) => Promise<Definition>;
-    /**
-     * Archive a deprecated definition.
-     * This is a terminal state that removes the definition from discovery.
-     */
+    /** Archive a deprecated definition. Terminal state — removes from discovery. */
     archive: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
   };
 
@@ -154,7 +158,9 @@ export class RegistryClient {
    * Version operations (list, diff)
    */
   readonly versions: {
+    /** List all versions of a definition with optional pagination. */
     list: (type: DefinitionType, name: string, options?: { limit?: number; offset?: number }) => Promise<VersionsListResponse>;
+    /** Compare two versions. Returns summary by default; pass full=true for raw YAML or format for fields/unified. */
     diff: (type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }) => Promise<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff>;
   };
 
@@ -162,6 +168,7 @@ export class RegistryClient {
    * Validation operations
    */
   readonly validation: {
+    /** Validate YAML content without storing. Returns errors/warnings if any. */
     validate: (type: DefinitionType, yaml: string) => Promise<ValidationResult>;
   };
 
@@ -169,7 +176,9 @@ export class RegistryClient {
    * Dependency operations
    */
   readonly dependencies: {
+    /** Get the dependency graph for a definition version. */
     get: (type: DefinitionType, name: string, version: string, options?: GetDependenciesOptions) => Promise<DependencyGraph>;
+    /** Get definitions that depend on this definition version. */
     getDependents: (type: DefinitionType, name: string, version: string) => Promise<DependencyGraph>;
   };
 
@@ -177,9 +186,13 @@ export class RegistryClient {
    * Fork operations
    */
   readonly forks: {
+    /** Fork a definition to create a new one under your ownership. */
     create: (type: DefinitionType, name: string, version: string, body: ForkDefinitionBody) => Promise<ForkResponse>;
+    /** Check if a definition can be forked. */
     checkForkable: (type: DefinitionType, name: string, version: string, options?: CheckForkableOptions) => Promise<ForkableCheck>;
+    /** Get the fork ancestry chain of a definition. */
     getAncestry: (type: DefinitionType, name: string, version: string) => Promise<ForkLineage>;
+    /** List all forks derived from a definition. */
     list: (type: DefinitionType, name: string, version: string) => Promise<ForkListResponse>;
   };
 
@@ -187,7 +200,9 @@ export class RegistryClient {
    * Execution statistics operations
    */
   readonly executions: {
+    /** Record an execution of a definition. Idempotent if runId already recorded. */
     record: (type: DefinitionType, name: string, version: string, body: RecordExecutionBody) => Promise<RecordExecutionResult>;
+    /** Get execution statistics for a definition. @param window - Time window in minutes (1-10080, default 60). */
     getStats: (type: DefinitionType, name: string, version: string, window?: number) => Promise<ExecutionStats>;
   };
 
@@ -195,8 +210,11 @@ export class RegistryClient {
    * Star operations (per-user per-definition, idempotent)
    */
   readonly stars: {
+    /** Check if the authenticated user has starred a definition. */
     getStatus: (type: DefinitionType, name: string, version?: string) => Promise<StarResult>;
+    /** Star a definition. Idempotent — no-op if already starred. */
     star: (type: DefinitionType, name: string, version?: string) => Promise<StarResult>;
+    /** Unstar a definition. Idempotent — no-op if not starred. */
     unstar: (type: DefinitionType, name: string, version?: string) => Promise<StarResult>;
   };
 
@@ -204,8 +222,11 @@ export class RegistryClient {
    * Translation operations
    */
   readonly translation: {
+    /** Get the current translator version. */
     getVersion: () => Promise<TranslatorVersion>;
+    /** Retranslate a definition using the latest translator. */
     retranslate: (type: DefinitionType, name: string, version: string, options?: RetranslateOptions) => Promise<Definition>;
+    /** Upgrade a legacy definition to the dual-storage format. */
     upgrade: (type: DefinitionType, name: string, body: UpgradeDefinitionBody) => Promise<UpgradeResult>;
   };
 
@@ -213,11 +234,17 @@ export class RegistryClient {
    * Model catalog operations
    */
   readonly models: {
+    /** List models with optional filters (provider, capability). */
     list: (query?: ListModelsQuery) => Promise<ModelsListResponse>;
+    /** Get a specific model by provider and model ID. */
     get: (provider: string, modelId: string) => Promise<Model>;
+    /** List all model providers. */
     listProviders: () => Promise<ProvidersListResponse>;
+    /** List all model aliases. */
     listAliases: () => Promise<AliasesListResponse>;
+    /** Resolve a model alias (e.g., 'sonnet') to its target provider and model. */
     resolveAlias: (alias: string) => Promise<AliasResolution>;
+    /** Sync models from models.dev. Requires admin role or pro subscription. */
     sync: () => Promise<ModelSyncResult>;
   };
 
@@ -225,7 +252,9 @@ export class RegistryClient {
    * User operations (read-only)
    */
   readonly users: {
+    /** Get public user information by UUID. */
     get: (id: string) => Promise<PublicUser>;
+    /** Batch lookup public user information (max 100 IDs). */
     batch: (ids: string[]) => Promise<BatchUserResponse>;
   };
 
@@ -233,7 +262,9 @@ export class RegistryClient {
    * Render operations
    */
   readonly render: {
+    /** Get the rendered markdown for a stored definition version. */
     get: (type: DefinitionType, name: string, version: string, options?: renderOps.RenderGetOptions) => Promise<RenderResult>;
+    /** Preview render YAML without storing. */
     preview: (type: DefinitionType, body: RenderPreviewBody) => Promise<RenderResult>;
   };
 
@@ -243,13 +274,21 @@ export class RegistryClient {
    * Health scores are provisional pending 90-day calibration study.
    */
   readonly analytics: {
+    /** Get effectiveness metrics (pass rate, scores, taxonomy breakdown). */
     getEffectiveness: (type: DefinitionType, name: string, version?: string) => Promise<DefinitionEffectiveness>;
+    /** Get health grade (A-F) and issue profile. Provisional pending calibration. */
     getHealth: (type: DefinitionType, name: string, version?: string) => Promise<DefinitionHealth>;
+    /** Get ecosystem-wide overview: counts, aggregate health, top performers. */
     getEcosystemOverview: () => Promise<EcosystemOverview>;
+    /** Get lineage graph: versions and forks as a tree. */
     getLineage: (type: DefinitionType, name: string) => Promise<LineageResult>;
+    /** Get version-over-version metrics with trend detection. */
     getEvolution: (type: DefinitionType, name: string) => Promise<EvolutionResult>;
+    /** Get versions grouped by translator version with aggregate metrics. */
     getTranslation: (type: DefinitionType, name: string) => Promise<TranslationAnalyticsResult>;
+    /** Compare effectiveness across 2-5 versions side-by-side. */
     compare: (type: DefinitionType, name: string, versions: string[]) => Promise<CompareResult>;
+    /** Get structural diff combined with metric deltas between two versions. */
     getDiffImpact: (type: DefinitionType, name: string, fromVersion: string, toVersion: string) => Promise<DiffImpactResult>;
   };
 

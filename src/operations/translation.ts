@@ -16,15 +16,24 @@ import { definitionSchema } from '../types/schemas.js';
 import { translatorVersionSchema, upgradeResultSchema } from '../types/response-schemas.js';
 
 /**
- * Get the current translator version
+ * Get the current translator version.
+ *
+ * @param http - Registry HTTP client
+ * @returns Translator version info (version string, supported schemas)
  */
 export async function getVersion(http: RegistryHttpClient): Promise<TranslatorVersion> {
   return http.get<TranslatorVersion>('/definitions/translation/version', undefined, { schema: translatorVersionSchema });
 }
 
 /**
- * Retranslate a definition using the latest translator
- * @param options.createNewVersion If true, creates a new patch version instead of updating in-place
+ * Retranslate a definition using the latest translator.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version to retranslate
+ * @param options - Options (createNewVersion: create a new patch version instead of updating in-place)
+ * @returns The retranslated definition
  */
 export async function retranslate(
   http: RegistryHttpClient,
@@ -38,7 +47,13 @@ export async function retranslate(
 }
 
 /**
- * Upgrade a legacy definition to the dual-storage format
+ * Upgrade a legacy definition to the dual-storage format.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param body - Upgrade payload with YAML content
+ * @returns Upgrade result with the new version
  */
 export async function upgrade(
   http: RegistryHttpClient,

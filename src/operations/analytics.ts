@@ -42,6 +42,12 @@ function analyticsPath(type: DefinitionType, name: string): string {
 /**
  * Get effectiveness metrics for a definition version.
  * Includes pass rate, scores, taxonomy distribution, health score, and composition lift.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version (omit for latest)
+ * @returns Effectiveness metrics with scores, pass rate, and taxonomy breakdown
  */
 export async function getEffectiveness(
   http: RegistryHttpClient,
@@ -63,6 +69,12 @@ export async function getEffectiveness(
 /**
  * Get health grade (A-F) and issue profile for a definition version.
  * Health scores are provisional pending 90-day calibration.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version (omit for latest)
+ * @returns Health grade, issue counts, and staleness indicators
  */
 export async function getHealth(
   http: RegistryHttpClient,
@@ -83,6 +95,9 @@ export async function getHealth(
 
 /**
  * Get ecosystem-wide overview: definition counts, aggregate health, top performers.
+ *
+ * @param http - Registry HTTP client
+ * @returns Ecosystem overview with counts, health distribution, and top definitions
  */
 export async function getEcosystemOverview(
   http: RegistryHttpClient,
@@ -94,6 +109,11 @@ export async function getEcosystemOverview(
 
 /**
  * Get the lineage graph for a definition: versions and forks as a tree.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @returns Lineage graph with version nodes and fork edges
  */
 export async function getLineage(
   http: RegistryHttpClient,
@@ -111,6 +131,11 @@ export async function getLineage(
 
 /**
  * Get version-over-version metrics with trend detection.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @returns Evolution timeline with per-version metrics and trend indicators
  */
 export async function getEvolution(
   http: RegistryHttpClient,
@@ -128,6 +153,11 @@ export async function getEvolution(
 
 /**
  * Get versions grouped by translator version with aggregate metrics.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @returns Translation analytics grouped by translator version
  */
 export async function getTranslation(
   http: RegistryHttpClient,
@@ -145,6 +175,12 @@ export async function getTranslation(
 
 /**
  * Compare effectiveness across 2-5 definition versions side-by-side.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param versions - Array of 2-5 semver versions to compare
+ * @returns Side-by-side effectiveness comparison with deltas
  */
 export async function compare(
   http: RegistryHttpClient,
@@ -168,6 +204,13 @@ export async function compare(
 /**
  * Get structural diff combined with metric deltas between two versions.
  * Deltas are observational, not causal — caveats are always included.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param fromVersion - Source version
+ * @param toVersion - Target version
+ * @returns Structural diff with correlated metric changes and caveats
  */
 export async function getDiffImpact(
   http: RegistryHttpClient,

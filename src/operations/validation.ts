@@ -9,7 +9,12 @@ import { validateDefinitionType, validateYamlSize } from '../config/validators.j
 import { validationResultSchema } from '../types/response-schemas.js';
 
 /**
- * Validate YAML content without storing
+ * Validate YAML content without storing.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param yaml - Raw YAML string to validate
+ * @returns Validation result with errors/warnings if any
  */
 export async function validate(
   http: RegistryHttpClient,

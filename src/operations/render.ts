@@ -18,7 +18,14 @@ export interface RenderGetOptions {
 }
 
 /**
- * Get the rendered markdown for a definition
+ * Get the rendered markdown for a definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version (or 'latest')
+ * @param options - Render options (renderProfile, target harness, model override)
+ * @returns Rendered markdown content with metadata
  */
 export async function get(
   http: RegistryHttpClient,
@@ -36,7 +43,12 @@ export async function get(
 }
 
 /**
- * Preview render YAML without storing
+ * Preview render YAML without storing.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param body - Preview payload with raw YAML
+ * @returns Rendered markdown content
  */
 export async function preview(
   http: RegistryHttpClient,

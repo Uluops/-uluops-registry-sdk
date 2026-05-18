@@ -25,7 +25,14 @@ export interface ForkListResponse {
 }
 
 /**
- * Fork a definition to create a new one under your ownership
+ * Fork a definition to create a new one under your ownership.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Source definition name
+ * @param version - Source version to fork from
+ * @param body - Fork options (new name, visibility)
+ * @returns Fork response with the newly created definition
  */
 export async function create(
   http: RegistryHttpClient,
@@ -39,7 +46,14 @@ export async function create(
 }
 
 /**
- * Check if a definition can be forked
+ * Check if a definition can be forked.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version to check
+ * @param options - Options (e.g., target name to check for conflicts)
+ * @returns Forkable status with reasons if not forkable
  */
 export async function checkForkable(
   http: RegistryHttpClient,
@@ -53,7 +67,13 @@ export async function checkForkable(
 }
 
 /**
- * Get the fork ancestry chain of a definition
+ * Get the fork ancestry chain of a definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version
+ * @returns Fork lineage with ancestor chain
  */
 export async function getAncestry(
   http: RegistryHttpClient,
@@ -66,7 +86,13 @@ export async function getAncestry(
 }
 
 /**
- * List all forks derived from a definition
+ * List all forks derived from a definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version
+ * @returns List of forked definitions with total count
  */
 export async function list(
   http: RegistryHttpClient,

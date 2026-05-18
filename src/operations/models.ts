@@ -47,7 +47,11 @@ export interface AliasesListResponse {
 }
 
 /**
- * List models with optional filters
+ * List models with optional filters.
+ *
+ * @param http - Registry HTTP client
+ * @param query - Optional filters (provider, capability, search)
+ * @returns Models list with aliases and total count
  */
 export async function list(
   http: RegistryHttpClient,
@@ -57,7 +61,12 @@ export async function list(
 }
 
 /**
- * Get a specific model by provider and model ID
+ * Get a specific model by provider and model ID.
+ *
+ * @param http - Registry HTTP client
+ * @param provider - Provider name (e.g., 'anthropic', 'openai')
+ * @param modelId - Model identifier (e.g., 'claude-sonnet-4-5-20250514')
+ * @returns Model details including capabilities and pricing
  */
 export async function get(
   http: RegistryHttpClient,
@@ -74,21 +83,31 @@ export async function get(
 }
 
 /**
- * List all providers
+ * List all providers.
+ *
+ * @param http - Registry HTTP client
+ * @returns Provider list with total count
  */
 export async function listProviders(http: RegistryHttpClient): Promise<ProvidersListResponse> {
   return http.get<ProvidersListResponse>('/models/providers', undefined, { schema: providersListResponseSchema });
 }
 
 /**
- * List all model aliases
+ * List all model aliases.
+ *
+ * @param http - Registry HTTP client
+ * @returns Alias list with total count
  */
 export async function listAliases(http: RegistryHttpClient): Promise<AliasesListResponse> {
   return http.get<AliasesListResponse>('/models/aliases', undefined, { schema: aliasesListResponseSchema });
 }
 
 /**
- * Resolve a model alias to its target model
+ * Resolve a model alias to its target model.
+ *
+ * @param http - Registry HTTP client
+ * @param alias - Alias string to resolve (e.g., 'sonnet', 'opus')
+ * @returns Resolution result with target provider and model ID
  */
 export async function resolveAlias(
   http: RegistryHttpClient,
@@ -101,8 +120,11 @@ export async function resolveAlias(
 }
 
 /**
- * Sync models from models.dev
- * Requires admin role or pro subscription
+ * Sync models from models.dev.
+ * Requires admin role or pro subscription.
+ *
+ * @param http - Registry HTTP client
+ * @returns Sync result with counts of added, updated, and removed models
  */
 export async function sync(http: RegistryHttpClient): Promise<ModelSyncResult> {
   return http.post<ModelSyncResult>('/models/sync', undefined, { schema: modelSyncResultSchema });

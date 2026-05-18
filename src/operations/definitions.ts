@@ -29,7 +29,11 @@ export interface DefinitionListResponse {
 }
 
 /**
- * List definitions with filters and pagination
+ * List definitions with filters and pagination.
+ *
+ * @param http - Registry HTTP client
+ * @param query - Optional filters (type, status, search, visibility, limit, offset)
+ * @returns Paginated list of definitions with total count
  */
 export async function list(
   http: RegistryHttpClient,
@@ -42,8 +46,14 @@ export async function list(
 }
 
 /**
- * Get a single definition by type and name
- * Optionally specify a version with name@version format
+ * Get a single definition by type and name.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version string (omit for latest published)
+ * @param options - Optional flags (e.g., includeYaml)
+ * @returns Full definition including metadata, YAML, and rendered markdown
  */
 export async function get(
   http: RegistryHttpClient,
@@ -57,7 +67,13 @@ export async function get(
 }
 
 /**
- * Create a new draft definition
+ * Create a new draft definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param body - Creation payload including YAML content and visibility
+ * @returns The created definition in draft status
  */
 export async function create(
   http: RegistryHttpClient,
@@ -71,7 +87,14 @@ export async function create(
 }
 
 /**
- * Update a draft definition
+ * Update a draft definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version of the draft to update
+ * @param body - Fields to update (yaml, visibility, description)
+ * @returns The updated definition
  */
 export async function update(
   http: RegistryHttpClient,
@@ -88,7 +111,12 @@ export async function update(
 }
 
 /**
- * Delete a draft definition
+ * Delete a draft definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version of the draft to delete
  */
 export async function remove(
   http: RegistryHttpClient,
@@ -101,7 +129,13 @@ export async function remove(
 }
 
 /**
- * Publish a draft definition
+ * Publish a draft definition, making it discoverable.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version of the draft to publish
+ * @returns The definition with status changed to published
  */
 export async function publish(
   http: RegistryHttpClient,
@@ -114,7 +148,14 @@ export async function publish(
 }
 
 /**
- * Deprecate a published definition
+ * Deprecate a published definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version to deprecate
+ * @param body - Deprecation details (reason, replacement)
+ * @returns The definition with status changed to deprecated
  */
 export async function deprecate(
   http: RegistryHttpClient,
@@ -128,8 +169,14 @@ export async function deprecate(
 }
 
 /**
- * Archive a deprecated definition
- * This is a terminal state that removes the definition from discovery
+ * Archive a deprecated definition.
+ * This is a terminal state that removes the definition from discovery.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Semver version to archive
+ * @returns The definition with status changed to archived
  */
 export async function archive(
   http: RegistryHttpClient,

@@ -9,7 +9,11 @@ import { ValidationError } from '../errors/errors.js';
 import { publicUserSchema, batchUserResponseSchema } from '../types/response-schemas.js';
 
 /**
- * Get public user information by ID
+ * Get public user information by ID.
+ *
+ * @param http - Registry HTTP client
+ * @param id - User UUID
+ * @returns Public user profile (username, name, avatar URL)
  */
 export async function get(http: RegistryHttpClient, id: string): Promise<PublicUser> {
   validateUuid(id, 'userId');
@@ -17,8 +21,11 @@ export async function get(http: RegistryHttpClient, id: string): Promise<PublicU
 }
 
 /**
- * Batch lookup public user information
- * @param ids Array of user IDs (max 100)
+ * Batch lookup public user information.
+ *
+ * @param http - Registry HTTP client
+ * @param ids - Array of user UUIDs (max 100)
+ * @returns Map of user ID to public user profile
  */
 export async function batch(
   http: RegistryHttpClient,

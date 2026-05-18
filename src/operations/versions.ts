@@ -26,6 +26,12 @@ export interface VersionsListResponse {
 
 /**
  * List all versions of a definition with optional pagination.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param options - Pagination options (limit, offset)
+ * @returns Paginated list of version items with total count
  */
 export async function list(
   http: RegistryHttpClient,
@@ -45,6 +51,14 @@ export async function list(
 /**
  * Compare two versions of a definition.
  * Returns a summary by default. Pass full=true for raw YAML content.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param fromVersion - Source version for comparison
+ * @param toVersion - Target version for comparison
+ * @param options - Diff options: full (raw YAML), format (sections, fields, unified)
+ * @returns Diff result in the requested format
  */
 export async function diff(
   http: RegistryHttpClient,

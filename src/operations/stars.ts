@@ -13,6 +13,12 @@ import { starResultSchema } from '../types/schemas.js';
 
 /**
  * Check if the authenticated user has starred a definition.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Optional version (stars are per-definition, not per-version)
+ * @returns Star status with starred flag and count
  */
 export async function getStatus(
   http: RegistryHttpClient,
@@ -26,6 +32,12 @@ export async function getStatus(
 
 /**
  * Star a definition. Idempotent — no-op if already starred.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Optional version
+ * @returns Star result with updated count
  */
 export async function star(
   http: RegistryHttpClient,
@@ -39,6 +51,12 @@ export async function star(
 
 /**
  * Unstar a definition. Idempotent — no-op if not starred.
+ *
+ * @param http - Registry HTTP client
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Optional version
+ * @returns Star result with updated count
  */
 export async function unstar(
   http: RegistryHttpClient,
