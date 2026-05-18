@@ -42,6 +42,14 @@ export interface ValidationResult {
 }
 
 /**
+ * Result of a successful login via `RegistryClient.login()`.
+ */
+export interface LoginResult {
+  sessionToken: string;
+  expiresAt?: string;
+}
+
+/**
  * Individual field-level validation error from the API.
  *
  * Renamed from `ValidationError` to avoid collision with the SDK's

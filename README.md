@@ -276,9 +276,15 @@ const agents = await client.definitions.list({
 });
 ```
 
-#### `get(type, name, version?)`
+#### `get(type, name, version?, options?)`
 
 Get a definition by type, name, and optional version.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `includeYaml` | `boolean` | Include raw YAML content in response |
+| `includeRuntime` | `boolean` | Include rendered markdown in response |
+| `includeRefs` | `boolean` | Include dependency references |
 
 ```typescript
 // Get latest version
@@ -286,6 +292,12 @@ const def = await client.definitions.get('agent', 'code-validator');
 
 // Get specific version
 const def = await client.definitions.get('agent', 'code-validator', '1.0.0');
+
+// Include YAML and rendered markdown
+const full = await client.definitions.get('agent', 'code-validator', '1.0.0', {
+  includeYaml: true,
+  includeRuntime: true,
+});
 ```
 
 #### `create(type, name, body)`
@@ -1052,9 +1064,14 @@ const apiAuth = new ApiKeyAuth('ulr_...');
 
 ### Using the Low-Level HTTP Client
 
-For advanced use cases, you can use `RegistryHttpClient` directly:
+Access the HTTP client from an existing `RegistryClient` via `getHttpClient()`, or construct one directly:
 
 ```typescript
+// From an existing client (preserves auth config)
+const http = client.getHttpClient();
+const data = await http.get<MyType>('/custom/endpoint');
+
+// Or construct directly
 import { RegistryHttpClient } from '@uluops/registry-sdk';
 
 const http = new RegistryHttpClient({

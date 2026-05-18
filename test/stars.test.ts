@@ -88,6 +88,16 @@ describe('stars', () => {
       expect(result.starCount).toBe(41);
     });
 
+    it('unstars a definition with version', async () => {
+      nock(MOCK_BASE_URL)
+        .delete('/definitions/pipeline/ship@2.0.0/star')
+        .reply(200, { data: { starred: false, starCount: 4 } });
+
+      const result = await starsOps.unstar(http, 'pipeline', 'ship', '2.0.0');
+      expect(result.starred).toBe(false);
+      expect(result.starCount).toBe(4);
+    });
+
     it('is idempotent — unstarring when not starred is a no-op', async () => {
       nock(MOCK_BASE_URL)
         .delete('/definitions/command/commit-push/star')

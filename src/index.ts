@@ -22,6 +22,7 @@
 
 // Main client
 export { RegistryClient, type RegistryClientConfig } from './client.js';
+export type { LoginResult } from './types/responses.js';
 
 // HTTP layer (for advanced use cases)
 export {

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.2] - 2026-05-18
+
+### Added
+- `LoginResult` exported type — `login()` return type is now a named interface instead of anonymous inline object
+- `GetDefinitionOptions` documented in README with `includeYaml`, `includeRuntime`, `includeRefs` flags
+- `client.getHttpClient()` documented in README Advanced Usage section
+- Unstar with version test coverage
+
+### Fixed
+- `onTokenRefresh` callback now forwarded to JwtSessionAuth after `login()` — previously lost
+- `prepublishOnly` script uses ESM-safe `fs.readFileSync` + `JSON.parse` instead of CJS `require()`
+- CHANGELOG version gap (0.12-0.15) explained with stub entry
+- SAFETY comment on Zod `z.record` key narrowing transform in `ecosystemOverviewSchema`
+
 ## [0.20.1] - 2026-05-18
 
 ### Added
@@ -94,6 +108,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Dead `src/utils/` module (3 files) — re-exported from `@uluops/sdk-core` with zero internal references
+
+## [0.12.0] through [0.15.x]
+
+These versions were published before the changelog was established. Changes included SDK-core extraction, auth strategy refactoring, analytics operations, and response schema validation. See git history for details.
 
 ## [0.11.2] - 2026-04-09
 

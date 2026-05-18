@@ -88,6 +88,7 @@ import type {
   RetranslateOptions,
   UpgradeDefinitionBody,
   UpgradeResult,
+  LoginResult,
 } from './types/responses.js';
 import type { DefinitionType } from './types/enums.js';
 import type { DefinitionListResponse } from './operations/definitions.js';
@@ -132,6 +133,7 @@ export interface RegistryClientConfig {
 export class RegistryClient {
   private readonly http: RegistryHttpClient;
   private readonly configTimeout?: number;
+  private readonly configOnTokenRefresh?: (token: string) => void;
 
   /**
    * Definition operations (CRUD, publish, deprecate)
@@ -300,6 +302,7 @@ export class RegistryClient {
 
   constructor(config: RegistryClientConfig = {}) {
     this.configTimeout = config.timeout;
+    this.configOnTokenRefresh = config.onTokenRefresh;
     this.http = this.createHttpClient(config);
     this.definitions = this.bindDefinitions();
     this.versions = this.bindVersions();
@@ -323,7 +326,7 @@ export class RegistryClient {
    * Login with email and password via the ops-uluops-api.
    * The registry API has no auth endpoints — login is delegated to the ops API.
    */
-  async login(email: string, password: string): Promise<{ sessionToken: string; expiresAt?: string }> {
+  async login(email: string, password: string): Promise<LoginResult> {
     // Create a temporary HTTP client with the provided credentials to perform
     // the login call against the ops API (authBaseUrl).
     const tempHttp = new RegistryHttpClient({
@@ -344,7 +347,7 @@ export class RegistryClient {
         new JwtSessionAuth(
           this.http.createFetchClient(),
           { email, password: '' },
-          undefined,
+          this.configOnTokenRefresh,
           token,
         )
       );

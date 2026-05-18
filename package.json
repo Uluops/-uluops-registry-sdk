@@ -1,6 +1,6 @@
 {
   "name": "@uluops/registry-sdk",
-  "version": "0.20.1",
+  "version": "0.20.2",
   "description": "SDK for the UluOps Registry API - manage AI workflow definitions",
   "type": "module",
   "main": "dist/index.js",
@@ -35,7 +35,7 @@
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/",
-    "prepublishOnly": "node -e \"const p=require('./package.json');const v=require('fs').readFileSync('src/config/constants.ts','utf8').match(/SDK_VERSION\\s*=\\s*'([^']+)'/)?.[1];if(v!==p.version){console.error('SDK_VERSION('+v+') != package.json('+p.version+')');process.exit(1)}\" && npm audit --audit-level=high --omit=dev && npm run build"
+    "prepublishOnly": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const v=fs.readFileSync('src/config/constants.ts','utf8').match(/SDK_VERSION\\s*=\\s*'([^']+)'/)?.[1];if(v!==p.version){console.error('SDK_VERSION('+v+') != package.json('+p.version+')');process.exit(1)}\" && npm audit --audit-level=high --omit=dev && npm run build"
   },
   "keywords": [
     "uluops",

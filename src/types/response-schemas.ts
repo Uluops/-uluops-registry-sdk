@@ -434,6 +434,10 @@ export const definitionHealthSchema = z.object({
 export const ecosystemOverviewSchema = z.object({
   definitions: z.object({
     total: z.number().int().nonnegative(),
+    // SAFETY: The API returns { agent: N, command: N, workflow: N, pipeline: N } but
+    // z.record validates values only (not keys). The narrowing cast is safe because:
+    // 1. Extra keys are harmless (Partial makes all optional)
+    // 2. The API contract guarantees only these four definition types exist
     byType: z.record(z.string(), z.number()).transform(v => v as Partial<Record<'agent' | 'command' | 'workflow' | 'pipeline', number>>),
   }),
   execution: z.object({
