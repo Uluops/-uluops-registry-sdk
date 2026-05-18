@@ -39,6 +39,7 @@ import * as modelsOps from './operations/models.js';
 import * as usersOps from './operations/users.js';
 import * as renderOps from './operations/render.js';
 import * as analyticsOps from './operations/analytics.js';
+import * as starsOps from './operations/stars.js';
 
 import type {
   Definition,
@@ -82,6 +83,7 @@ import type {
   RecordExecutionBody,
   RecordExecutionResult,
   ExecutionStats,
+  StarResult,
   TranslatorVersion,
   RetranslateOptions,
   UpgradeDefinitionBody,
@@ -190,6 +192,15 @@ export class RegistryClient {
   };
 
   /**
+   * Star operations (per-user per-definition, idempotent)
+   */
+  readonly stars: {
+    getStatus: (type: DefinitionType, name: string, version?: string) => Promise<StarResult>;
+    star: (type: DefinitionType, name: string, version?: string) => Promise<StarResult>;
+    unstar: (type: DefinitionType, name: string, version?: string) => Promise<StarResult>;
+  };
+
+  /**
    * Translation operations
    */
   readonly translation: {
@@ -250,6 +261,7 @@ export class RegistryClient {
     this.dependencies = this.bindDependencies();
     this.forks = this.bindForks();
     this.executions = this.bindExecutions();
+    this.stars = this.bindStars();
     this.translation = this.bindTranslation();
     this.models = this.bindModels();
     this.users = this.bindUsers();
@@ -373,6 +385,14 @@ export class RegistryClient {
     return {
       record: (type, name, version, body) => executionsOps.record(this.http, type, name, version, body),
       getStats: (type, name, version, window) => executionsOps.getStats(this.http, type, name, version, window),
+    };
+  }
+
+  private bindStars(): RegistryClient['stars'] {
+    return {
+      getStatus: (type, name, version) => starsOps.getStatus(this.http, type, name, version),
+      star: (type, name, version) => starsOps.star(this.http, type, name, version),
+      unstar: (type, name, version) => starsOps.unstar(this.http, type, name, version),
     };
   }
 

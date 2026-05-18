@@ -170,4 +170,5 @@ export type {
   RecordExecutionBody,
   RecordExecutionResult,
   ExecutionStats,
+  StarResult,
 } from './types/responses.js';

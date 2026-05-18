@@ -88,6 +88,11 @@ export const executionStatsSchema = z.object({
   windowMinutes: z.number().int().positive(),
 });
 
+export const starResultSchema = z.object({
+  starred: z.boolean(),
+  starCount: z.number().int().nonnegative(),
+});
+
 export const recordExecutionResultSchema = z.object({
   recorded: z.boolean(),
   duplicate: z.boolean(),

@@ -149,3 +149,12 @@ export interface ExecutionStats {
   recentCount: number;
   windowMinutes: number;
 }
+
+/**
+ * Star status result.
+ * Returned by star/unstar/getStatus operations.
+ */
+export interface StarResult {
+  starred: boolean;
+  starCount: number;
+}
