@@ -10,10 +10,12 @@ import {
   mockError,
   TEST_API_KEY,
   TEST_SESSION_TOKEN,
+} from './setup.js';
+import {
   createMockDefinition,
   createMockModel,
-  createMockUser,
-} from './setup.js';
+  createMockPublicUser,
+} from './contract-helpers.js';
 
 describe('RegistryClient', () => {
   let client: RegistryClient;
@@ -114,7 +116,7 @@ describe('RegistryClient', () => {
 
   describe('users', () => {
     it('should get a user by id', async () => {
-      const mockUser = createMockUser();
+      const mockUser = createMockPublicUser();
       mockEndpoint('get', '/users/00000000-0000-4000-a000-000000000001', mockUser);
 
       const result = await client.users.get('00000000-0000-4000-a000-000000000001');
@@ -123,7 +125,7 @@ describe('RegistryClient', () => {
 
     it('should batch lookup users', async () => {
       const mockResponse = {
-        '00000000-0000-4000-a000-000000000001': createMockUser(),
+        '00000000-0000-4000-a000-000000000001': createMockPublicUser(),
       };
 
       mockEndpoint('post', '/users/batch', mockResponse);

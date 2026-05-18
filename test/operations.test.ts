@@ -16,7 +16,8 @@ import * as executionOps from '../src/operations/executions.js';
 import * as translationOps from '../src/operations/translation.js';
 import * as modelOps from '../src/operations/models.js';
 import * as renderOps from '../src/operations/render.js';
-import { TEST_API_KEY, MOCK_BASE_URL, createMockDefinition, createMockModel } from './setup.js';
+import { TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
+import { createMockDefinition, createMockModel } from './contract-helpers.js';
 import { MAX_YAML_SIZE } from '../src/config/constants.js';
 
 describe('operations', () => {
@@ -666,9 +667,9 @@ describe('operations', () => {
         expect(result.translatorVersion).toBe('2.0.0');
       });
 
-      it('should retranslate with force option', async () => {
+      it('should retranslate with createNewVersion option', async () => {
         nock(MOCK_BASE_URL)
-          .post('/definitions/agent/my-agent@1.0.0/retranslate', { force: true })
+          .post('/definitions/agent/my-agent@1.0.0/retranslate', { createNewVersion: true })
           .reply(200, { data: createMockDefinition({ translatorVersion: '2.0.0' }) });
 
         const result = await translationOps.retranslate(
@@ -676,7 +677,7 @@ describe('operations', () => {
           'agent',
           'my-agent',
           '1.0.0',
-          { force: true }
+          { createNewVersion: true }
         );
         expect(result.translatorVersion).toBe('2.0.0');
       });

@@ -9,10 +9,6 @@
 export {
   DEFAULT_TIMEOUT,
   DEFAULT_RETRY_COUNT,
-  BACKOFF_BASE_MS,
-  MAX_BACKOFF_MS,
-  JITTER_MIN,
-  JITTER_MAX,
   API_KEY_PREFIX,
   CONFIG_PATHS,
   HTTP_STATUS,
@@ -80,7 +76,7 @@ export const ENV_VARS = {
  * so this module can be imported in browser environments.
  * Keep in sync with package.json "version" field.
  */
-export const SDK_VERSION = '0.20.3';
+export const SDK_VERSION = '0.20.4';
 
 /**
  * User agent string for requests

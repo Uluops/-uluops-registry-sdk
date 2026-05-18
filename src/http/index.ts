@@ -12,4 +12,4 @@ export {
   type AuthConfig,
 } from './auth-strategy.js';
 
-export type { FetchClient } from './fetch-adapter.js';
+export type { FetchClient } from '@uluops/sdk-core/http';

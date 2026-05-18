@@ -73,7 +73,6 @@ export type {
 
 export type {
   // Version types
-  DefinitionVersion,
   VersionListItem,
   VersionDiff,
   VersionDiffSummary,

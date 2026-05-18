@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.4] - 2026-05-18
+
+### Removed
+- Dead mock factories from `test/setup.ts` — tests now use schema-validated factories from `contract-helpers.ts`
+- `DefinitionVersion` type from public exports — never returned by any SDK operation
+- Backoff constants (`BACKOFF_BASE_MS`, `MAX_BACKOFF_MS`, `JITTER_MIN`, `JITTER_MAX`) from re-exports — unreachable dead-end, not consumed internally
+- `DEFAULT_PROD_URL` / `DEFAULT_DEV_URL` from config barrel — internal-only, consumers should use `DEFAULT_BASE_URL`
+- `src/http/fetch-adapter.ts` — single-line type re-export indirection replaced by direct import
+- Stale `src/cli.ts` coverage exclude from `vitest.config.ts`
+
+### Fixed
+- `retranslate` test used phantom `force` option not in `RetranslateOptions` type — corrected to `createNewVersion`
+
 ## [0.20.3] - 2026-05-18
 
 ### Added
