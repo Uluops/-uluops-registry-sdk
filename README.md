@@ -179,6 +179,7 @@ import type {
   Definition,
   DefinitionType,
   DefinitionStatus,
+  ValidationFieldError,
   Model,
   PublicUser,
 } from '@uluops/registry-sdk';
@@ -252,7 +253,7 @@ List definitions with optional filters.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `type` | `DefinitionType` | Filter by type ('agent', 'command', 'workflow', 'pipeline') |
-| `status` | `DefinitionStatus` | Filter by status ('draft', 'published', 'deprecated') |
+| `status` | `DefinitionStatus` | Filter by status ('draft', 'published', 'deprecated', 'archived') |
 | `domain` | `Domain` | Filter by domain |
 | `authorId` | `string` | Filter by author user ID |
 | `visibility` | `Visibility` | Filter by visibility |

@@ -64,6 +64,12 @@ describe('analytics', () => {
 
       await expect(analyticsOps.getEffectiveness(http, 'pipeline', 'ship')).resolves.not.toThrow();
     });
+
+    it('rejects invalid version', async () => {
+      await expect(
+        analyticsOps.getEffectiveness(http, 'agent', 'code-validator', 'bad')
+      ).rejects.toThrow('semver');
+    });
   });
 
   // ── getHealth ─────────────────────────────────────────────────
@@ -100,6 +106,12 @@ describe('analytics', () => {
 
       const result = await analyticsOps.getHealth(http, 'agent', 'code-validator', '1.2.0');
       expect(result.definition.version).toBe('1.2.0');
+    });
+
+    it('rejects invalid version', async () => {
+      await expect(
+        analyticsOps.getHealth(http, 'agent', 'code-validator', 'bad')
+      ).rejects.toThrow('semver');
     });
   });
 
@@ -261,11 +273,29 @@ describe('analytics', () => {
         analyticsOps.compare(http, 'agent', 'code-validator', [])
       ).rejects.toThrow('requires 2-5 versions');
     });
+
+    it('rejects invalid semver in versions array', async () => {
+      await expect(
+        analyticsOps.compare(http, 'agent', 'code-validator', ['bad', '1.0.0'])
+      ).rejects.toThrow('semver');
+    });
   });
 
   // ── getDiffImpact ─────────────────────────────────────────────
 
   describe('getDiffImpact', () => {
+    it('rejects invalid fromVersion', async () => {
+      await expect(
+        analyticsOps.getDiffImpact(http, 'agent', 'code-validator', 'bad', '1.0.0')
+      ).rejects.toThrow('semver');
+    });
+
+    it('rejects invalid toVersion', async () => {
+      await expect(
+        analyticsOps.getDiffImpact(http, 'agent', 'code-validator', '1.0.0', 'bad')
+      ).rejects.toThrow('semver');
+    });
+
     it('constructs correct URL with both versions', async () => {
       nock(MOCK_BASE_URL)
         .get('/analytics/definitions/agent/code-validator/diff/1.0.0/1.1.0/impact')

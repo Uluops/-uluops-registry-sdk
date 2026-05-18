@@ -131,6 +131,7 @@ export interface RegistryClientConfig {
  */
 export class RegistryClient {
   private readonly http: RegistryHttpClient;
+  private readonly configTimeout?: number;
 
   /**
    * Definition operations (CRUD, publish, deprecate)
@@ -293,6 +294,7 @@ export class RegistryClient {
   };
 
   constructor(config: RegistryClientConfig = {}) {
+    this.configTimeout = config.timeout;
     this.http = this.createHttpClient(config);
     this.definitions = this.bindDefinitions();
     this.versions = this.bindVersions();
@@ -322,6 +324,7 @@ export class RegistryClient {
     const { RegistryHttpClient: HttpClient } = await import('./http/http-client.js');
     const tempHttp = new HttpClient({
       authBaseUrl: this.http.getAuthBaseUrl(),
+      timeout: this.configTimeout,
       email,
       password,
     });

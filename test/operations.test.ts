@@ -963,7 +963,7 @@ describe('operations', () => {
       });
 
       it('should accept YAML at exactly MAX_YAML_SIZE', async () => {
-        const exactSizeYaml = 'x'.repeat(102400);
+        const exactSizeYaml = 'x'.repeat(MAX_YAML_SIZE);
         nock(MOCK_BASE_URL)
           .post('/validate/agent')
           .reply(200, { data: { valid: true, errors: [] } });
