@@ -230,8 +230,6 @@ const client = new RegistryClient({
   password: 'secret',          // Password for session auth (requires email)
 
   // Connection settings
-  baseUrl: 'https://api.uluops.ai/api/v1/registry',  // Registry API base URL
-  authBaseUrl: 'https://api.uluops.ai/api/v1/ops',    // Auth API base URL (for login/refresh)
   timeout: 30000,              // Request timeout in ms (default: 30000)
   retries: 3,                  // Retry count for transient errors (default: 3)
   orgSlug: 'my-org',           // Organization slug for multi-tenancy
