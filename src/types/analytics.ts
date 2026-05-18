@@ -26,15 +26,25 @@ export interface HealthFactor {
 // ── Effectiveness ─────────────────────────────────────────────────
 
 export interface EffectivenessMetrics {
+  /** Percentage of runs that passed the gate threshold (0–1) */
   passRate: number;
+  /** Mean score across all runs */
   runAvgScore: number;
+  /** Standard deviation of run scores; null if fewer than 2 runs */
   scoreStdDev: number | null;
+  /** Average number of actionable issues found per run */
   issueYield: number;
+  /** Proportion of issues later marked as false positives (0–1) */
   falsePositiveRate: number;
+  /** Proportion of surfaced issues that were subsequently resolved (0–1) */
   resolutionRate: number;
+  /** Rate at which resolved issues reappear; null if insufficient data */
   regressionRate: number | null;
+  /** Mean hours from issue creation to resolution; null if no resolutions */
   avgResolutionTimeHours: number | null;
+  /** Breakdown of issues across the four failure domains (STR/SEM/PRA/EPI) */
   failureDomainDistribution: FailureDomainDistribution;
+  /** Ratio of epistemic (EPI) issues to total issues — higher means more fundamental findings */
   epistemicDensity: number;
 }
 

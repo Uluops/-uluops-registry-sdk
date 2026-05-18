@@ -201,9 +201,19 @@ describe('RegistryClient', () => {
   describe('session management', () => {
     const AUTH_BASE_URL = 'https://auth.test.uluops.ai/api/v1';
 
+    it('should throw when login called on API-key client', async () => {
+      const apiClient = new RegistryClient({
+        apiKey: TEST_API_KEY,
+        authBaseUrl: AUTH_BASE_URL,
+      });
+
+      await expect(
+        apiClient.login('user@test.com', 'password123')
+      ).rejects.toThrow('Cannot call login() on an API-key-authenticated client');
+    });
+
     it('should login with email and password', async () => {
       const loginClient = new RegistryClient({
-        apiKey: TEST_API_KEY,
         authBaseUrl: AUTH_BASE_URL,
       });
 
@@ -223,7 +233,6 @@ describe('RegistryClient', () => {
 
     it('should throw when login response missing sessionToken', async () => {
       const loginClient = new RegistryClient({
-        apiKey: TEST_API_KEY,
         authBaseUrl: AUTH_BASE_URL,
       });
 

@@ -844,6 +844,22 @@ ULUOPS_API_KEY=ulr_your-api-key-here
 # ULUOPS_AUTH_URL=http://localhost:3100/api/v1
 ```
 
+## Constants
+
+The `/config` sub-path exports useful constants for pre-flight checks and debugging:
+
+```typescript
+import { MAX_YAML_SIZE, SDK_VERSION } from '@uluops/registry-sdk/config';
+
+// Validate payload size before uploading
+if (yamlBuffer.byteLength > MAX_YAML_SIZE) {
+  throw new Error(`YAML exceeds ${MAX_YAML_SIZE} bytes`);
+}
+
+// Log the SDK version for debugging
+console.log('SDK version:', SDK_VERSION);
+```
+
 ## Error Handling
 
 The SDK provides a typed error hierarchy so you can catch and recover from specific failure modes.
@@ -863,7 +879,7 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
 | `NetworkError` | - | DNS failure, connection refused, network unreachable |
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
-| `ResponseValidationError` | * | API response did not match expected Zod schema (from `@uluops/sdk-core/errors`) |
+| `ResponseValidationError` | * | API response did not match expected Zod schema (from `@uluops/registry-sdk/errors`) |
 
 All API errors extend `RegistryApiError` and include:
 - `statusCode` — HTTP status code (0 for network/timeout)

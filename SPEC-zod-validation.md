@@ -1,5 +1,7 @@
 # Registry SDK: Zod Response Validation Expansion
 
+> **Status: COMPLETED in v0.16.0** — 39/40 HTTP calls (98%) now have Zod runtime validation. This document is retained as a historical implementation spec.
+
 ## Problem
 
 Only 8 of 40 HTTP calls (20%) validate API responses with Zod schemas. The remaining 31 calls use `as T` casts — TypeScript types are enforced at compile-time only, with no runtime guarantee. If the API response drifts from the expected shape, consumers get silent data corruption rather than a clear `ResponseValidationError`.

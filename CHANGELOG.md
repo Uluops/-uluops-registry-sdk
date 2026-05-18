@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.3] - 2026-05-18
+
+### Added
+- `ResponseValidationError` and `isResponseValidationError` re-exported from `@uluops/registry-sdk/errors` — consumers can now catch schema-drift errors without importing `@uluops/sdk-core` directly
+- `stars` namespace added to `operations/index.ts` barrel export
+- `login()` JSDoc expanded with `@returns`, `@throws` for API-key guard and invalid credentials
+- `logout()` JSDoc documenting local-only semantics and silent no-op behavior
+- Inline JSDoc on all `EffectivenessMetrics` fields (issueYield, falsePositiveRate, epistemicDensity, etc.)
+- Inline JSDoc on all `HttpClientConfig` fields (timeout, retries, debug, onTokenRefresh, sessionToken)
+- Constants section in README documenting `MAX_YAML_SIZE` and `SDK_VERSION` exports from `/config` sub-path
+- Client-side `validateDefinitionType()` guard on `definitions.list()` — invalid `type` query param now produces actionable error instead of opaque server rejection
+
+### Fixed
+- `ResponseValidationError` README error table referenced wrong import path (`@uluops/sdk-core/errors` → `@uluops/registry-sdk/errors`)
+- `login()` on API-key-authenticated client now throws immediately instead of firing a live HTTP request
+- `SPEC-zod-validation.md` marked as completed (v0.16.0) — was presenting 98%-complete work as a future plan
+
 ## [0.20.2] - 2026-05-18
 
 ### Added

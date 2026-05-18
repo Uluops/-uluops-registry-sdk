@@ -325,8 +325,20 @@ export class RegistryClient {
   /**
    * Login with email and password via the ops-uluops-api.
    * The registry API has no auth endpoints — login is delegated to the ops API.
+   *
+   * @param email - User email address
+   * @param password - User password
+   * @returns Session token and optional ISO 8601 expiry timestamp
+   * @throws {Error} If the client was constructed with API key auth (use session-based auth instead)
+   * @throws {UnauthorizedError} If credentials are invalid
    */
   async login(email: string, password: string): Promise<LoginResult> {
+    if (this.getAuthType() === 'api_key') {
+      throw new Error(
+        'Cannot call login() on an API-key-authenticated client. Use session-based auth instead.'
+      );
+    }
+
     // Create a temporary HTTP client with the provided credentials to perform
     // the login call against the ops API (authBaseUrl).
     const tempHttp = new RegistryHttpClient({
@@ -359,7 +371,10 @@ export class RegistryClient {
   }
 
   /**
-   * Logout (clear local session — registry has no server-side logout endpoint)
+   * Clear the local session token. Does not invalidate the token server-side —
+   * the registry API has no server-side logout endpoint.
+   *
+   * No-ops silently if the client is not using session-based auth.
    */
   logout(): void {
     const authStrategy = this.http.getAuthStrategy();

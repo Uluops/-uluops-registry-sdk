@@ -19,17 +19,27 @@ import {
  * HTTP client configuration for the registry SDK
  */
 export interface HttpClientConfig {
+  /** Registry API base URL (default: https://api.uluops.ai/api/v1/registry) */
   baseUrl?: string;
+  /** Auth API base URL for login/refresh (default: https://api.uluops.ai/api/v1/ops) */
   authBaseUrl?: string;
+  /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
+  /** Number of retries for transient errors with exponential backoff (default: 3) */
   retries?: number;
+  /** Enable debug logging to stderr */
   debug?: boolean;
+  /** API key for authentication (starts with 'ulr_') */
   apiKey?: string;
+  /** Email for session-based auth */
   email?: string;
+  /** Password for session-based auth */
   password?: string;
+  /** Pre-existing JWT session token — bypasses login, does not trigger onTokenRefresh */
   sessionToken?: string;
   /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
   orgSlug?: string;
+  /** Callback invoked when a session token is refreshed — use to persist the new token */
   onTokenRefresh?: (token: string) => void;
 }
 

@@ -23,6 +23,9 @@ export * as forks from './forks.js';
 /** Execution recording and statistics */
 export * as executions from './executions.js';
 
+/** Star/unstar definitions and check star status */
+export * as stars from './stars.js';
+
 /** Schema version translation and upgrades */
 export * as translation from './translation.js';
 
