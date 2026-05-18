@@ -223,8 +223,11 @@ describe('dependencyGraphSchema', () => {
 describe('forkListResponseSchema', () => {
   it('accepts valid response', () => {
     const result = forkListResponseSchema.safeParse({
-      items: [createMockDefinitionListItem()],
-      total: 1,
+      forks: [{
+        fork: { id: '00000000-0000-4000-a000-000000000010', definitionId: '00000000-0000-4000-a000-000000000001', sourceDefinitionId: null, forkedAt: '2026-01-01T00:00:00Z' },
+        definition: { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', authorId: '00000000-0000-4000-a000-000000000001', orgId: null },
+      }],
+      totalForks: 1,
     });
     expect(result.success).toBe(true);
   });

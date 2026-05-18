@@ -34,7 +34,7 @@ export const DEFAULT_DEV_URL = 'http://localhost:3001/api/v1';
  * - Otherwise (production, test, undefined) -> production
  */
 export const DEFAULT_BASE_URL =
-  process.env.NODE_ENV === 'development' ? DEFAULT_DEV_URL : DEFAULT_PROD_URL;
+  (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') ? DEFAULT_DEV_URL : DEFAULT_PROD_URL;
 
 /**
  * Production auth base URL (ops API) for login/refresh.
@@ -48,7 +48,7 @@ export const DEFAULT_AUTH_PROD_URL = 'https://api.uluops.ai/api/v1/ops';
 export const DEFAULT_AUTH_DEV_URL = 'http://localhost:3100/api/v1';
 
 export const DEFAULT_AUTH_BASE_URL =
-  process.env.NODE_ENV === 'development' ? DEFAULT_AUTH_DEV_URL : DEFAULT_AUTH_PROD_URL;
+  (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') ? DEFAULT_AUTH_DEV_URL : DEFAULT_AUTH_PROD_URL;
 
 /**
  * Maximum YAML size in bytes (150KB)
@@ -76,7 +76,7 @@ export const ENV_VARS = {
  * so this module can be imported in browser environments.
  * Keep in sync with package.json "version" field.
  */
-export const SDK_VERSION = '0.21.0';
+export const SDK_VERSION = '0.21.1';
 
 /**
  * User agent string for requests

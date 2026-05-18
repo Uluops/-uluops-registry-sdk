@@ -277,11 +277,31 @@ export const forkLineageSchema = z.object({
   chain: z.array(definitionListItemSchema).optional(),
 });
 
+/** Fork record schema */
+const forkRecordSchema = z.object({
+  id: z.string().uuid(),
+  definitionId: z.string().uuid(),
+  sourceDefinitionId: z.string().uuid().nullable(),
+  forkedAt: z.string(),
+});
+
+/** Fork definition summary schema */
+const forkDefinitionSummarySchema = z.object({
+  id: z.string().uuid(),
+  type: z.string(),
+  name: z.string(),
+  version: z.string(),
+  authorId: z.string().uuid(),
+  orgId: z.string().uuid().nullable(),
+});
+
 /** GET /definitions/{type}/{name}/{version}/forks */
 export const forkListResponseSchema = z.object({
-  items: z.array(definitionListItemSchema).optional(),
-  total: z.number().int().nonnegative().optional(),
-  forks: z.array(definitionListItemSchema).optional(),
+  forks: z.array(z.object({
+    fork: forkRecordSchema,
+    definition: forkDefinitionSummarySchema.nullable(),
+  })),
+  totalForks: z.number().int().nonnegative(),
 });
 
 /** Dependency graph node */

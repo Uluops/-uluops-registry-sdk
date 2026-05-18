@@ -43,7 +43,7 @@ export * as analytics from './analytics.js';
 
 // Re-export response types
 export type { DefinitionListResponse } from './definitions.js';
-export type { ForkListResponse } from './forks.js';
+export type { ForkListResponse, ForkEntry, ForkRecord, ForkDefinitionSummary } from './forks.js';
 export type {
   ModelsListResponse,
   ProvidersListResponse,

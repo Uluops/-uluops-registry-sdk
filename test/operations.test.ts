@@ -562,16 +562,17 @@ describe('operations', () => {
           .get('/definitions/agent/my-agent@1.0.0/forks')
           .reply(200, {
             data: {
-              items: [
-                { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', status: 'published', displayName: 'Fork 1', description: 'First fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
-                { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'fork-2', version: '1.0.0', status: 'published', displayName: 'Fork 2', description: 'Second fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
+              forks: [
+                { fork: { id: '00000000-0000-4000-a000-000000000010', definitionId: '00000000-0000-4000-a000-000000000001', sourceDefinitionId: '00000000-0000-4000-a000-000000000099', forkedAt: '2026-01-01T00:00:00Z' }, definition: { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', authorId: '00000000-0000-4000-a000-000000000001', orgId: null } },
+                { fork: { id: '00000000-0000-4000-a000-000000000011', definitionId: '00000000-0000-4000-a000-000000000002', sourceDefinitionId: '00000000-0000-4000-a000-000000000099', forkedAt: '2026-01-02T00:00:00Z' }, definition: { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'fork-2', version: '1.0.0', authorId: '00000000-0000-4000-a000-000000000001', orgId: null } },
               ],
-              total: 2,
+              totalForks: 2,
             },
           });
 
         const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
-        expect(result.items).toHaveLength(2);
+        expect(result.forks).toHaveLength(2);
+        expect(result.totalForks).toBe(2);
       });
     });
   });
@@ -982,27 +983,27 @@ describe('operations', () => {
           .get('/definitions/agent/my-agent@1.0.0/forks')
           .reply(200, {
             data: {
-              items: [
-                { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', status: 'published', displayName: 'Fork 1', description: 'First fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
-                { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'fork-2', version: '1.0.0', status: 'published', displayName: 'Fork 2', description: 'Second fork', domain: 'software', authorId: '00000000-0000-4000-a000-000000000001', tier: 'user', visibility: 'public', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', executionCount: 0, forkCount: 0, starCount: 0 },
+              forks: [
+                { fork: { id: '00000000-0000-4000-a000-000000000010', definitionId: '00000000-0000-4000-a000-000000000001', sourceDefinitionId: '00000000-0000-4000-a000-000000000099', forkedAt: '2026-01-01T00:00:00Z' }, definition: { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'fork-1', version: '1.0.0', authorId: '00000000-0000-4000-a000-000000000001', orgId: null } },
+                { fork: { id: '00000000-0000-4000-a000-000000000011', definitionId: '00000000-0000-4000-a000-000000000002', sourceDefinitionId: '00000000-0000-4000-a000-000000000099', forkedAt: '2026-01-02T00:00:00Z' }, definition: { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'fork-2', version: '1.0.0', authorId: '00000000-0000-4000-a000-000000000001', orgId: null } },
               ],
-              total: 2,
+              totalForks: 2,
             },
           });
 
         const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
-        expect(result.items).toHaveLength(2);
-        expect(result.total).toBe(2);
+        expect(result.forks).toHaveLength(2);
+        expect(result.totalForks).toBe(2);
       });
 
       it('should handle empty forks list', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/forks')
-          .reply(200, { data: { items: [], total: 0 } });
+          .reply(200, { data: { forks: [], totalForks: 0 } });
 
         const result = await forkOps.list(http, 'agent', 'my-agent', '1.0.0');
-        expect(result.items).toEqual([]);
-        expect(result.total).toBe(0);
+        expect(result.forks).toEqual([]);
+        expect(result.totalForks).toBe(0);
       });
 
       it('should reject invalid type', async () => {

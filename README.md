@@ -501,7 +501,11 @@ console.log('Chain:', lineage.chain);
 List all forks of a definition.
 
 ```typescript
-const forks = await client.forks.list('agent', 'code-validator', '1.0.0');
+const result = await client.forks.list('agent', 'code-validator', '1.0.0');
+console.log(result.totalForks); // 2
+result.forks.forEach(({ fork, definition }) => {
+  console.log(definition?.name, fork.forkedAt);
+});
 ```
 
 ---

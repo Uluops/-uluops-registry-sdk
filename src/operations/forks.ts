@@ -10,18 +10,40 @@ import type {
   ForkLineage,
   CheckForkableOptions,
 } from '../types/forks.js';
-import type { DefinitionListItem } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
 import { forkResponseSchema, forkableCheckSchema, forkLineageSchema, forkListResponseSchema } from '../types/response-schemas.js';
 
+/** Fork record linking a derived definition to its source */
+export interface ForkRecord {
+  id: string;
+  definitionId: string;
+  sourceDefinitionId: string | null;
+  forkedAt: string;
+}
+
+/** Summary of a forked definition */
+export interface ForkDefinitionSummary {
+  id: string;
+  type: string;
+  name: string;
+  version: string;
+  authorId: string;
+  orgId: string | null;
+}
+
+/** A single fork entry with the fork record and its definition details */
+export interface ForkEntry {
+  fork: ForkRecord;
+  definition: ForkDefinitionSummary | null;
+}
+
 /**
- * Fork list response
+ * Fork list response — contains the list of forked definitions and their count.
  */
 export interface ForkListResponse {
-  items?: DefinitionListItem[];
-  forks?: DefinitionListItem[];
-  total?: number;
+  forks: ForkEntry[];
+  totalForks: number;
 }
 
 /**
