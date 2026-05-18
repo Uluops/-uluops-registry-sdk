@@ -8,7 +8,7 @@ import {
   JwtSessionAuth,
   createAuthStrategy,
 } from '../src/http/auth-strategy.js';
-import type { FetchClient } from '../src/http/fetch-adapter.js';
+import type { FetchClient } from '@uluops/sdk-core/http';
 import { ValidationError } from '../src/errors/errors.js';
 import { TEST_API_KEY, TEST_SESSION_TOKEN } from './setup.js';
 

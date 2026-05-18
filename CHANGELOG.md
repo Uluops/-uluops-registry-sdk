@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-05-18
+
+### Added
+- Invalid-case tests for `validateShortString` on render target/model params (invalid chars, >100 chars)
+- `resetIdCounter()` export from `test/contract-helpers.ts` for deterministic test IDs
+- JSDoc on all config barrel re-exports (`HTTP_STATUS`, `ERROR_CODES`, `ENV_VARS`, etc.)
+- Expanded Constants section in README listing all `/config` exports with usage examples
+
+### Fixed
+- `BatchUserResponse` index signature now includes `| undefined` for consumer safety with `noUncheckedIndexedAccess`
+- `FetchClient` removed from http barrel — internal type, not consumer-facing
+- Removed brittle `toHaveBeenCalledTimes(1)` assertions in `loaders.test.ts` delegation tests
+- Auth strategy test updated to import `FetchClient` from `@uluops/sdk-core/http` (stale `fetch-adapter.ts` import)
+- CHANGELOG `Migration` section merged into `Changed` bullets (keep-a-changelog compliance)
+- Mixed-case org name in repository URL lowercased
+
 ## [0.21.1] - 2026-05-18
 
 ### Fixed
@@ -19,17 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.0] - 2026-05-18
 
 ### Changed
-- **BREAKING:** `client.forks.checkForkable()` renamed to `client.forks.isForkable()` — aligns with verb+adjective pattern for boolean-returning methods
-- **BREAKING:** `client.translation.upgrade()` renamed to `client.translation.upgradeDefinition()` — aligns with verb+noun convention used across the SDK
-
-### Migration
-```diff
-- await client.forks.checkForkable('agent', 'my-agent', '1.0.0');
-+ await client.forks.isForkable('agent', 'my-agent', '1.0.0');
-
-- await client.translation.upgrade('agent', 'legacy', { yaml });
-+ await client.translation.upgradeDefinition('agent', 'legacy', { yaml });
-```
+- **BREAKING:** `client.forks.checkForkable()` renamed to `client.forks.isForkable()` — aligns with verb+adjective pattern for boolean-returning methods. Migration: `checkForkable(...)` → `isForkable(...)`
+- **BREAKING:** `client.translation.upgrade()` renamed to `client.translation.upgradeDefinition()` — aligns with verb+noun convention used across the SDK. Migration: `upgrade(...)` → `upgradeDefinition(...)`
 
 ## [0.20.4] - 2026-05-18
 

@@ -1,6 +1,6 @@
 {
   "name": "@uluops/registry-sdk",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "description": "SDK for the UluOps Registry API - manage AI workflow definitions",
   "type": "module",
   "main": "dist/index.js",
@@ -49,7 +49,7 @@
   "author": "UluOps <hello@uluops.ai>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uluops/-uluops-registry-sdk.git"
+    "url": "https://github.com/uluops/-uluops-registry-sdk.git"
   },
   "license": "MIT",
   "dependencies": {

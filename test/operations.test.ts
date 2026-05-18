@@ -847,6 +847,24 @@ describe('operations', () => {
         expect(result.markdown).toBe('# Latest');
       });
 
+      it('should reject target with invalid characters', async () => {
+        await expect(
+          renderOps.get(http, 'agent', 'my-agent', '1.0.0', { target: 'has spaces!' })
+        ).rejects.toThrow('target contains invalid characters');
+      });
+
+      it('should reject target exceeding 100 chars', async () => {
+        await expect(
+          renderOps.get(http, 'agent', 'my-agent', '1.0.0', { target: 'a'.repeat(101) })
+        ).rejects.toThrow('target must be a non-empty string');
+      });
+
+      it('should reject model with invalid characters', async () => {
+        await expect(
+          renderOps.get(http, 'agent', 'my-agent', '1.0.0', { target: 'opencode', model: 'bad model!' })
+        ).rejects.toThrow('model contains invalid characters');
+      });
+
       it('should pass renderProfile query param', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/render')

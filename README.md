@@ -854,10 +854,22 @@ ULUOPS_API_KEY=ulr_your-api-key-here
 
 ## Constants
 
-The `/config` sub-path exports useful constants for pre-flight checks and debugging:
+The `/config` sub-path exports constants for pre-flight checks, debugging, and defensive programming:
 
 ```typescript
-import { MAX_YAML_SIZE, SDK_VERSION } from '@uluops/registry-sdk/config';
+import {
+  MAX_YAML_SIZE,
+  SDK_VERSION,
+  USER_AGENT,
+  HTTP_STATUS,
+  ERROR_CODES,
+  RETRYABLE_STATUS_CODES,
+  ENV_VARS,
+  DEFAULT_BASE_URL,
+  DEFAULT_TIMEOUT,
+  DEFAULT_RETRY_COUNT,
+  API_KEY_PREFIX,
+} from '@uluops/registry-sdk/config';
 
 // Validate payload size before uploading
 if (yamlBuffer.byteLength > MAX_YAML_SIZE) {
@@ -866,6 +878,24 @@ if (yamlBuffer.byteLength > MAX_YAML_SIZE) {
 
 // Log the SDK version for debugging
 console.log('SDK version:', SDK_VERSION);
+
+// Check error codes programmatically
+if (error.code === ERROR_CODES.NOT_FOUND) { /* ... */ }
+```
+
+The sub-path also exports Node.js-only helpers for credential discovery:
+
+```typescript
+import {
+  createClientFromEnvironment,
+  loadCredentials,
+  loadConfig,
+  loadStoredCredentials,
+  getGlobalConfigDir,
+  getCredentialsPath,
+  isApiKey,
+  validateCredentials,
+} from '@uluops/registry-sdk/config';
 ```
 
 ## Error Handling

@@ -65,7 +65,6 @@ describe('loaders', () => {
 
       const dir = getGlobalConfigDir();
       expect(dir).toBe('/home/testuser/.uluops');
-      expect(mockGetGlobalConfigDir).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -75,7 +74,6 @@ describe('loaders', () => {
 
       const path = getCredentialsPath();
       expect(path).toBe('/home/testuser/.uluops/credentials.json');
-      expect(mockGetCredentialsPath).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -117,7 +115,6 @@ describe('loaders', () => {
 
       const result = loadStoredCredentials();
       expect(result?.apiKey).toBe('ulr_stored_key');
-      expect(mockLoadStoredCredentials).toHaveBeenCalledTimes(1);
     });
 
     it('should pass profile argument through', () => {

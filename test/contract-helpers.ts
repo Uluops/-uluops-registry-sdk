@@ -79,6 +79,11 @@ const STRICT_CONTRACTS = process.env.STRICT_CONTRACTS !== 'false';
 
 let idCounter = 0;
 
+/** Reset ID counter between test files to ensure deterministic IDs */
+export function resetIdCounter(): void {
+  idCounter = 0;
+}
+
 function generateId(): string {
   idCounter++;
   return `00000000-0000-4000-a000-${String(idCounter).padStart(12, '0')}`;

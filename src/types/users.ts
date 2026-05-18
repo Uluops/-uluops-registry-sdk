@@ -19,5 +19,5 @@ export interface PublicUser {
  * Batch user lookup response
  */
 export interface BatchUserResponse {
-  [userId: string]: PublicUser | null;
+  [userId: string]: PublicUser | null | undefined;
 }
