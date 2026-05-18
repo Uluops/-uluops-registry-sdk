@@ -131,6 +131,9 @@ export function createClientFromEnvironment(config: RegistryClientConfig = {}): 
     retries: config.retries,
   });
 
+  // Resolve orgSlug: explicit config > env var
+  const orgSlug = config.orgSlug ?? process.env[ENV_VARS.ORG_SLUG] ?? undefined;
+
   return new RegistryClient({
     baseUrl: sdkConfig.baseUrl,
     authBaseUrl: sdkConfig.authBaseUrl,
@@ -141,6 +144,7 @@ export function createClientFromEnvironment(config: RegistryClientConfig = {}): 
     email: sdkConfig.credentials.email,
     password: sdkConfig.credentials.password,
     sessionToken: sdkConfig.credentials.sessionToken,
+    orgSlug,
     onTokenRefresh: config.onTokenRefresh,
   });
 }

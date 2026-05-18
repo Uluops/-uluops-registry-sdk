@@ -7,7 +7,9 @@
 
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { DefinitionType } from '../types/enums.js';
-import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';import type {
+import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
+import { ValidationError } from '../errors/errors.js';
+import type {
   DefinitionEffectiveness,
   DefinitionHealth,
   EcosystemOverview,
@@ -151,7 +153,7 @@ export async function compare(
   versions: string[],
 ): Promise<CompareResult> {
   if (versions.length < 2 || versions.length > 5) {
-    throw new Error(`compare() requires 2-5 versions (received ${String(versions.length)})`);
+    throw new ValidationError(`compare() requires 2-5 versions (received ${String(versions.length)})`, { field: 'versions', value: versions.length });
   }
   for (const v of versions) validateVersion(v);
   return http.get<CompareResult>(

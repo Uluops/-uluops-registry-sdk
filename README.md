@@ -254,8 +254,16 @@ List definitions with optional filters.
 | `type` | `DefinitionType` | Filter by type ('agent', 'command', 'workflow', 'pipeline') |
 | `status` | `DefinitionStatus` | Filter by status ('draft', 'published', 'deprecated') |
 | `domain` | `Domain` | Filter by domain |
-| `ownerId` | `string` | Filter by owner |
+| `authorId` | `string` | Filter by author user ID |
 | `visibility` | `Visibility` | Filter by visibility |
+| `search` | `string` | Text search across name and description |
+| `tag` | `string \| string[]` | Filter by tag(s) |
+| `isFork` | `boolean` | `true` = only forks, `false` = only originals |
+| `authorshipType` | `AuthorshipType` | Filter by authorship ('human', 'agent', 'collaborative', 'automated') |
+| `agentType` | `AgentType` | Filter by agent type |
+| `tier` | `Tier` | Filter by subscription tier |
+| `sortBy` | `SortField` | Sort field ('name', 'createdAt', 'executionCount', etc.) |
+| `sortOrder` | `SortOrder` | 'asc' or 'desc' |
 | `limit` | `number` | Max results (default: 50, max: 200) |
 | `offset` | `number` | Pagination offset |
 
@@ -364,13 +372,30 @@ for (const v of versions) {
 
 #### `diff(type, name, fromVersion, toVersion, options?)`
 
-Compare two versions showing changes.
+Compare two versions showing changes. The response shape depends on the `format` option:
 
 ```typescript
-const diff = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0', {
+// Section-level summary (default)
+const summary = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0');
+console.log(summary.sectionsAdded, summary.sectionsRemoved, summary.sectionsModified);
+
+// Unified text diff
+const unified = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0', {
   format: 'unified',
 });
-console.log(diff.sectionsAdded, diff.sectionsRemoved, diff.sectionsModified);
+console.log(unified.unified); // string containing unified diff
+
+// Field-level diff with suggested semver bump
+const fields = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0', {
+  format: 'fields',
+});
+console.log(fields.suggestedBump); // 'major' | 'minor' | 'patch'
+
+// Full raw YAML
+const full = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0', {
+  full: true,
+});
+console.log(full.fromYaml, full.toYaml);
 ```
 
 ---
@@ -825,6 +850,7 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
 | `NetworkError` | - | DNS failure, connection refused, network unreachable |
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
+| `ResponseValidationError` | * | API response did not match expected Zod schema (from `@uluops/sdk-core/errors`) |
 
 All API errors extend `RegistryApiError` and include:
 - `statusCode` — HTTP status code (0 for network/timeout)
@@ -1009,6 +1035,20 @@ Retryable status codes: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gatew
 
 ## Advanced Usage
 
+### Auth Strategies
+
+The SDK exports `ApiKeyAuth`, `JwtSessionAuth`, and `createAuthStrategy` for advanced composition. Most users should use `RegistryClient` directly — these are for cases where you need to manage auth independently of the client (e.g., sharing a token across multiple SDK instances or implementing custom refresh logic).
+
+```typescript
+import { ApiKeyAuth, JwtSessionAuth, createAuthStrategy } from '@uluops/registry-sdk';
+
+// Auto-detect from config
+const auth = createAuthStrategy({ apiKey: 'ulr_...' });
+
+// Or construct directly
+const apiAuth = new ApiKeyAuth('ulr_...');
+```
+
 ### Using the Low-Level HTTP Client
 
 For advanced use cases, you can use `RegistryHttpClient` directly:
@@ -1037,7 +1077,7 @@ import { createClientFromEnvironment } from '@uluops/registry-sdk/config';
 const client = createClientFromEnvironment();
 
 // Auto-discover with overrides
-const client = createClientFromEnvironment({
+const clientWithOverrides = createClientFromEnvironment({
   debug: true,
   baseUrl: 'http://localhost:3001/api/v1',
 });

@@ -5,6 +5,7 @@
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { PublicUser, BatchUserResponse } from '../types/users.js';
 import { validateUuid } from '../config/validators.js';
+import { ValidationError } from '../errors/errors.js';
 import { publicUserSchema, batchUserResponseSchema } from '../types/response-schemas.js';
 
 /**
@@ -28,7 +29,7 @@ export async function batch(
   }
 
   if (ids.length > 100) {
-    throw new Error(`Batch lookup supports maximum 100 user IDs (received ${ids.length})`);
+    throw new ValidationError(`Batch lookup supports maximum 100 user IDs (received ${ids.length})`, { field: 'ids', value: ids.length });
   }
 
   // Validate all IDs
