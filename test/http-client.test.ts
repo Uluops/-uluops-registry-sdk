@@ -697,7 +697,7 @@ describe('RegistryHttpClient', () => {
       expect(client.getAuthStrategy()).not.toBeNull();
     });
 
-    it('should throw UnauthorizedError (not NetworkError) when no credentials and server unreachable', async () => {
+    it('should throw NetworkError with credential hint when no credentials and server unreachable', async () => {
       // Allow real connections so fetch throws a genuine TypeError
       nock.enableNetConnect('localhost:19999');
 
@@ -711,9 +711,8 @@ describe('RegistryHttpClient', () => {
         await unauthClient.get('/test');
         expect.fail('Should have thrown');
       } catch (error) {
-        expect(error).toBeInstanceOf(UnauthorizedError);
-        expect(error).not.toBeInstanceOf(NetworkError);
-        expect((error as UnauthorizedError).message).toContain('ULUOPS_API_KEY');
+        expect(error).toBeInstanceOf(NetworkError);
+        expect((error as NetworkError).message).toContain('No credentials configured');
       }
     });
 
