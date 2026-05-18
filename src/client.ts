@@ -367,6 +367,9 @@ export class RegistryClient {
       return { sessionToken: token, expiresAt };
     }
 
+    // Unreachable: the API-key guard above catches the only non-session path,
+    // and the temp HTTP client always creates JwtSessionAuth when given email/password.
+    // Retained as a defensive safety net.
     throw new Error('Cannot login: no session auth strategy available');
   }
 

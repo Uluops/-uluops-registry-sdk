@@ -114,6 +114,8 @@ For interactive applications, use `login()` to obtain a session token programmat
 
 ```typescript
 // Login with email/password — no API key required
+// Note: process.env is Node.js-only. In browser environments,
+// pass the URL string directly instead.
 const client = new RegistryClient({
   authBaseUrl: process.env.ULUOPS_AUTH_URL, // ops API for login
 });
@@ -685,6 +687,8 @@ Batch lookup multiple users (max 100).
 ```typescript
 const users = await client.users.batch(['id1', 'id2', 'id3']);
 console.log(users['id1']?.username);
+// Unknown IDs return null — the key is present but the value is null
+console.log(users['nonexistent-id']); // null
 ```
 
 ---
