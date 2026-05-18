@@ -55,7 +55,7 @@ export async function create(
  * @param options - Options (e.g., target name to check for conflicts)
  * @returns Forkable status with reasons if not forkable
  */
-export async function checkForkable(
+export async function isForkable(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,

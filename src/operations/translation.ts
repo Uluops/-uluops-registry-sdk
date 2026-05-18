@@ -55,7 +55,7 @@ export async function retranslate(
  * @param body - Upgrade payload with YAML content
  * @returns Upgrade result with the new version
  */
-export async function upgrade(
+export async function upgradeDefinition(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,

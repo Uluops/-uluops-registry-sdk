@@ -74,7 +74,7 @@ Consumers should catch `ResponseValidationError` separately from `SdkApiError` (
 | **translation.ts** | `getVersion` | `TranslatorVersion` | Low |
 | **translation.ts** | `upgrade` | `UpgradeResult` | Medium — embeds `Definition` + `changes: Record<string, unknown>` |
 | **forks.ts** | `create` | `ForkResponse` | Medium — `{ definition: Definition, fork: Fork, source: DefinitionListItem, warnings? }` |
-| **forks.ts** | `checkForkable` | `ForkableCheck` | Low |
+| **forks.ts** | `isForkable` | `ForkableCheck` | Low |
 | **forks.ts** | `getAncestry` | `ForkLineage` | Medium — `{ current: DefinitionListItem, source?: DefinitionListItem \| null, chain: DefinitionListItem[] }` |
 | **forks.ts** | `list` | `ForkListResponse` | Medium — contains list items |
 | **dependencies.ts** | `get` | `DependencyGraph` | Medium — nodes + edges |
@@ -116,7 +116,7 @@ Low-complexity types with flat or shallow structure.
 - `modelSyncResultSchema` — `{ message?, providersAdded, providersUpdated, modelsAdded, modelsUpdated, duration? }`
 - `providerSchema` — `{ id, name, logoUrl?, docUrl?, apiUrl?, status: 'active' | 'inactive' | 'deprecated' }`
 
-**Wire to:** `render.get`, `render.preview`, `validation.validate`, `translation.getVersion`, `forks.checkForkable`, `users.get`, `models.sync`, `models.listProviders`
+**Wire to:** `render.get`, `render.preview`, `validation.validate`, `translation.getVersion`, `forks.isForkable`, `users.get`, `models.sync`, `models.listProviders`
 
 ### Phase 2: List & Composite Response Schemas (~14 new schemas, 6 files)
 Types that embed other schemas. `providerSchema` from Phase 1 is reused here.

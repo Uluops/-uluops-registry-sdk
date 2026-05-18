@@ -475,12 +475,12 @@ const forked = await client.forks.create('agent', 'code-validator', '1.0.0', {
 });
 ```
 
-#### `checkForkable(type, name, version)`
+#### `isForkable(type, name, version)`
 
 Check if a definition can be forked.
 
 ```typescript
-const check = await client.forks.checkForkable('agent', 'code-validator', '1.0.0');
+const check = await client.forks.isForkable('agent', 'code-validator', '1.0.0');
 if (check.canFork) {
   console.log('Can fork!');
 }
@@ -592,12 +592,12 @@ const def = await client.translation.retranslate('agent', 'my-agent', '1.0.0', {
 });
 ```
 
-#### `upgrade(type, name, body)`
+#### `upgradeDefinition(type, name, body)`
 
 Upgrade a legacy definition to the current format.
 
 ```typescript
-const result = await client.translation.upgrade('agent', 'legacy-agent', {
+const result = await client.translation.upgradeDefinition('agent', 'legacy-agent', {
   yaml: oldFormatYaml,
 });
 ```

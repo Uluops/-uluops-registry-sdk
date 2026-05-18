@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-05-18
+
+### Changed
+- **BREAKING:** `client.forks.checkForkable()` renamed to `client.forks.isForkable()` — aligns with verb+adjective pattern for boolean-returning methods
+- **BREAKING:** `client.translation.upgrade()` renamed to `client.translation.upgradeDefinition()` — aligns with verb+noun convention used across the SDK
+
+### Migration
+```diff
+- await client.forks.checkForkable('agent', 'my-agent', '1.0.0');
++ await client.forks.isForkable('agent', 'my-agent', '1.0.0');
+
+- await client.translation.upgrade('agent', 'legacy', { yaml });
++ await client.translation.upgradeDefinition('agent', 'legacy', { yaml });
+```
+
 ## [0.20.4] - 2026-05-18
 
 ### Removed

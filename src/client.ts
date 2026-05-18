@@ -197,7 +197,7 @@ export class RegistryClient {
     /** Fork a definition to create a new one under your ownership. */
     create: (type: DefinitionType, name: string, version: string, body: ForkDefinitionBody) => Promise<ForkResponse>;
     /** Check if a definition can be forked. */
-    checkForkable: (type: DefinitionType, name: string, version: string, options?: CheckForkableOptions) => Promise<ForkableCheck>;
+    isForkable: (type: DefinitionType, name: string, version: string, options?: CheckForkableOptions) => Promise<ForkableCheck>;
     /** Get the fork ancestry chain of a definition. */
     getAncestry: (type: DefinitionType, name: string, version: string) => Promise<ForkLineage>;
     /** List all forks derived from a definition. */
@@ -235,7 +235,7 @@ export class RegistryClient {
     /** Retranslate a definition using the latest translator. */
     retranslate: (type: DefinitionType, name: string, version: string, options?: RetranslateOptions) => Promise<Definition>;
     /** Upgrade a legacy definition to the dual-storage format. */
-    upgrade: (type: DefinitionType, name: string, body: UpgradeDefinitionBody) => Promise<UpgradeResult>;
+    upgradeDefinition: (type: DefinitionType, name: string, body: UpgradeDefinitionBody) => Promise<UpgradeResult>;
   };
 
   /**
@@ -446,7 +446,7 @@ export class RegistryClient {
   private bindForks(): RegistryClient['forks'] {
     return {
       create: (type, name, version, body) => forksOps.create(this.http, type, name, version, body),
-      checkForkable: (type, name, version, options) => forksOps.checkForkable(this.http, type, name, version, options),
+      isForkable: (type, name, version, options) => forksOps.isForkable(this.http, type, name, version, options),
       getAncestry: (type, name, version) => forksOps.getAncestry(this.http, type, name, version),
       list: (type, name, version) => forksOps.list(this.http, type, name, version),
     };
@@ -471,7 +471,7 @@ export class RegistryClient {
     return {
       getVersion: () => translationOps.getVersion(this.http),
       retranslate: (type, name, version, options) => translationOps.retranslate(this.http, type, name, version, options),
-      upgrade: (type, name, body) => translationOps.upgrade(this.http, type, name, body),
+      upgradeDefinition: (type, name, body) => translationOps.upgradeDefinition(this.http, type, name, body),
     };
   }
 

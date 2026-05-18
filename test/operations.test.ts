@@ -507,13 +507,13 @@ describe('operations', () => {
       });
     });
 
-    describe('checkForkable', () => {
+    describe('isForkable', () => {
       it('should check if forkable', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/forkable')
           .reply(200, { data: { canFork: true } });
 
-        const result = await forkOps.checkForkable(
+        const result = await forkOps.isForkable(
           http,
           'agent',
           'my-agent',
@@ -695,7 +695,7 @@ describe('operations', () => {
             },
           });
 
-        const result = await translationOps.upgrade(http, 'agent', 'legacy-agent', {
+        const result = await translationOps.upgradeDefinition(http, 'agent', 'legacy-agent', {
           yaml: 'old format',
         });
         expect(result.version).toBe('2.0.0');
@@ -1135,11 +1135,11 @@ describe('operations', () => {
       await expect(renderOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
     });
 
-    it('forks.checkForkable rejects wrong type for canFork', async () => {
+    it('forks.isForkable rejects wrong type for canFork', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/forkable').reply(200, {
         data: { canFork: 'yes' },
       });
-      await expect(forkOps.checkForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+      await expect(forkOps.isForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
     });
 
     it('dependencies.get rejects wrong type for nodes', async () => {
