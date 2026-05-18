@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-05-18
+
+### Added
+- `client.stars` namespace — star/unstar definitions and check star status (`getStatus`, `star`, `unstar`). Per-user per-definition, all idempotent. Matches existing Registry API star endpoints.
+- `StarResult` type and `starResultSchema` Zod validation schema
+- `ValidationFieldError` type exported from main entry — renamed from `ValidationError` response interface to avoid collision with the SDK's `ValidationError` error class
+
+### Changed
+- `SDK_VERSION` updated to 0.20.0
+
 ## [0.19.0] - 2026-05-15
 
 ### Changed

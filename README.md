@@ -47,6 +47,7 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
   - [Dependencies](#dependencies-clientdependencies)
   - [Forks](#forks-clientforks)
   - [Executions](#executions-clientexecutions)
+  - [Stars](#stars-clientstars)
   - [Translation](#translation-clienttranslation)
   - [Models](#models-clientmodels)
   - [Users](#users-clientusers)
@@ -61,7 +62,7 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 
 ## Features
 
-- **Full API Coverage**: Access all registry endpoints across 11 operation domains
+- **Full API Coverage**: Access all registry endpoints across 12 operation domains
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
 - **Type-Safe**: Complete TypeScript definitions with Zod runtime validation on all 39 operations (98% coverage)
 - **Dual Authentication**: API key (preferred) and JWT session support
@@ -490,6 +491,40 @@ const stats = await client.executions.getStats('agent', 'code-validator', '1.0.0
 console.log(`Total executions: ${stats.totalCount}`);
 console.log(`Recent executions: ${stats.recentCount}`);
 console.log(`Window: ${stats.windowMinutes} minutes`);
+```
+
+---
+
+### Stars (`client.stars`)
+
+Star and unstar definitions. Stars are tracked per-user per-definition (not per-version). All operations are idempotent and require authentication.
+
+#### `getStatus(type, name, version?)`
+
+Check if the authenticated user has starred a definition.
+
+```typescript
+const status = await client.stars.getStatus('agent', 'code-validator');
+console.log(status.starred); // true
+console.log(status.starCount); // 42
+```
+
+#### `star(type, name, version?)`
+
+Star a definition. No-op if already starred.
+
+```typescript
+const result = await client.stars.star('agent', 'code-validator');
+console.log(result.starCount); // 43
+```
+
+#### `unstar(type, name, version?)`
+
+Unstar a definition. No-op if not starred.
+
+```typescript
+const result = await client.stars.unstar('agent', 'code-validator');
+console.log(result.starCount); // 42
 ```
 
 ---
