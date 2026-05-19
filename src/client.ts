@@ -331,6 +331,9 @@ export class RegistryClient {
    * @returns Session token and optional ISO 8601 expiry timestamp
    * @throws {Error} If the client was constructed with API key auth (use session-based auth instead)
    * @throws {UnauthorizedError} If credentials are invalid
+   * @remarks After login, the client stores only the token — not the password. If the token expires
+   * and automatic refresh fails, you must call `login()` again. Long-running processes should
+   * catch auth errors and re-authenticate.
    */
   async login(email: string, password: string): Promise<LoginResult> {
     if (this.getAuthType() === 'api_key') {
@@ -355,6 +358,9 @@ export class RegistryClient {
       // Install session auth on the main client so subsequent requests
       // are authenticated (matches OpsClient.login() behaviour).
       // Password omitted — token is already obtained; no re-login needed.
+      // NOTE: If the token expires and automatic refresh fails, the client
+      // cannot re-authenticate. Long-running processes must catch auth errors
+      // and call login() again.
       this.http.setAuthStrategy(
         new JwtSessionAuth(
           this.http.createFetchClient(),

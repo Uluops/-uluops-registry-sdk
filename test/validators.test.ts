@@ -10,6 +10,7 @@ import {
   validateYamlSize,
   validateUuid,
   validatePagination,
+  validateShortString,
   parseDefinitionRef,
   buildDefinitionPath,
 } from '../src/config/validators.js';
@@ -354,6 +355,56 @@ describe('validators', () => {
 
     it('should reject NaN offset', () => {
       expect(() => validatePagination(50, NaN)).toThrow('Offset must be a non-negative integer');
+    });
+  });
+
+  describe('validateShortString', () => {
+    it('should accept valid short strings', () => {
+      expect(() => validateShortString('opencode', 'target')).not.toThrow();
+      expect(() => validateShortString('gpt-5.3_model', 'model')).not.toThrow();
+      expect(() => validateShortString('claude-sonnet-4-6', 'model')).not.toThrow();
+    });
+
+    it('should accept string at exactly 100 characters', () => {
+      expect(() => validateShortString('a'.repeat(100), 'target')).not.toThrow();
+    });
+
+    it('should reject empty string', () => {
+      expect(() => validateShortString('', 'target')).toThrow('non-empty string');
+    });
+
+    it('should reject string over 100 characters', () => {
+      expect(() => validateShortString('a'.repeat(101), 'target')).toThrow('non-empty string');
+    });
+
+    it('should reject string with spaces', () => {
+      expect(() => validateShortString('has spaces', 'target')).toThrow('invalid characters');
+    });
+
+    it('should reject string with special characters', () => {
+      expect(() => validateShortString('foo@bar', 'target')).toThrow('invalid characters');
+      expect(() => validateShortString('foo\r\nbar', 'target')).toThrow('invalid characters');
+    });
+
+    it('should include field name in error', () => {
+      expect(() => validateShortString('', 'orgSlug')).toThrow('orgSlug');
+    });
+
+    it('should throw ValidationError with details', () => {
+      try {
+        validateShortString('bad value!', 'myField');
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).details).toHaveProperty('field', 'myField');
+      }
+    });
+
+    it('should reject non-string input', () => {
+      // @ts-expect-error Testing invalid input
+      expect(() => validateShortString(null, 'target')).toThrow('non-empty string');
+      // @ts-expect-error Testing invalid input
+      expect(() => validateShortString(undefined, 'target')).toThrow('non-empty string');
     });
   });
 

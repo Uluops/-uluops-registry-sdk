@@ -61,9 +61,6 @@ export interface ValidationFieldError {
   code?: string;
 }
 
-/**
- * Rendered definition response
- */
 /** Warning from a target adapter about lossy or unmappable fields. */
 export interface TargetWarning {
   field: string;
@@ -71,6 +68,7 @@ export interface TargetWarning {
   level: 'info' | 'warn' | 'error';
 }
 
+/** Rendered definition response */
 export interface RenderResult {
   markdown: string;
   promptHash?: string | null;
@@ -130,6 +128,7 @@ export interface UpgradeResult {
  * Execution recording body
  */
 export interface RecordExecutionBody {
+  /** Source identifier for analytics attribution (e.g., 'cli', 'api', 'sdk', 'mcp') — free-form string */
   source: string;
   runId?: string;
 }

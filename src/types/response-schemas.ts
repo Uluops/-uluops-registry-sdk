@@ -4,7 +4,26 @@
  * Runtime validation for API responses. All schemas validate the inner
  * payload after the HttpClient auto-unwraps the { data: T } envelope.
  *
- * Conventions (matching ops-sdk):
+ * ## Design Decision: Strict Schema Coupling (ADR-002)
+ *
+ * This SDK intentionally couples response schemas tightly to the API contract.
+ * If the API removes a required field or changes a type, operations throw
+ * `ResponseValidationError` rather than returning silently corrupted data.
+ *
+ * This is a deliberate trade-off:
+ * - **Chosen**: Fail-fast on contract drift. Consumers get clear errors.
+ * - **Rejected**: Lenient/partial parsing (graceful degradation). Would let
+ *   consumers operate on incomplete data without realizing the contract broke.
+ * - **Mitigated by**: Default `.strip()` behavior — new fields added by the
+ *   API are silently dropped, so additive API changes never cause failures.
+ *   Only breaking changes (removed/retyped fields) trigger validation errors.
+ * - **Operational constraint**: SDK and API versions must advance together.
+ *   This is enforced by semver: API breaking changes require a major bump,
+ *   which triggers an SDK major bump.
+ *
+ * See: ADR-002-strict-response-validation.md
+ *
+ * ## Conventions (matching ops-sdk):
  * - .nullable() = DB allows NULL, field always present
  * - .optional() = API sometimes omits the field
  * - .nullable().optional() = nullable when present, sometimes omitted
@@ -742,22 +761,3 @@ export const versionUnifiedDiffSchema = versionDiffBaseSchema.extend({
   toLineCount: z.number().int().nonnegative(),
 });
 
-// ============================================================================
-// Generic Factory Functions (for test infrastructure)
-// ============================================================================
-
-/** Wrap a schema in { data: T, message? } envelope for test validation */
-export function createApiResponseSchema<T extends z.ZodTypeAny>(dataSchema: T) {
-  return z.object({
-    data: dataSchema,
-    message: z.string().optional(),
-  });
-}
-
-/** Wrap an item schema in { data: T[], count? } for list test validation */
-export function createListResponseSchema<T extends z.ZodTypeAny>(itemSchema: T) {
-  return z.object({
-    data: z.array(itemSchema),
-    count: z.number().int().nonnegative().optional(),
-  });
-}

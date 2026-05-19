@@ -3,6 +3,7 @@
  */
 
 import nock from 'nock';
+import { resetIdCounter } from './contract-helpers.js';
 
 /**
  * Mock API base URL (explicit test URL, not tied to SDK defaults)
@@ -83,6 +84,7 @@ export function mockWithHeaders(
 beforeEach(() => {
   nock.cleanAll(); // Ensure no stale interceptors from previous test
   enableMocks();
+  resetIdCounter();
 
   // Clear ULUOPS_ env vars to prevent tests from picking up real credentials
   for (const key of Object.keys(process.env)) {

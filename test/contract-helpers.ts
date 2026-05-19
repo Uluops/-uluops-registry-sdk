@@ -57,11 +57,28 @@ import {
   versionDiffSummarySchema,
   versionFieldDiffSchema,
   versionUnifiedDiffSchema,
-  // Factories
-  createApiResponseSchema,
-  createListResponseSchema,
 } from '../src/types/response-schemas.js';
 import { definitionSchema } from '../src/types/schemas.js';
+
+// ============================================================================
+// Schema Envelope Factories (test-only)
+// ============================================================================
+
+/** Wrap a schema in { data: T, message? } envelope for test validation */
+function createApiResponseSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+  return z.object({
+    data: dataSchema,
+    message: z.string().optional(),
+  });
+}
+
+/** Wrap an item schema in { data: T[], count? } for list test validation */
+function createListResponseSchema<T extends z.ZodTypeAny>(itemSchema: T) {
+  return z.object({
+    data: z.array(itemSchema),
+    count: z.number().int().nonnegative().optional(),
+  });
+}
 
 // ============================================================================
 // Configuration
@@ -400,11 +417,11 @@ export {
   versionDiffSummarySchema,
   versionFieldDiffSchema,
   versionUnifiedDiffSchema,
-  // Factories
-  createApiResponseSchema,
-  createListResponseSchema,
   // Input schemas
   definitionSchema,
+  // Factories (test-only, defined locally)
+  createApiResponseSchema,
+  createListResponseSchema,
 };
 
 export { STRICT_CONTRACTS };

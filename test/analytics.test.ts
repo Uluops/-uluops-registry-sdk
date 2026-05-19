@@ -319,4 +319,104 @@ describe('analytics', () => {
       expect(result.diff.hasChanges).toBe(true);
     });
   });
+
+  // ── Response Validation Wiring ────────────────────────────────
+  // Verify that Zod schema validation catches malformed responses
+
+  describe('response validation', () => {
+    it('getHealth rejects missing grade field', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/test/health')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'test', version: '1.0.0' },
+            healthScore: 85,
+            // grade missing
+            provisional: true,
+            caveats: [],
+            issueProfile: null,
+            factors: [],
+            stale: false,
+          },
+        });
+      await expect(analyticsOps.getHealth(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('getEcosystemOverview rejects missing definitions field', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/ecosystem/overview')
+        .reply(200, { data: { execution: { totalRuns: 0, uniqueProjects: 0 }, effectiveness: {}, stale: false } });
+      await expect(analyticsOps.getEcosystemOverview(http)).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('getLineage rejects missing root field', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/test/lineage')
+        .reply(200, { data: { totalVersions: 0, totalForks: 0, statistics: {}, stale: false } });
+      await expect(analyticsOps.getLineage(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('getEvolution rejects missing versions array', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/test/evolution')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'test', version: '1.0.0' },
+            trend: 'improving',
+            trendConfidence: 'medium',
+            overallTrend: {},
+            stale: false,
+          },
+        });
+      await expect(analyticsOps.getEvolution(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('getTranslation rejects missing groups array', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/test/translation')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'test', version: '1.0.0' },
+            currentTranslatorVersion: '4.0.0',
+            // groups missing
+            upgradeAvailable: false,
+            stale: false,
+          },
+        });
+      await expect(analyticsOps.getTranslation(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('compare rejects missing versions array in response', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/test/effectiveness/compare')
+        .query({ versions: '1.0.0,2.0.0' })
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'test', version: '1.0.0' },
+            // versions missing
+            stale: false,
+          },
+        });
+      await expect(analyticsOps.compare(http, 'agent', 'test', ['1.0.0', '2.0.0'])).rejects.toThrow(/API response validation failed/);
+    });
+
+    it('getDiffImpact rejects missing deltas', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/test/diff/1.0.0/2.0.0/impact')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'test', version: '1.0.0' },
+            diff: { hasChanges: true, sectionsAdded: [], sectionsRemoved: [], sectionsModified: [], fromLineCount: 0, toLineCount: 0 },
+            from: { version: '1.0.0', passRate: 0, runAvgScore: 0, runCount: 0 },
+            to: { version: '2.0.0', passRate: 0, runAvgScore: 0, runCount: 0 },
+            // deltas missing
+            categorizedChanges: [],
+            taxonomyShift: null,
+            caveats: [],
+            stale: false,
+          },
+        });
+      await expect(analyticsOps.getDiffImpact(http, 'agent', 'test', '1.0.0', '2.0.0')).rejects.toThrow(/API response validation failed/);
+    });
+  });
 });

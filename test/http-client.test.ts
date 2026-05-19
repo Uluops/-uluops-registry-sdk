@@ -763,11 +763,10 @@ describe('backoff calculation', () => {
     expect(attempts).toBe(3);
 
     // Verify delays increase (exponential backoff)
-    if (timestamps.length >= 3) {
-      const delay1 = timestamps[1] - timestamps[0];
-      const delay2 = timestamps[2] - timestamps[1];
-      // Second delay should be roughly 2x the first (with some tolerance for jitter)
-      expect(delay2).toBeGreaterThan(delay1 * 1.5);
-    }
+    expect(timestamps).toHaveLength(3);
+    const delay1 = timestamps[1]! - timestamps[0]!;
+    const delay2 = timestamps[2]! - timestamps[1]!;
+    // Second delay should be roughly 2x the first (with some tolerance for jitter)
+    expect(delay2).toBeGreaterThan(delay1 * 1.5);
   });
 });

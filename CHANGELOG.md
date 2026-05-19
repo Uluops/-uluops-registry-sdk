@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.4] - 2026-05-18
+
+### Fixed
+- **Security**: orgSlug now validated at construction time via `validateShortString()` — blocks CRLF header injection (CWE-93), special characters, and overlength values
+- Stale "39 operations (98% coverage)" claim in README replaced with accurate description
+
+### Added
+- Unit tests for `validateShortString` — boundary at 100/101 chars, empty string, CRLF, special characters, non-string input
+- Response-validation-wiring tests for all 7 remaining analytics endpoints (`getHealth`, `getEcosystemOverview`, `getLineage`, `getEvolution`, `getTranslation`, `compare`, `getDiffImpact`)
+- JSDoc `@remarks` on `login()` documenting post-login re-authentication requirement for long-running processes
+
 ## [0.21.3] - 2026-05-18
 
 ### Added

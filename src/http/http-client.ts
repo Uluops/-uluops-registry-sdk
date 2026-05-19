@@ -14,6 +14,7 @@ import {
   DEFAULT_AUTH_BASE_URL,
   SDK_VERSION,
 } from '../config/constants.js';
+import { validateShortString } from '../config/validators.js';
 
 /**
  * HTTP client configuration for the registry SDK
@@ -49,6 +50,10 @@ export interface HttpClientConfig {
  */
 export class RegistryHttpClient extends HttpClient {
   constructor(config: HttpClientConfig = {}) {
+    if (config.orgSlug) {
+      validateShortString(config.orgSlug, 'orgSlug');
+    }
+
     const coreConfig: CoreHttpClientConfig = {
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
       authBaseUrl: config.authBaseUrl ?? DEFAULT_AUTH_BASE_URL,

@@ -46,7 +46,9 @@ export interface Definition {
   name: string;
   version: string;
   status: DefinitionStatus;
+  /** Raw YAML source in UDL format (ADL/CDL/WDL/PDL). Null when content-gated. */
   yaml?: string | null;
+  /** SHA-256 hash of the YAML content — used for change detection */
   hash: string;
   displayName: string;
   description: string;
@@ -67,13 +69,18 @@ export interface Definition {
   /** True when content was stripped by content gating (yaml/runtimeMd will be null) */
   proRestricted?: boolean;
   visibility: Visibility;
+  /** Rendered markdown output from the UDL translator. Null when content-gated. */
   runtimeMd?: string | null;
+  /** SHA-256 hash of the rendered prompt content — distinct from yaml hash */
   promptHash?: string | null;
+  /** UDL translator version used to render this definition (e.g., '4.1.0') */
   translatorVersion?: string | null;
+  /** ADL/CDL/WDL/PDL schema version the YAML conforms to (e.g., 'v1.13.0') */
   schemaVersion?: string | null;
   executionCount: number;
   forkCount: number;
   starCount: number;
+  /** UUID of the source definition this was forked from. Null if original. */
   forkedFromId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -147,6 +154,7 @@ export interface GetDefinitionOptions {
  * Request body for creating a new definition
  */
 export interface CreateDefinitionBody {
+  /** Raw YAML content in UDL format (ADL/CDL/WDL/PDL). Maximum 150KB. */
   yaml: string;
   visibility?: Visibility;
   provenance?: Provenance;

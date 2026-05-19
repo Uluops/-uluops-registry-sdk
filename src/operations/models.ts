@@ -67,6 +67,7 @@ export async function list(
  * @param provider - Provider name (e.g., 'anthropic', 'openai')
  * @param modelId - Model identifier (e.g., 'claude-sonnet-4-5-20250514')
  * @returns Model details including capabilities and pricing
+ * @throws {ValidationError} If provider or modelId is empty or not a string
  */
 export async function get(
   http: RegistryHttpClient,
@@ -108,6 +109,7 @@ export async function listAliases(http: RegistryHttpClient): Promise<AliasesList
  * @param http - Registry HTTP client
  * @param alias - Alias string to resolve (e.g., 'sonnet', 'opus')
  * @returns Resolution result with target provider and model ID
+ * @throws {ValidationError} If alias is empty or not a string
  */
 export async function resolveAlias(
   http: RegistryHttpClient,

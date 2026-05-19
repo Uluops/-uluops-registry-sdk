@@ -64,13 +64,16 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 
 - **Full API Coverage**: Access all registry endpoints across 12 operation domains
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
-- **Type-Safe**: Complete TypeScript definitions with Zod runtime validation on all 39 operations (98% coverage)
+- **Type-Safe**: Complete TypeScript definitions with Zod runtime validation on all API operations
 - **Dual Authentication**: API key (preferred) and JWT session support
 - **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429)
 - **Error Hierarchy**: Typed errors for precise error handling
 - **Subpath Exports**: Import only what you need (`@uluops/registry-sdk/types`, `@uluops/registry-sdk/errors`)
 
 ## Installation
+
+> **Note:** This package is ESM-only. CJS environments (`require()`) are not supported.
+> Ensure your project uses `"type": "module"` or an ESM-compatible bundler.
 
 ```bash
 # npm
@@ -203,7 +206,7 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 | Export Path | Contents | Browser Safe |
 |------------|----------|:---:|
 | `@uluops/registry-sdk` | Main `RegistryClient`, `RegistryHttpClient`, auth strategies | Yes |
-| `@uluops/registry-sdk/types` | All TypeScript types and Zod schemas | Yes |
+| `@uluops/registry-sdk/types` | TypeScript types (PascalCase), Zod runtime schemas (`*Schema` suffix), enum arrays (SCREAMING_SNAKE) | Yes |
 | `@uluops/registry-sdk/errors` | Error classes and utilities | Yes |
 | `@uluops/registry-sdk/config` | Configuration loaders, `createClientFromEnvironment`, constants | No (Node.js) |
 
@@ -224,7 +227,7 @@ The base URL defaults to `https://api.uluops.ai/api/v1/registry` in production a
 ```typescript
 const client = new RegistryClient({
   // Authentication (choose one)
-  apiKey: 'ulr_...',           // API key (preferred)
+  apiKey: 'ulr_your-api-key-here', // API key (preferred)
   sessionToken: 'jwt-token',   // Existing session token
   email: 'user@example.com',   // Email for session auth (requires password)
   password: 'secret',          // Password for session auth (requires email)
@@ -873,6 +876,7 @@ import {
   ERROR_CODES,
   RETRYABLE_STATUS_CODES,
   ENV_VARS,
+  CONFIG_PATHS,
   DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT,
   DEFAULT_RETRY_COUNT,
@@ -899,6 +903,7 @@ import {
   loadCredentials,
   loadConfig,
   loadStoredCredentials,
+  loadEnvFiles,
   getGlobalConfigDir,
   getCredentialsPath,
   isApiKey,
@@ -1100,7 +1105,7 @@ The SDK automatically retries GET requests on transient errors (502, 503, 504, 4
 
 ```typescript
 const client = new RegistryClient({
-  apiKey: 'ulr_...',
+  apiKey: 'ulr_your-api-key-here',
   retries: 3,        // Max retry attempts (default: 3)
   timeout: 30000,    // Request timeout in ms (default: 30000)
 });
@@ -1118,10 +1123,10 @@ The SDK exports `ApiKeyAuth`, `JwtSessionAuth`, and `createAuthStrategy` for adv
 import { ApiKeyAuth, JwtSessionAuth, createAuthStrategy } from '@uluops/registry-sdk';
 
 // Auto-detect from config
-const auth = createAuthStrategy({ apiKey: 'ulr_...' });
+const auth = createAuthStrategy({ apiKey: 'ulr_your-api-key-here' });
 
 // Or construct directly
-const apiAuth = new ApiKeyAuth('ulr_...');
+const apiAuth = new ApiKeyAuth('ulr_your-api-key-here');
 ```
 
 ### Using the Low-Level HTTP Client
@@ -1138,7 +1143,7 @@ import { RegistryHttpClient } from '@uluops/registry-sdk';
 
 const http = new RegistryHttpClient({
   baseUrl: 'https://api.uluops.ai/api/v1/registry',
-  apiKey: 'ulr_...',
+  apiKey: 'ulr_your-api-key-here',
 });
 
 // Make raw requests
