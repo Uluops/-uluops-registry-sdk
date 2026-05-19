@@ -119,19 +119,19 @@ For interactive applications, use `login()` to obtain a session token programmat
 // Login with email/password — no API key required
 // Note: process.env is Node.js-only. In browser environments,
 // pass the URL string directly instead.
-const client = new RegistryClient({
+const sessionClient = new RegistryClient({
   authBaseUrl: process.env.ULUOPS_AUTH_URL, // ops API for login
 });
-const { sessionToken, expiresAt } = await client.login('user@example.com', 'password');
+const { sessionToken, expiresAt } = await sessionClient.login('user@example.com', 'password');
 // The client is now authenticated — subsequent requests use the session token
 
 // Or pass an existing token directly
-const client2 = new RegistryClient({
+const tokenClient = new RegistryClient({
   sessionToken: 'your-jwt-token',
 });
 
 // Clear the session when done
-client.logout();
+sessionClient.logout();
 ```
 
 The auth URL defaults to production (`https://api.uluops.ai/api/v1/ops`). For local development, set `ULUOPS_AUTH_URL` in your `.env` file or pass `authBaseUrl` to the constructor.
