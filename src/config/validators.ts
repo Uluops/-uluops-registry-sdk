@@ -15,7 +15,7 @@ export function validateDefinitionType(type: string): asserts type is Definition
   if (!DEFINITION_TYPE_SET.has(type)) {
     throw new ValidationError(
       `Invalid definition type '${type}'. Must be one of: ${DEFINITION_TYPES.join(', ')}`,
-      { field: 'type', value: type, allowed: [...DEFINITION_TYPES] }
+      { field: 'type', allowed: [...DEFINITION_TYPES] }
     );
   }
 }
@@ -27,12 +27,12 @@ export function validateDefinitionType(type: string): asserts type is Definition
  */
 export function validateDefinitionName(name: string): void {
   if (!name || typeof name !== 'string') {
-    throw new ValidationError('Definition name is required', { field: 'name', value: name });
+    throw new ValidationError('Definition name is required', { field: 'name' });
   }
 
   if (name.length < 1 || name.length > 100) {
     throw new ValidationError('Definition name must be 1-100 characters', {
-      field: 'name', value: name, length: name.length, maxLength: 100,
+      field: 'name', length: name.length, maxLength: 100,
     });
   }
 
@@ -41,7 +41,7 @@ export function validateDefinitionName(name: string): void {
     throw new ValidationError(
       'Definition name must be lowercase letters, numbers, and hyphens. ' +
         'Cannot start or end with hyphen.',
-      { field: 'name', value: name }
+      { field: 'name' }
     );
   }
 }
@@ -60,7 +60,7 @@ export function validateVersion(version: string): void {
   if (!pattern.test(version)) {
     throw new ValidationError(
       `Invalid version '${version}'. Must be semver format (X.Y.Z)`,
-      { field: 'version', value: version }
+      { field: 'version' }
     );
   }
 }
@@ -92,7 +92,7 @@ export function parseDefinitionRef(ref: string): { name: string; version?: strin
   if (parts.length > 2) {
     throw new ValidationError(
       `Invalid definition reference '${ref}'`,
-      { field: 'ref', value: ref }
+      { field: 'ref' }
     );
   }
 
@@ -100,7 +100,7 @@ export function parseDefinitionRef(ref: string): { name: string; version?: strin
   const version = parts[1];
 
   if (!name) {
-    throw new ValidationError('Definition name is required in reference', { field: 'ref', value: ref });
+    throw new ValidationError('Definition name is required in reference', { field: 'ref' });
   }
 
   validateDefinitionName(name);
@@ -122,15 +122,16 @@ export function buildDefinitionPath(
 ): string {
   validateDefinitionType(type);
   validateDefinitionName(name);
+  const encodedName = encodeURIComponent(name);
   if (version) {
     if (version === 'latest' && options?.allowLatest) {
       // Omit version from path — API resolves to latest published
-      return `/definitions/${type}/${name}`;
+      return `/definitions/${type}/${encodedName}`;
     }
     validateVersion(version);
-    return `/definitions/${type}/${name}@${version}`;
+    return `/definitions/${type}/${encodedName}@${encodeURIComponent(version)}`;
   }
-  return `/definitions/${type}/${name}`;
+  return `/definitions/${type}/${encodedName}`;
 }
 
 /**
@@ -140,8 +141,8 @@ export function validateUuid(id: string, fieldName = 'id'): void {
   const pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!pattern.test(id)) {
     throw new ValidationError(
-      `Invalid UUID format for ${fieldName}: '${id}'`,
-      { field: fieldName, value: id }
+      `Invalid UUID format for ${fieldName}`,
+      { field: fieldName }
     );
   }
 }
@@ -154,14 +155,14 @@ export function validateShortString(value: string, fieldName: string): void {
   if (typeof value !== 'string' || value.length === 0 || value.length > 100) {
     throw new ValidationError(
       `${fieldName} must be a non-empty string of at most 100 characters`,
-      { field: fieldName, value, maxLength: 100 }
+      { field: fieldName, maxLength: 100 }
     );
   }
   const pattern = /^[a-zA-Z0-9._-]+$/;
   if (!pattern.test(value)) {
     throw new ValidationError(
       `${fieldName} contains invalid characters. Only letters, numbers, dots, hyphens, and underscores are allowed.`,
-      { field: fieldName, value }
+      { field: fieldName }
     );
   }
 }
@@ -173,7 +174,7 @@ export function validatePagination(limit?: number, offset?: number): void {
   if (limit !== undefined) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
       throw new ValidationError('Limit must be an integer between 1 and 200', {
-        field: 'limit', value: limit, min: 1, max: 200,
+        field: 'limit', min: 1, max: 200,
       });
     }
   }
@@ -181,7 +182,7 @@ export function validatePagination(limit?: number, offset?: number): void {
   if (offset !== undefined) {
     if (!Number.isInteger(offset) || offset < 0) {
       throw new ValidationError('Offset must be a non-negative integer', {
-        field: 'offset', value: offset,
+        field: 'offset',
       });
     }
   }

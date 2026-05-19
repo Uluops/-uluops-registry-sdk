@@ -42,7 +42,7 @@ export async function list(
   validateDefinitionType(type);
   validateDefinitionName(name);
   if (options) validatePagination(options.limit, options.offset);
-  return http.get<VersionsListResponse>(`/definitions/${type}/${name}/versions`, {
+  return http.get<VersionsListResponse>(`/definitions/${type}/${encodeURIComponent(name)}/versions`, {
     ...(options?.limit !== undefined && { limit: String(options.limit) }),
     ...(options?.offset !== undefined && { offset: String(options.offset) }),
   }, { schema: versionsListResponseSchema });
@@ -91,7 +91,7 @@ export async function diff(
         ? versionUnifiedDiffSchema
         : versionDiffSummarySchema;
 
-  return http.get<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff>(`/definitions/${type}/${name}/diff`, {
+  return http.get<VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff>(`/definitions/${type}/${encodeURIComponent(name)}/diff`, {
     from: fromVersion,
     to: toVersion,
     ...(options?.full === true && { full: 'true' }),

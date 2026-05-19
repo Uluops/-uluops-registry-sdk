@@ -34,7 +34,7 @@ import {
 function analyticsPath(type: DefinitionType, name: string): string {
   validateDefinitionType(type);
   validateDefinitionName(name);
-  return `/analytics/definitions/${type}/${name}`;
+  return `/analytics/definitions/${type}/${encodeURIComponent(name)}`;
 }
 
 // ── Effectiveness ─────────────────────────────────────────────────

@@ -117,11 +117,7 @@ For interactive applications, use `login()` to obtain a session token programmat
 
 ```typescript
 // Login with email/password — no API key required
-// Note: process.env is Node.js-only. In browser environments,
-// pass the URL string directly instead.
-const sessionClient = new RegistryClient({
-  authBaseUrl: process.env.ULUOPS_AUTH_URL, // ops API for login
-});
+const sessionClient = new RegistryClient();
 const { sessionToken, expiresAt } = await sessionClient.login('user@example.com', 'password');
 // The client is now authenticated — subsequent requests use the session token
 
@@ -134,7 +130,7 @@ const tokenClient = new RegistryClient({
 sessionClient.logout();
 ```
 
-The auth URL defaults to production (`https://api.uluops.ai/api/v1/ops`). For local development, set `ULUOPS_AUTH_URL` in your `.env` file or pass `authBaseUrl` to the constructor.
+The auth URL defaults to production (`https://api.uluops.ai/api/v1/ops`).
 
 ### Validating Credentials
 
@@ -218,7 +214,7 @@ This SDK targets the **UluOps Registry API v1** (`/api/v1`). The SDK version fol
 - **Minor** (0.x.0): New features, backward-compatible
 - **Major** (x.0.0): Breaking changes (method signatures, removed endpoints)
 
-The base URL defaults to `https://api.uluops.ai/api/v1/registry` in production and `http://localhost:3001/api/v1` when `NODE_ENV=development`. Override with the `baseUrl` constructor option or `ULUOPS_REGISTRY_URL` env var.
+The base URL defaults to `https://api.uluops.ai/api/v1/registry`.
 
 ## API Reference
 
@@ -848,8 +844,6 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
 | `ULUOPS_EMAIL` | Email for session-based auth | - |
 | `ULUOPS_PASSWORD` | Password for session-based auth | - |
-| `ULUOPS_REGISTRY_URL` | Registry API base URL | `https://api.uluops.ai/api/v1/registry` |
-| `ULUOPS_AUTH_URL` | Auth API base URL (for `login()`) | `https://api.uluops.ai/api/v1/ops` |
 | `ULUOPS_ORG_SLUG` | Organization slug for multi-tenancy | - |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
@@ -857,10 +851,6 @@ Create a `.env` file in your project:
 
 ```env
 ULUOPS_API_KEY=ulr_your-api-key-here
-
-# Override for local development:
-# ULUOPS_REGISTRY_URL=http://localhost:3001/api/v1
-# ULUOPS_AUTH_URL=http://localhost:3100/api/v1
 ```
 
 ## Constants
@@ -1142,7 +1132,6 @@ const data = await http.get<MyType>('/custom/endpoint');
 import { RegistryHttpClient } from '@uluops/registry-sdk';
 
 const http = new RegistryHttpClient({
-  baseUrl: 'https://api.uluops.ai/api/v1/registry',
   apiKey: 'ulr_your-api-key-here',
 });
 
@@ -1164,7 +1153,6 @@ const client = createClientFromEnvironment();
 // Auto-discover with overrides
 const clientWithOverrides = createClientFromEnvironment({
   debug: true,
-  baseUrl: 'http://localhost:3001/api/v1',
 });
 ```
 
@@ -1179,7 +1167,7 @@ console.log(credentials.apiKey);
 
 // Load full config
 const config = loadConfig();
-console.log(config.baseUrl);
+console.log(config.apiKey);
 ```
 
 > **Note:** The `/config` sub-path uses Node.js built-ins (`node:fs`, `node:path`, `node:os`) and cannot be imported in browser environments.
@@ -1193,7 +1181,7 @@ The main SDK entry point (`@uluops/registry-sdk`) is browser-safe. The `Registry
 import { RegistryClient } from '@uluops/registry-sdk';
 
 const client = new RegistryClient({
-  baseUrl: '/api/v1', // Or your proxy URL
+  apiKey: 'ulr_your-api-key-here',
 });
 
 const models = await client.models.list({ provider: 'anthropic' });

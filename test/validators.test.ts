@@ -42,8 +42,8 @@ describe('validators', () => {
         expect(error).toBeInstanceOf(ValidationError);
         const ve = error as ValidationError;
         expect(ve.details).toHaveProperty('field', 'type');
-        expect(ve.details).toHaveProperty('value', 'invalid');
         expect(ve.details).toHaveProperty('allowed');
+        expect(ve.details).not.toHaveProperty('value');
       }
     });
   });
@@ -173,7 +173,7 @@ describe('validators', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ValidationError);
         expect((error as ValidationError).details).toHaveProperty('field', 'version');
-        expect((error as ValidationError).details).toHaveProperty('value', 'bad');
+        expect((error as ValidationError).details).not.toHaveProperty('value');
       }
     });
 
@@ -256,7 +256,7 @@ describe('validators', () => {
 
     it('should include field name in error message', () => {
       expect(() => validateUuid('invalid', 'userId')).toThrow(
-        "Invalid UUID format for userId: 'invalid'"
+        'Invalid UUID format for userId'
       );
     });
 
@@ -267,7 +267,7 @@ describe('validators', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ValidationError);
         expect((error as ValidationError).details).toHaveProperty('field', 'definitionId');
-        expect((error as ValidationError).details).toHaveProperty('value', 'bad');
+        expect((error as ValidationError).details).not.toHaveProperty('value');
       }
     });
   });
