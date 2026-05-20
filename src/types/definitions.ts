@@ -15,6 +15,25 @@ import type {
   Visibility,
 } from './enums.js';
 
+// ── Definition Reference ─────────────────────────────────────
+
+/**
+ * Compact reference to a specific definition version.
+ *
+ * Reduces the (type, name, version) ceremony when passing definition
+ * identifiers between functions. Destructure with spread:
+ *
+ * ```ts
+ * const ref: DefinitionRef = { type: 'agent', name: 'code-validator', version: '1.0.0' };
+ * const def = await client.definitions.get(ref.type, ref.name, ref.version);
+ * ```
+ */
+export interface DefinitionRef {
+  type: DefinitionType;
+  name: string;
+  version: string;
+}
+
 // ── Provenance Types ──────────────────────────────────────────
 
 export type AuthorshipType = 'human' | 'agent' | 'collaborative' | 'automated';

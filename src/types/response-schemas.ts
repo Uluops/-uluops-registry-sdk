@@ -17,9 +17,9 @@
  * - **Mitigated by**: Default `.strip()` behavior — new fields added by the
  *   API are silently dropped, so additive API changes never cause failures.
  *   Only breaking changes (removed/retyped fields) trigger validation errors.
- * - **Operational constraint**: SDK and API versions must advance together.
- *   This is enforced by semver: API breaking changes require a major bump,
- *   which triggers an SDK major bump.
+ * - **Operational constraint**: SDK and API versions should advance together.
+ *   While pre-1.0, breaking changes may occur in minor releases. Post-1.0,
+ *   this will be enforced by semver (API breaking changes require a major bump).
  *
  * See: ADR-002-strict-response-validation.md
  *
