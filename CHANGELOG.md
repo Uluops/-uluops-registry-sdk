@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-05-20
+
+### Added
+- **`onRetry` callback** — new client config option fires before each retry attempt with `{ attempt, maxAttempts, error, delayMs }`. Passed through to sdk-core.
+
+### Dependencies
+- `@uluops/sdk-core` bumped to `^0.9.0` (onRetry callback)
+
 ## [0.24.0] - 2026-05-20
 
 ### Added

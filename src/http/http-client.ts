@@ -47,6 +47,8 @@ export interface HttpClientConfig {
   onRateLimitApproaching?: (info: RateLimitInfo) => void;
   /** Ratio of remaining/limit that triggers the callback (default: 0.1) */
   rateLimitThreshold?: number;
+  /** Called before each retry attempt with attempt info and backoff delay */
+  onRetry?: (info: { attempt: number; maxAttempts: number; error: Error; delayMs: number }) => void;
 }
 
 /**
@@ -79,6 +81,7 @@ export class RegistryHttpClient extends HttpClient {
       onTokenRefresh: config.onTokenRefresh,
       onRateLimitApproaching: config.onRateLimitApproaching,
       rateLimitThreshold: config.rateLimitThreshold,
+      onRetry: config.onRetry,
     };
     super(coreConfig);
   }

@@ -127,6 +127,8 @@ export interface RegistryClientConfig {
   onRateLimitApproaching?: (info: import('@uluops/sdk-core').RateLimitInfo) => void;
   /** Ratio of remaining/limit that triggers the callback (default: 0.1) */
   rateLimitThreshold?: number;
+  /** Called before each retry attempt with attempt info and backoff delay */
+  onRetry?: (info: { attempt: number; maxAttempts: number; error: Error; delayMs: number }) => void;
 }
 
 /**
@@ -421,6 +423,7 @@ export class RegistryClient {
       onTokenRefresh: config.onTokenRefresh,
       onRateLimitApproaching: config.onRateLimitApproaching,
       rateLimitThreshold: config.rateLimitThreshold,
+      onRetry: config.onRetry,
     });
   }
 

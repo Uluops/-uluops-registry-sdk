@@ -1,6 +1,6 @@
 {
   "name": "@uluops/registry-sdk",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "SDK for the UluOps Registry API - manage AI workflow definitions",
   "type": "module",
   "main": "dist/index.js",
@@ -58,7 +58,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@uluops/sdk-core": "^0.8.0",
+    "@uluops/sdk-core": "^0.9.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
