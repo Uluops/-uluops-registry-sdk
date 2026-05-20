@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-05-19
+
+### Added
+- **Definition normalization** — new `@uluops/registry-sdk/normalization` subpath export with pure functions that transform CDL/WDL/PDL YAML authoring format into the runtime shape executors expect. Previously, every SDK consumer (MCP server, CLI, core) had to build their own normalization layer. Now canonical and reusable.
+  - `normalizeDefinition(parsed)` — orchestrator: detects top-level key, dispatches to type-specific normalizer
+  - `normalizeCommandSection(section)` — CDL: `invokes.agent/agents` → `agents[]`, preflight/postflight → `execution.*`, `overrides.threshold` → `execution.thresholds.pass`
+  - `normalizeWorkflowSection(section)` — WDL: `steps[].command` → `commands[]`, `condition` → `skip_if` (negated), default `gate.aggregate`
+  - `normalizePipelineSection(section)` — PDL: infer `stage.type` from `agents[]` or `ref` presence
+  - `validateWorkflowStructure(section)`, `validatePipelineStructure(section)` — structural guards
+  - `DefinitionValidationError` — thrown on invalid definition structure
+- All normalizers are immutable (return new objects via `structuredClone`) and browser-safe (no Node.js APIs)
+- See ADR-003 for design rationale
+
 ## [0.21.4] - 2026-05-18
 
 ### Fixed

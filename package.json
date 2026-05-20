@@ -1,6 +1,6 @@
 {
   "name": "@uluops/registry-sdk",
-  "version": "0.21.5",
+  "version": "0.22.0",
   "description": "SDK for the UluOps Registry API - manage AI workflow definitions",
   "type": "module",
   "main": "dist/index.js",
@@ -21,6 +21,10 @@
     "./config": {
       "import": "./dist/config/index.js",
       "types": "./dist/config/index.d.ts"
+    },
+    "./normalization": {
+      "import": "./dist/normalization/index.js",
+      "types": "./dist/normalization/index.d.ts"
     }
   },
   "files": [
