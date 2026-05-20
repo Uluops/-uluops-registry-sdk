@@ -15,12 +15,18 @@ TypeScript SDK for the UluOps Registry API. Manage AI workflow definitions inclu
 
 > **Note:** Examples use TypeScript syntax. Run with [tsx](https://github.com/privatenumber/tsx) (`npx tsx script.ts`) or compile with `tsc` first. A running Registry API server is required — see [Environment Variables](#environment-variables) to configure the base URL.
 
-```typescript
-import { RegistryClient } from '@uluops/registry-sdk';
+### Node.js (Recommended)
 
-const client = new RegistryClient({
-  apiKey: 'ulr_your-api-key-here',
-});
+Set your API key in the environment (or a `.env` file), then use `createClientFromEnvironment()` to auto-discover credentials:
+
+```bash
+export ULUOPS_API_KEY=ulr_your-api-key-here
+```
+
+```typescript
+import { createClientFromEnvironment } from '@uluops/registry-sdk/config';
+
+const client = createClientFromEnvironment();
 
 // List agent definitions
 const { definitions: agents } = await client.definitions.list({ type: 'agent' });
@@ -33,6 +39,20 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
   yaml: 'agent:\n  interface:\n    name: my-agent\n    version: 1.0.0',
 });
 ```
+
+### Browser / Explicit Config
+
+The `RegistryClient` constructor is browser-safe and does not read environment variables. Pass credentials directly:
+
+```typescript
+import { RegistryClient } from '@uluops/registry-sdk';
+
+const client = new RegistryClient({
+  apiKey: process.env.ULUOPS_API_KEY, // or pass from your backend
+});
+```
+
+> **Security:** Never hardcode API keys in source code. Use environment variables, secret managers, or server-side proxies to inject credentials at runtime.
 
 ## Table of Contents
 
@@ -101,21 +121,31 @@ The SDK supports two authentication methods:
 
 API keys provide persistent authentication without session management. Keys must start with the `ulr_` prefix.
 
+**Node.js** — use environment discovery (reads `ULUOPS_API_KEY` from env, `.env` files, and `~/.uluops/credentials.json`):
+
 ```typescript
-import { RegistryClient } from '@uluops/registry-sdk';
+import { createClientFromEnvironment } from '@uluops/registry-sdk/config';
 
-const client = new RegistryClient({
-  apiKey: 'ulr_your-api-key-here',
-});
-
-// Check authentication status
+const client = createClientFromEnvironment();
 console.log(client.isAuthenticated()); // true
 console.log(client.getAuthType()); // 'api_key'
 ```
 
+**Browser / Explicit** — pass the key directly (do not hardcode in source):
+
+```typescript
+import { RegistryClient } from '@uluops/registry-sdk';
+
+const client = new RegistryClient({
+  apiKey: process.env.ULUOPS_API_KEY,
+});
+```
+
 ### Session-Based Authentication
 
-For interactive applications, use `login()` to obtain a session token programmatically:
+For interactive applications, use `login()` to obtain a session token programmatically.
+
+> **Note:** Constructing `new RegistryClient()` without credentials is valid — the client starts unauthenticated and becomes authenticated after `login()` succeeds. Any API call made before login will fail with `UnauthorizedError`.
 
 ```typescript
 // Login with email/password — no API key required
@@ -128,8 +158,8 @@ const tokenClient = new RegistryClient({
   sessionToken: 'your-jwt-token',
 });
 
-// Clear the session when done
-sessionClient.logout();
+// Clear the local session when done (does not revoke the token server-side)
+sessionClient.clearLocalSession();
 ```
 
 The auth URL defaults to production (`https://api.uluops.ai/api/v1/ops`).
@@ -226,7 +256,7 @@ The base URL defaults to `https://api.uluops.ai/api/v1/registry`.
 ```typescript
 const client = new RegistryClient({
   // Authentication (choose one)
-  apiKey: 'ulr_your-api-key-here', // API key (preferred)
+  apiKey: process.env.ULUOPS_API_KEY,  // API key (preferred)
   sessionToken: 'jwt-token',   // Existing session token
   email: 'user@example.com',   // Email for session auth (requires password)
   password: 'secret',          // Password for session auth (requires email)
@@ -249,7 +279,7 @@ const client = new RegistryClient({
 | `isAuthenticated()` | `boolean` | Check if credentials are configured and valid |
 | `getAuthType()` | `'api_key' \| 'session' \| null` | Get the authentication strategy in use |
 | `login(email, password)` | `Promise<LoginResult>` | Login with email/password via the ops API |
-| `logout()` | `void` | Clear the local session token (no server-side revocation) |
+| `clearLocalSession()` | `void` | Clear the local session token (no server-side revocation) |
 | `getHttpClient()` | `RegistryHttpClient` | Access the underlying HTTP client for custom requests |
 
 ---
@@ -1094,11 +1124,11 @@ try {
 
 ### Automatic Retries
 
-The SDK automatically retries GET requests on transient errors (502, 503, 504, 429) with exponential backoff and jitter. Mutations (POST/PUT/DELETE) are **not** retried by default to prevent duplicate side effects.
+The SDK automatically retries GET requests on transient errors (502, 503, 504, 429) with exponential backoff and jitter. Idempotent mutations (publish, deprecate, archive, record execution, star/unstar) are also retried automatically. Non-idempotent mutations (create, update, delete) are **not** retried by default to prevent duplicate side effects.
 
 ```typescript
 const client = new RegistryClient({
-  apiKey: 'ulr_your-api-key-here',
+  apiKey: process.env.ULUOPS_API_KEY,
   retries: 3,        // Max retry attempts (default: 3)
   timeout: 30000,    // Request timeout in ms (default: 30000)
 });
@@ -1157,10 +1187,10 @@ The SDK exports `ApiKeyAuth`, `JwtSessionAuth`, and `createAuthStrategy` for adv
 import { ApiKeyAuth, JwtSessionAuth, createAuthStrategy } from '@uluops/registry-sdk';
 
 // Auto-detect from config
-const auth = createAuthStrategy({ apiKey: 'ulr_your-api-key-here' });
+const auth = createAuthStrategy({ apiKey: process.env.ULUOPS_API_KEY });
 
 // Or construct directly
-const apiAuth = new ApiKeyAuth('ulr_your-api-key-here');
+const apiAuth = new ApiKeyAuth(process.env.ULUOPS_API_KEY!);
 ```
 
 ### Using the Low-Level HTTP Client
@@ -1176,7 +1206,7 @@ const data = await http.get<MyType>('/custom/endpoint');
 import { RegistryHttpClient } from '@uluops/registry-sdk';
 
 const http = new RegistryHttpClient({
-  apiKey: 'ulr_your-api-key-here',
+  apiKey: process.env.ULUOPS_API_KEY,
 });
 
 // Make raw requests
@@ -1224,8 +1254,9 @@ The main SDK entry point (`@uluops/registry-sdk`) is browser-safe. The `Registry
 // Works in Next.js, React, Vite, or any browser bundler
 import { RegistryClient } from '@uluops/registry-sdk';
 
+// In browser apps, inject the key from your backend — never bundle it in client code
 const client = new RegistryClient({
-  apiKey: 'ulr_your-api-key-here',
+  apiKey: apiKeyFromServer,
 });
 
 const models = await client.models.list({ provider: 'anthropic' });

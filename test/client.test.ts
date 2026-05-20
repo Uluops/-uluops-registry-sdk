@@ -247,22 +247,31 @@ describe('RegistryClient', () => {
       ).rejects.toThrow('Login response missing sessionToken');
     });
 
-    it('should logout by clearing session', () => {
+    it('should clear local session via clearLocalSession()', () => {
+      const sessionClient = new RegistryClient({ sessionToken: TEST_SESSION_TOKEN });
+      expect(sessionClient.isAuthenticated()).toBe(true);
+
+      sessionClient.clearLocalSession();
+
+      expect(sessionClient.isAuthenticated()).toBe(false);
+    });
+
+    it('should be a no-op when clearLocalSession called with API key auth', () => {
+      const apiClient = new RegistryClient({ apiKey: TEST_API_KEY });
+      expect(apiClient.isAuthenticated()).toBe(true);
+
+      apiClient.clearLocalSession(); // Should not throw
+
+      expect(apiClient.isAuthenticated()).toBe(true);
+    });
+
+    it('should support deprecated logout() as alias', () => {
       const sessionClient = new RegistryClient({ sessionToken: TEST_SESSION_TOKEN });
       expect(sessionClient.isAuthenticated()).toBe(true);
 
       sessionClient.logout();
 
       expect(sessionClient.isAuthenticated()).toBe(false);
-    });
-
-    it('should be a no-op when logout called with API key auth', () => {
-      const apiClient = new RegistryClient({ apiKey: TEST_API_KEY });
-      expect(apiClient.isAuthenticated()).toBe(true);
-
-      apiClient.logout(); // Should not throw
-
-      expect(apiClient.isAuthenticated()).toBe(true);
     });
   });
 });

@@ -147,7 +147,7 @@ export async function publish(
   version: string
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/publish`;
-  return http.post<Definition>(path, undefined, { schema: definitionSchema });
+  return http.post<Definition>(path, undefined, { schema: definitionSchema, retryMutations: true });
 }
 
 /**
@@ -168,7 +168,7 @@ export async function deprecate(
   body: DeprecateDefinitionBody
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/deprecate`;
-  return http.post<Definition>(path, body, { schema: definitionSchema });
+  return http.post<Definition>(path, body, { schema: definitionSchema, retryMutations: true });
 }
 
 /**
@@ -188,5 +188,5 @@ export async function archive(
   version: string,
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/archive`;
-  return http.post<Definition>(path, {}, { schema: definitionSchema });
+  return http.post<Definition>(path, {}, { schema: definitionSchema, retryMutations: true });
 }

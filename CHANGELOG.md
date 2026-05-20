@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-05-19
+
+### Changed
+- **README restructured for auth safety** — Quick Start now leads with `createClientFromEnvironment()` and environment variables instead of hardcoded API keys. All inline examples updated to use `process.env.ULUOPS_API_KEY` or server-side injection. Browser section warns against bundling keys in client code. Resolves adoption-drift finding that AI assistants would propagate the unsafe auth path.
+- **`logout()` deprecated** — renamed to `clearLocalSession()` to accurately convey local-only semantics. The ops-sdk's `logout()` calls `/auth/logout-all` server-side; the registry-sdk's version only clears the in-memory token. `logout()` remains as a deprecated alias for backward compatibility.
+- **Idempotent mutations now retried** — `publish()`, `deprecate()`, and `archive()` operations now pass `retryMutations: true`, matching the existing behavior of `executions.record()` and `stars.star()`. Non-idempotent mutations (create, update, delete) remain non-retried. README retry documentation updated to list which operations retry.
+
+### Fixed
+- **Token refresh failure message enriched** — when a session token expires and automatic refresh is unavailable (CWE-316 credential clearing), the `UnauthorizedError` message now explains why and tells the user to call `login()` again. Previously only logged at debug level.
+- README session auth section now documents that `new RegistryClient()` without credentials is valid for the `login()` flow
+
+### Dependencies
+- `@uluops/sdk-core` bumped to `^0.7.0` (enriched auth error messaging)
+
 ## [0.22.0] - 2026-05-19
 
 ### Added

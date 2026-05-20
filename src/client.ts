@@ -6,11 +6,9 @@
  *
  * @example
  * ```typescript
- * import { RegistryClient } from '@uluops/registry-sdk';
- *
- * const client = new RegistryClient({
- *   apiKey: process.env.ULUOPS_API_KEY,
- * });
+ * // Node.js — auto-discover credentials from env / .env / ~/.uluops/credentials.json
+ * import { createClientFromEnvironment } from '@uluops/registry-sdk/config';
+ * const client = createClientFromEnvironment();
  *
  * // List definitions
  * const result = await client.definitions.list({ type: 'agent' });
@@ -381,15 +379,27 @@ export class RegistryClient {
 
   /**
    * Clear the local session token. Does not invalidate the token server-side —
-   * the registry API has no server-side logout endpoint.
+   * the registry API has no server-side logout endpoint. The token remains valid
+   * until it expires naturally.
+   *
+   * For server-side session revocation, use the ops-sdk's `logout()` method
+   * which calls `/auth/logout-all`.
    *
    * No-ops silently if the client is not using session-based auth.
    */
-  logout(): void {
+  clearLocalSession(): void {
     const authStrategy = this.http.getAuthStrategy();
     if (authStrategy instanceof JwtSessionAuth) {
       authStrategy.clearSession();
     }
+  }
+
+  /**
+   * @deprecated Use {@link clearLocalSession} instead. `logout()` implied server-side
+   * session invalidation, but this method only clears the local token.
+   */
+  logout(): void {
+    this.clearLocalSession();
   }
 
   private createHttpClient(config: RegistryClientConfig): RegistryHttpClient {
