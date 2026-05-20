@@ -17,7 +17,9 @@ import { starResultSchema } from '../types/schemas.js';
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Optional version (stars are per-definition, not per-version)
+ * @param version - Version for URL resolution (defaults to latest). Stars are
+ *   tracked per-definition, not per-version — the version only determines which
+ *   definition record the API resolves.
  * @returns Star status with starred flag and count
  */
 export async function getStatus(
@@ -36,7 +38,8 @@ export async function getStatus(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Optional version
+ * @param version - Version for URL resolution (defaults to latest). Stars are
+ *   tracked per-definition, not per-version.
  * @returns Star result with updated count
  */
 export async function star(
@@ -55,7 +58,8 @@ export async function star(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Optional version
+ * @param version - Version for URL resolution (defaults to latest). Stars are
+ *   tracked per-definition, not per-version.
  * @returns Star result with updated count
  */
 export async function unstar(
@@ -65,7 +69,5 @@ export async function unstar(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
-  // Note: delete() does not support retryMutations in sdk-core's type signature.
-  // Unstar is idempotent but not retried on transient errors.
-  return http.delete<StarResult>(path, undefined, { schema: starResultSchema });
+  return http.delete<StarResult>(path, undefined, { schema: starResultSchema, retryMutations: true });
 }
