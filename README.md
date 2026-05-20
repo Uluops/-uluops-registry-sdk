@@ -56,6 +56,7 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 - [Environment Variables](#environment-variables)
 - [Error Handling](#error-handling)
 - [Advanced Usage](#advanced-usage)
+  - [Definition Normalization](#definition-normalization)
   - [Node.js Environment Discovery](#nodejs-environment-discovery)
   - [Browser Usage](#browser-usage)
 - [License](#license)
@@ -68,7 +69,8 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 - **Dual Authentication**: API key (preferred) and JWT session support
 - **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429)
 - **Error Hierarchy**: Typed errors for precise error handling
-- **Subpath Exports**: Import only what you need (`@uluops/registry-sdk/types`, `@uluops/registry-sdk/errors`)
+- **Definition Normalization**: Transform CDL/WDL/PDL YAML into runtime-ready shapes via `@uluops/registry-sdk/normalization`
+- **Subpath Exports**: Import only what you need (`/types`, `/errors`, `/config`, `/normalization`)
 
 ## Installation
 
@@ -205,6 +207,7 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 | `@uluops/registry-sdk/types` | TypeScript types (PascalCase), Zod runtime schemas (`*Schema` suffix), enum arrays (SCREAMING_SNAKE) | Yes |
 | `@uluops/registry-sdk/errors` | Error classes and utilities | Yes |
 | `@uluops/registry-sdk/config` | Configuration loaders, `createClientFromEnvironment`, constants | No (Node.js) |
+| `@uluops/registry-sdk/normalization` | Definition normalizers (CDL/WDL/PDL YAML → runtime shape), structural validators | Yes |
 
 ## API Compatibility
 
@@ -1104,6 +1107,47 @@ const client = new RegistryClient({
 Retryable status codes: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`, `429 Too Many Requests`.
 
 ## Advanced Usage
+
+### Definition Normalization
+
+UDL definition languages (CDL, WDL, PDL) use an ergonomic authoring format that differs from the runtime structure executors expect. The `/normalization` subpath provides canonical transforms:
+
+```typescript
+import { normalizeDefinition } from '@uluops/registry-sdk/normalization';
+import yaml from 'yaml';
+
+// Parse YAML and normalize to runtime shape
+const parsed = yaml.parse(yamlContent);
+const { topKey, definition } = normalizeDefinition(parsed);
+// topKey: 'agent' | 'command' | 'workflow' | 'pipeline'
+// definition: normalized object ready for execution
+```
+
+**What gets normalized:**
+
+| Type | Authoring Format | Runtime Shape |
+|------|-----------------|---------------|
+| CDL (command) | `invokes.agent` / `invokes.agents` | `agents[]` |
+| CDL | `preflight` / `postflight` (top-level) | `execution.preflight` / `execution.postflight` |
+| CDL | `overrides.threshold` | `execution.thresholds.pass` |
+| WDL (workflow) | `steps[].command` / `steps[].agent` | `commands[]` / `agentRefs[]` |
+| WDL | `condition` | `skip_if` (negated) |
+| PDL (pipeline) | stages with `agents[]` | `stage.type = 'agents'` |
+
+Agent definitions pass through unchanged — no normalization needed.
+
+All normalizers are **immutable** (return new objects, never mutate input) and **browser-safe** (no Node.js APIs). Individual normalizers are also exported for advanced use:
+
+```typescript
+import {
+  normalizeCommandSection,
+  normalizeWorkflowSection,
+  normalizePipelineSection,
+  DefinitionValidationError,
+} from '@uluops/registry-sdk/normalization';
+```
+
+> **See also:** [ADR-003](docs/adr/ADR-003-definition-normalization.md) for design rationale.
 
 ### Auth Strategies
 
