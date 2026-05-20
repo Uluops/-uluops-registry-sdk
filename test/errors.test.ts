@@ -308,16 +308,16 @@ describe('error classes', () => {
       expect(error.name).toBe('NetworkError');
     });
 
-    it('should not be retryable by default', () => {
+    it('should be retryable (transient network failures)', () => {
       const error = new NetworkError('Connection refused');
-      expect(error.isRetryable()).toBe(false);
+      expect(error.isRetryable()).toBe(true);
     });
   });
 
   describe('TimeoutError', () => {
     it('should create with timeout value', () => {
       const error = new TimeoutError(30000);
-      expect(error.statusCode).toBe(0);
+      expect(error.statusCode).toBe(-1);
       expect(error.message).toContain('Request timed out after 30000ms');
       expect(error.code).toBe('TIMEOUT');
       expect(error.name).toBe('TimeoutError');

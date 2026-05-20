@@ -1,14 +1,15 @@
 /**
  * HTTP client for the Registry API
  *
- * Thin subclass of HttpClient from @uluops/sdk-core, passing
- * registry-sdk defaults (baseUrl, authBaseUrl, extra headers).
+ * Registry-specific HTTP client extending sdk-core's HttpClient
+ * with registry defaults (baseUrl, authBaseUrl, extra headers).
  */
 
 import {
   HttpClient,
   type HttpClientConfig as CoreHttpClientConfig,
 } from '@uluops/sdk-core/http';
+import type { RateLimitInfo } from '@uluops/sdk-core';
 import {
   DEFAULT_BASE_URL,
   DEFAULT_AUTH_BASE_URL,
@@ -42,6 +43,10 @@ export interface HttpClientConfig {
   orgSlug?: string;
   /** Callback invoked when a session token is refreshed — use to persist the new token */
   onTokenRefresh?: (token: string) => void;
+  /** Called when rate limit remaining drops below threshold (default: 10%) */
+  onRateLimitApproaching?: (info: RateLimitInfo) => void;
+  /** Ratio of remaining/limit that triggers the callback (default: 0.1) */
+  rateLimitThreshold?: number;
 }
 
 /**
@@ -65,7 +70,6 @@ export class RegistryHttpClient extends HttpClient {
       debug: config.debug,
       defaultHeaders: {
         'Accept': 'application/json',
-        'X-Content-Type-Options': 'nosniff',
         ...(config.orgSlug ? { 'X-Org-Slug': config.orgSlug } : {}),
       },
       apiKey: config.apiKey,
@@ -73,6 +77,8 @@ export class RegistryHttpClient extends HttpClient {
       password: config.password,
       sessionToken: config.sessionToken,
       onTokenRefresh: config.onTokenRefresh,
+      onRateLimitApproaching: config.onRateLimitApproaching,
+      rateLimitThreshold: config.rateLimitThreshold,
     };
     super(coreConfig);
   }

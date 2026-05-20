@@ -87,7 +87,7 @@ const client = new RegistryClient({
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
 - **Type-Safe**: Complete TypeScript definitions with Zod runtime validation on all API operations
 - **Dual Authentication**: API key (preferred) and JWT session support
-- **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429)
+- **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429, network failures)
 - **Error Hierarchy**: Typed errors for precise error handling
 - **Definition Normalization**: Transform CDL/WDL/PDL YAML into runtime-ready shapes via `@uluops/registry-sdk/normalization`
 - **Subpath Exports**: Import only what you need (`/types`, `/errors`, `/config`, `/normalization`)
@@ -269,6 +269,10 @@ const client = new RegistryClient({
 
   // Callbacks
   onTokenRefresh: (token) => { /* handle token refresh */ },
+  onRateLimitApproaching: (info) => {
+    console.warn(`Rate limit: ${info.remaining}/${info.limit} remaining, resets ${info.reset}`);
+  },
+  rateLimitThreshold: 0.1,  // Fire when <10% remaining (default)
 });
 ```
 
@@ -951,7 +955,7 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `UnprocessableError` | 422 | Valid YAML syntax but invalid semantics (missing refs, cycles) |
 | `RateLimitError` | 429 | Too many requests (100 executions/min per definition) |
 | `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
-| `NetworkError` | - | DNS failure, connection refused, network unreachable |
+| `NetworkError` | - | DNS failure, connection refused, network unreachable (auto-retried) |
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
 | `ResponseValidationError` | * | API response did not match expected Zod schema (from `@uluops/registry-sdk/errors`) |
 
@@ -1134,7 +1138,7 @@ const client = new RegistryClient({
 });
 ```
 
-Retryable status codes: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`, `429 Too Many Requests`.
+Retryable errors: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`, `429 Too Many Requests`, and `NetworkError` (DNS failures, connection resets, ECONNREFUSED).
 
 ## Advanced Usage
 
@@ -1270,7 +1274,13 @@ import type { Model, ModelAlias, Provider } from '@uluops/registry-sdk/types';
 
 **Do not import** `@uluops/registry-sdk/config` in browser code — it uses `node:fs` for reading credential files and `.env` loading.
 
-> **CORS:** The Registry API may not set permissive `Access-Control-Allow-Origin` headers. In browser apps, proxy API requests through your own backend (e.g., Next.js API routes) to avoid CORS issues.
+> **CORS:** The SDK is browser-safe (native `fetch`, no Node.js APIs), but the Registry API does not serve CORS headers by default. Browser requests to the API will fail with opaque CORS errors unless you proxy them through your own backend. Recommended patterns:
+>
+> - **Next.js API routes** — `app/api/registry/route.ts` proxies to the Registry API server-side
+> - **Express/Fastify middleware** — forward `/api/registry/*` to the upstream API
+> - **Reverse proxy** (nginx/Caddy) — add `Access-Control-Allow-Origin` at the edge
+>
+> Do not configure the API to return `Access-Control-Allow-Origin: *` with authenticated requests — this exposes API keys to any origin. Use an allowlist or proxy instead.
 
 ## License
 

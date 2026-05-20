@@ -1,7 +1,7 @@
 /**
  * Configuration and credential loading for the Registry SDK
  *
- * Thin wrapper over @uluops/sdk-core loaders, passing registry-sdk ENV_VARS.
+ * Configuration loading for the Registry SDK, delegating to sdk-core with registry-specific ENV_VARS.
  */
 
 import {

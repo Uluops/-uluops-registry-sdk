@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-05-20
+
+### Added
+- **`onRateLimitApproaching` callback** — new client config option fires when rate limit remaining drops below threshold (default: 10%). Enables proactive throttling before hitting 429. Includes `rateLimitThreshold` option to customize the trigger ratio.
+- **`RateLimitInfo` type re-exported** from `@uluops/registry-sdk` — consumers no longer need to import from `@uluops/sdk-core` directly
+- **CORS documentation expanded** — Browser Usage section now includes proxy patterns (Next.js API routes, Express middleware, reverse proxy) and security guidance for `Access-Control-Allow-Origin`
+
+### Changed
+- **`NetworkError` now auto-retried** — transient DNS failures, connection resets, and ECONNREFUSED are retried with exponential backoff alongside 502/503/504/429. README, Features, Error Classes table, and retry documentation updated to reflect this.
+
+### Dependencies
+- `@uluops/sdk-core` bumped to `^0.8.0` (NetworkError retryable, rate limit callback)
+
 ## [0.23.0] - 2026-05-19
 
 ### Changed

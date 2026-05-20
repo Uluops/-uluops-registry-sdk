@@ -123,6 +123,10 @@ export interface RegistryClientConfig {
   debug?: boolean;
   /** Callback when token is refreshed */
   onTokenRefresh?: (token: string) => void;
+  /** Called when rate limit remaining drops below threshold (default: 10%) */
+  onRateLimitApproaching?: (info: import('@uluops/sdk-core').RateLimitInfo) => void;
+  /** Ratio of remaining/limit that triggers the callback (default: 0.1) */
+  rateLimitThreshold?: number;
 }
 
 /**
@@ -415,6 +419,8 @@ export class RegistryClient {
       sessionToken: config.sessionToken,
       orgSlug: config.orgSlug,
       onTokenRefresh: config.onTokenRefresh,
+      onRateLimitApproaching: config.onRateLimitApproaching,
+      rateLimitThreshold: config.rateLimitThreshold,
     });
   }
 

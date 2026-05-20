@@ -172,3 +172,6 @@ export type {
   ExecutionStats,
   StarResult,
 } from './types/responses.js';
+
+// Re-export core types used in public config interfaces
+export type { RateLimitInfo } from '@uluops/sdk-core';

@@ -551,6 +551,7 @@ describe('RegistryHttpClient', () => {
     it('should throw NetworkError on ECONNREFUSED', async () => {
       nock(MOCK_BASE_URL)
         .get('/test')
+        .times(3)
         .replyWithError({ code: 'ECONNREFUSED', message: 'connect ECONNREFUSED' });
 
       await expect(client.get('/test')).rejects.toThrow(NetworkError);
@@ -559,6 +560,7 @@ describe('RegistryHttpClient', () => {
     it('should throw NetworkError on ECONNRESET', async () => {
       nock(MOCK_BASE_URL)
         .get('/test')
+        .times(3)
         .replyWithError({ code: 'ECONNRESET', message: 'socket hang up' });
 
       await expect(client.get('/test')).rejects.toThrow(NetworkError);
@@ -567,6 +569,7 @@ describe('RegistryHttpClient', () => {
     it('should include base URL in NetworkError message', async () => {
       nock(MOCK_BASE_URL)
         .get('/test')
+        .times(3)
         .replyWithError({ code: 'ECONNREFUSED', message: 'connect ECONNREFUSED' });
 
       try {
