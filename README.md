@@ -273,6 +273,9 @@ const client = new RegistryClient({
     console.warn(`Rate limit: ${info.remaining}/${info.limit} remaining, resets ${info.reset}`);
   },
   rateLimitThreshold: 0.1,  // Fire when <10% remaining (default)
+  onRetry: ({ attempt, maxAttempts, error, delayMs }) => {
+    console.warn(`Retry ${attempt}/${maxAttempts} after ${delayMs}ms: ${error.message}`);
+  },
 });
 ```
 
