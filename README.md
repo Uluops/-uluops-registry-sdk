@@ -237,6 +237,7 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 | `@uluops/registry-sdk/types` | TypeScript types (PascalCase), Zod runtime schemas (`*Schema` suffix), enum arrays (SCREAMING_SNAKE) | Yes |
 | `@uluops/registry-sdk/errors` | Error classes and utilities | Yes |
 | `@uluops/registry-sdk/config` | Configuration loaders, `createClientFromEnvironment`, constants | No (Node.js) |
+| `@uluops/registry-sdk/config/constants` | `SDK_VERSION`, `MAX_YAML_SIZE`, `ERROR_CODES`, `HTTP_STATUS`, `ENV_VARS`, etc. | Yes |
 | `@uluops/registry-sdk/normalization` | Definition normalizers (CDL/WDL/PDL YAML → runtime shape), structural validators | Yes |
 
 \* **Browser Safe** = no Node.js built-ins required (importable in any browser bundler). API calls from browsers require a server-side proxy — see [Browser Usage](#browser-usage).
@@ -897,7 +898,7 @@ ULUOPS_API_KEY=ulr_your-api-key-here
 
 ## Constants
 
-The `/config` sub-path exports constants for pre-flight checks, debugging, and defensive programming:
+The `/config` sub-path exports constants for pre-flight checks, debugging, and defensive programming. For browser environments, use the `/config/constants` sub-path which has no Node.js dependencies:
 
 ```typescript
 import {
