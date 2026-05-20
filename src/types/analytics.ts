@@ -113,11 +113,24 @@ export interface DefinitionEffectiveness {
 
 // ── Health ─────────────────────────────────────────────────────────
 
+/**
+ * Health assessment for a definition.
+ *
+ * **Provisionality:** Health scores are computed from factor weights that have
+ * not yet been validated against real-world outcomes. When `provisional` is true,
+ * the `healthScore` and `grade` reflect the current weighting model but should not
+ * be treated as calibrated measurements. The `caveats` array contains specific
+ * warnings (e.g., `'PROVISIONAL: factor weights unvalidated'`). Consuming code
+ * should surface `provisional` status to users rather than presenting scores as
+ * authoritative.
+ */
 export interface DefinitionHealth {
   definition: { type: string; name: string; version?: string };
   healthScore: number | null;
   grade: string | null;
+  /** True when factor weights are unvalidated — scores are directional, not calibrated. */
   provisional: boolean;
+  /** Machine-readable warnings about score reliability and data completeness. */
   caveats: string[];
   issueProfile: {
     failureDomainDistribution: FailureDomainDistribution;

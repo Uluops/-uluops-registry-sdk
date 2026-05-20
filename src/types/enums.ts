@@ -29,11 +29,25 @@ export type Domain = (typeof DOMAINS)[number];
 export const AGENT_TYPES = ['validator', 'executor', 'analyst', 'generator', 'explorer', 'forecaster'] as const;
 export type AgentType = (typeof AGENT_TYPES)[number];
 
-// Quality/provenance tiers
+/**
+ * Quality/provenance tiers — who authored and endorsed the definition.
+ * - `user`: community-contributed
+ * - `org`: organization-endorsed
+ * - `pro`: platform-curated (UluOps team)
+ *
+ * Not to be confused with {@link SubscriptionTier} which gates content access.
+ * Both contain `'pro'` but with different semantics: Tier.pro = authorship,
+ * SubscriptionTier.pro = subscription level.
+ */
 export const TIERS = ['user', 'org', 'pro'] as const;
 export type Tier = (typeof TIERS)[number];
 
-// Subscription tiers (content gating)
+/**
+ * Subscription tiers — content access gating based on user plan.
+ * Controls which definitions a user can access via `minSubscription`.
+ *
+ * Not to be confused with {@link Tier} which describes authorship provenance.
+ */
 export const SUBSCRIPTION_TIERS = ['free', 'hobbyist', 'plus', 'pro', 'enterprise'] as const;
 export type SubscriptionTier = (typeof SUBSCRIPTION_TIERS)[number];
 

@@ -85,7 +85,7 @@ const client = new RegistryClient({
 
 - **Full API Coverage**: Access all registry endpoints across 12 operation domains
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
-- **Type-Safe**: Complete TypeScript definitions with Zod runtime validation on all API operations
+- **Type-Safe**: Complete TypeScript definitions for API operations with Zod runtime validation
 - **Dual Authentication**: API key (preferred) and JWT session support
 - **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429, network failures)
 - **Error Hierarchy**: Typed errors for precise error handling
@@ -231,13 +231,15 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 
 ### Package Exports
 
-| Export Path | Contents | Browser Safe |
+| Export Path | Contents | Browser Safe* |
 |------------|----------|:---:|
 | `@uluops/registry-sdk` | Main `RegistryClient`, `RegistryHttpClient`, auth strategies | Yes |
 | `@uluops/registry-sdk/types` | TypeScript types (PascalCase), Zod runtime schemas (`*Schema` suffix), enum arrays (SCREAMING_SNAKE) | Yes |
 | `@uluops/registry-sdk/errors` | Error classes and utilities | Yes |
 | `@uluops/registry-sdk/config` | Configuration loaders, `createClientFromEnvironment`, constants | No (Node.js) |
 | `@uluops/registry-sdk/normalization` | Definition normalizers (CDL/WDL/PDL YAML → runtime shape), structural validators | Yes |
+
+\* **Browser Safe** = no Node.js built-ins required (importable in any browser bundler). API calls from browsers require a server-side proxy — see [Browser Usage](#browser-usage).
 
 ## API Compatibility
 
