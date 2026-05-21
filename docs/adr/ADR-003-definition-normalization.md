@@ -54,6 +54,22 @@ No `client.definitions.getResolved()` convenience method in this release. The no
 ### Neutral
 - The type assertion at the core boundary (`definition as unknown as ResolvedDefinition['definition']`) remains — the SDK's `Record<string, unknown>` output and core's typed definition union are not structurally linked. A future phase could add Zod runtime validation to close this gap.
 
+## Revision: Migration to definition-factory (2026-05-20)
+
+**Context:** Three Socratic examination runs (#36→#37→#38, scores 45→65→72) on the SDK identified that normalization in the SDK created a circular dependency (API cannot import from the SDK it serves) and left the output untyped (`Record<string, unknown>`) despite the SDK's strict Zod validation stance (ADR-002).
+
+**Decision:** Migrate normalization from `@uluops/registry-sdk/normalization` to `@uluops/definition-factory` (which the API already depends on). The API exposes `?normalize=true` on `GET /definitions/:type/:name`, performing normalization server-side and returning the result in a Zod-validated `normalized` field. The SDK becomes a pure client — it passes the `normalize` option through and receives typed output.
+
+**Changes:**
+- `@uluops/registry-sdk/normalization` subpath **removed** (breaking)
+- `GetDefinitionOptions.normalize` option added
+- `Definition.normalized` and `Definition.normalizationError` fields added
+- `definitionSchema` updated with corresponding Zod fields
+- Normalization logic now lives in `@uluops/definition-factory` (`normalizeDefinition()`)
+- Only consumer (`@uluops/core`) switches to API-provided normalization in the same release
+
+**See:** `plans/server-side-normalization-spec-v0_1_0.md` for full migration spec.
+
 ## Related
 
 - **ADR-002**: Strict response validation — the normalization layer sits downstream of response validation. Raw API responses are Zod-validated first, then optionally normalized.

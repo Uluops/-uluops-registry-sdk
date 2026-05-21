@@ -1,6 +1,6 @@
 {
   "name": "@uluops/registry-sdk",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "description": "SDK for the UluOps Registry API - manage AI workflow definitions",
   "type": "module",
   "main": "dist/index.js",
@@ -25,10 +25,6 @@
     "./config/constants": {
       "import": "./dist/config/constants.js",
       "types": "./dist/config/constants.d.ts"
-    },
-    "./normalization": {
-      "import": "./dist/normalization/index.js",
-      "types": "./dist/normalization/index.d.ts"
     }
   },
   "files": [

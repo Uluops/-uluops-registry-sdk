@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-05-20
+
+### Added
+- **`normalize` option on `definitions.get()`** — pass `{ normalize: true }` to receive server-side normalized definitions in the `normalized` field. Transforms computed by the API via `@uluops/definition-factory`.
+- **`normalized` field on `Definition`** — `Record<string, unknown> | null` containing the runtime-ready definition shape when normalization is requested
+- **`normalizationError` field on `Definition`** — error message when normalization fails (e.g., malformed YAML)
+
+### Removed
+- **BREAKING: `@uluops/registry-sdk/normalization` subpath removed** — normalization logic migrated to `@uluops/definition-factory` and exposed server-side via `?normalize=true`. For offline normalization, import `normalizeDefinition` from `@uluops/definition-factory` directly.
+- Deleted `src/normalization/` directory (7 files) and `test/normalization.test.ts` (46 tests now live in definition-factory)
+
+### Changed
+- ADR-003 updated with migration revision documenting the move to server-side normalization
+
 ## [0.25.0] - 2026-05-20
 
 ### Added

@@ -96,6 +96,10 @@ export interface Definition {
   translatorVersion?: string | null;
   /** ADL/CDL/WDL/PDL schema version the YAML conforms to (e.g., 'v1.13.0') */
   schemaVersion?: string | null;
+  /** Normalized definition in runtime-ready shape (present when ?normalize=true) */
+  normalized?: Record<string, unknown> | null;
+  /** Error message if normalization failed (present when normalized is null) */
+  normalizationError?: string;
   executionCount: number;
   forkCount: number;
   starCount: number;
@@ -167,6 +171,8 @@ export interface GetDefinitionOptions {
   includeRuntime?: boolean;
   includeYaml?: boolean;
   includeRefs?: boolean;
+  /** Request server-side normalization (authoring→runtime structural transform). */
+  normalize?: boolean;
 }
 
 /**

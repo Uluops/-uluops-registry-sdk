@@ -76,7 +76,7 @@ const client = new RegistryClient({
 - [Environment Variables](#environment-variables)
 - [Error Handling](#error-handling)
 - [Advanced Usage](#advanced-usage)
-  - [Definition Normalization](#definition-normalization)
+  - [Server-Side Normalization](#server-side-normalization)
   - [Node.js Environment Discovery](#nodejs-environment-discovery)
   - [Browser Usage](#browser-usage)
 - [License](#license)
@@ -89,8 +89,8 @@ const client = new RegistryClient({
 - **Dual Authentication**: API key (preferred) and JWT session support
 - **Automatic Retries**: Exponential backoff for transient errors (502, 503, 504, 429, network failures)
 - **Error Hierarchy**: Typed errors for precise error handling
-- **Definition Normalization**: Transform CDL/WDL/PDL YAML into runtime-ready shapes via `@uluops/registry-sdk/normalization`
-- **Subpath Exports**: Import only what you need (`/types`, `/errors`, `/config`, `/normalization`)
+- **Server-Side Normalization**: Request runtime-ready normalized definitions via `{ normalize: true }` — transforms computed server-side
+- **Subpath Exports**: Import only what you need (`/types`, `/errors`, `/config`)
 
 ## Installation
 
@@ -238,7 +238,6 @@ import { loadCredentials, DEFAULT_BASE_URL } from '@uluops/registry-sdk/config';
 | `@uluops/registry-sdk/errors` | Error classes and utilities | Yes |
 | `@uluops/registry-sdk/config` | Configuration loaders, `createClientFromEnvironment`, constants | No (Node.js) |
 | `@uluops/registry-sdk/config/constants` | `SDK_VERSION`, `MAX_YAML_SIZE`, `ERROR_CODES`, `HTTP_STATUS`, `ENV_VARS`, etc. | Yes |
-| `@uluops/registry-sdk/normalization` | Definition normalizers (CDL/WDL/PDL YAML → runtime shape), structural validators | Yes |
 
 \* **Browser Safe** = no Node.js built-ins required (importable in any browser bundler). API calls from browsers require a server-side proxy — see [Browser Usage](#browser-usage).
 
@@ -1148,46 +1147,24 @@ Retryable errors: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Tim
 
 ## Advanced Usage
 
-### Definition Normalization
+### Server-Side Normalization
 
-UDL definition languages (CDL, WDL, PDL) use an ergonomic authoring format that differs from the runtime structure executors expect. The `/normalization` subpath provides canonical transforms:
-
-```typescript
-import { normalizeDefinition } from '@uluops/registry-sdk/normalization';
-import yaml from 'yaml';
-
-// Parse YAML and normalize to runtime shape
-const parsed = yaml.parse(yamlContent);
-const { topKey, definition } = normalizeDefinition(parsed);
-// topKey: 'agent' | 'command' | 'workflow' | 'pipeline'
-// definition: normalized object ready for execution
-```
-
-**What gets normalized:**
-
-| Type | Authoring Format | Runtime Shape |
-|------|-----------------|---------------|
-| CDL (command) | `invokes.agent` / `invokes.agents` | `agents[]` |
-| CDL | `preflight` / `postflight` (top-level) | `execution.preflight` / `execution.postflight` |
-| CDL | `overrides.threshold` | `execution.thresholds.pass` |
-| WDL (workflow) | `steps[].command` / `steps[].agent` | `commands[]` / `agentRefs[]` |
-| WDL | `condition` | `skip_if` (negated) |
-| PDL (pipeline) | stages with `agents[]` | `stage.type = 'agents'` |
-
-Agent definitions pass through unchanged — no normalization needed.
-
-All normalizers are **immutable** (return new objects, never mutate input) and **browser-safe** (no Node.js APIs). Individual normalizers are also exported for advanced use:
+UDL definition languages (CDL, WDL, PDL) use an ergonomic authoring format that differs from the runtime structure executors expect. Pass `normalize: true` to get the runtime-ready shape computed server-side:
 
 ```typescript
-import {
-  normalizeCommandSection,
-  normalizeWorkflowSection,
-  normalizePipelineSection,
-  DefinitionValidationError,
-} from '@uluops/registry-sdk/normalization';
+const def = await client.definitions.get('command', 'code-validate', '1.0.0', {
+  normalize: true,
+});
+
+// def.normalized contains the runtime-ready definition object
+// def.normalizationError is set if normalization failed (def.normalized will be null)
 ```
 
-> **See also:** [ADR-003](docs/adr/ADR-003-definition-normalization.md) for design rationale.
+The `normalized` field is Zod-validated as part of the standard response schema. Normalization defaults to `false` — existing consumers are unaffected.
+
+> **Migration from v0.25.0:** The `@uluops/registry-sdk/normalization` subpath has been removed. Normalization now lives server-side in the API (powered by `@uluops/definition-factory`). For offline normalization, import directly from `@uluops/definition-factory`.
+>
+> **See also:** [ADR-003](docs/adr/ADR-003-definition-normalization.md) for design rationale and migration history.
 
 ### Auth Strategies
 

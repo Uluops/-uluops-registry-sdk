@@ -68,6 +68,8 @@ export const definitionSchema = z.object({
   promptHash: z.string().nullish(),
   translatorVersion: z.string().nullish(),
   schemaVersion: z.string().nullish(),
+  normalized: z.record(z.string(), z.unknown()).nullable().optional(),
+  normalizationError: z.string().optional(),
   executionCount: z.number().int().nonnegative(),
   forkCount: z.number().int().nonnegative(),
   starCount: z.number().int().nonnegative(),
