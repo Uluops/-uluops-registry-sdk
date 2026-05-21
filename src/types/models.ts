@@ -89,5 +89,5 @@ export interface ModelSyncResult {
   providersUpdated: number;
   modelsAdded: number;
   modelsUpdated: number;
-  duration?: string;
+  duration?: string | number;
 }

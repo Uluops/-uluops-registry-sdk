@@ -135,7 +135,7 @@ export const modelSyncResultSchema = z.object({
   providersUpdated: z.number().int().nonnegative(),
   modelsAdded: z.number().int().nonnegative(),
   modelsUpdated: z.number().int().nonnegative(),
-  duration: z.string().optional(),
+  duration: z.union([z.string(), z.number()]).optional(),
 });
 
 /** Provider entity */
