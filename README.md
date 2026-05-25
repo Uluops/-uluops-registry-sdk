@@ -561,23 +561,11 @@ result.forks.forEach(({ fork, definition }) => {
 
 ### Executions (`client.executions`)
 
-Record and query execution statistics.
-
-#### `record(type, name, version, body)`
-
-Record an execution event.
-
-```typescript
-const result = await client.executions.record('agent', 'code-validator', '1.0.0', {
-  source: 'cli',
-  runId: '550e8400-e29b-41d4-a716-446655440000', // optional, for idempotency
-});
-console.log(result.recorded); // true if new, false if duplicate
-```
+Query execution statistics.
 
 #### `getStats(type, name, version, window?)`
 
-Get aggregated execution statistics.
+Get aggregated execution statistics. No authentication required.
 
 ```typescript
 const stats = await client.executions.getStats('agent', 'code-validator', '1.0.0', 60);
