@@ -34,6 +34,59 @@ export interface DefinitionRef {
   version: string;
 }
 
+// ── Safety Analysis Types ────────────────────────────────────
+
+export type SignalSeverity = 'medium' | 'high';
+export type RiskLevel = 'none' | 'medium' | 'high';
+
+export interface SafetySignal {
+  id: string;
+  severity: SignalSeverity;
+  title: string;
+  detail: string;
+  location?: string;
+}
+
+export interface DefinitionCapabilities {
+  tools: string[];
+  preflightCommands: number;
+  maxTokens?: number;
+  temperature?: number;
+  agentType?: string;
+}
+
+export interface SyncScanResult {
+  version: string;
+  scannedAt: string;
+  capabilities: DefinitionCapabilities;
+  signals: SafetySignal[];
+  riskLevel: RiskLevel;
+}
+
+export interface DeepFinding {
+  id: string;
+  severity: SignalSeverity;
+  confidence: number;
+  title: string;
+  detail: string;
+  category: 'injection' | 'exfiltration' | 'escalation' | 'resource' | 'dependency' | 'behavioral';
+  location?: string;
+}
+
+export interface DeepAnalysisResult {
+  version: string;
+  analyzedAt: string;
+  findings: DeepFinding[];
+  riskLevel: RiskLevel;
+}
+
+export interface RiskProfile {
+  sync: SyncScanResult;
+  deep: DeepAnalysisResult | null;
+  aggregateRiskLevel: RiskLevel;
+  lastUpdated: string;
+}
+
 // ── Provenance Types ──────────────────────────────────────────
 
 export type AuthorshipType = 'human' | 'agent' | 'collaborative' | 'automated';
@@ -109,6 +162,8 @@ export interface Definition {
   updatedAt: string;
   publishedAt?: string | null;
   deprecatedAt?: string | null;
+  /** Safety analysis results — null when not yet analyzed */
+  riskProfile?: RiskProfile | null;
 }
 
 /**

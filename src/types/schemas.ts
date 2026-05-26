@@ -78,6 +78,43 @@ export const definitionSchema = z.object({
   updatedAt: z.string(),
   publishedAt: z.string().nullish(),
   deprecatedAt: z.string().nullish(),
+  riskProfile: z.object({
+    sync: z.object({
+      version: z.string(),
+      scannedAt: z.string(),
+      capabilities: z.object({
+        tools: z.array(z.string()),
+        preflightCommands: z.number().int().nonnegative(),
+        maxTokens: z.number().optional(),
+        temperature: z.number().optional(),
+        agentType: z.string().optional(),
+      }),
+      signals: z.array(z.object({
+        id: z.string(),
+        severity: z.enum(['medium', 'high']),
+        title: z.string(),
+        detail: z.string(),
+        location: z.string().optional(),
+      })),
+      riskLevel: z.enum(['none', 'medium', 'high']),
+    }),
+    deep: z.object({
+      version: z.string(),
+      analyzedAt: z.string(),
+      findings: z.array(z.object({
+        id: z.string(),
+        severity: z.enum(['medium', 'high']),
+        confidence: z.number(),
+        title: z.string(),
+        detail: z.string(),
+        category: z.enum(['injection', 'exfiltration', 'escalation', 'resource', 'dependency', 'behavioral']),
+        location: z.string().optional(),
+      })),
+      riskLevel: z.enum(['none', 'medium', 'high']),
+    }).nullable(),
+    aggregateRiskLevel: z.enum(['none', 'medium', 'high']),
+    lastUpdated: z.string(),
+  }).nullish(),
 });
 
 // ============================================================================
