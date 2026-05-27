@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.27.0] - 2026-05-27
+
+### Added
+
+- **`riskProfile` on `Definition` interface** — definitions now include safety scan results when available (`riskLevel`, `signals`, `scannerVersion`, `scannedAt`).
+
+### Fixed
+
+- **`ModelSyncResult.duration` accepts `number`** — was typed as `string` only, now accepts the numeric duration returned by the API.
+
+### Changed
+
+- Removed admin-only execution recording section from public README.
 
 ## [0.26.0] - 2026-05-20
 
