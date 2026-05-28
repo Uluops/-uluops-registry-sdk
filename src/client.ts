@@ -38,6 +38,7 @@ import * as usersOps from './operations/users.js';
 import * as renderOps from './operations/render.js';
 import * as analyticsOps from './operations/analytics.js';
 import * as starsOps from './operations/stars.js';
+import * as languagesOps from './operations/languages.js';
 
 import type {
   Definition,
@@ -63,6 +64,8 @@ import type {
   AliasResolution,
 } from './types/models.js';
 import type { PublicUser, BatchUserResponse } from './types/users.js';
+import type { LanguageWithSchema } from './types/languages.js';
+import type { LanguagesListResponse } from './operations/languages.js';
 import type {
   DefinitionEffectiveness,
   DefinitionHealth,
@@ -301,6 +304,16 @@ export class RegistryClient {
     getDiffImpact: (type: DefinitionType, name: string, fromVersion: string, toVersion: string) => Promise<DiffImpactResult>;
   };
 
+  /**
+   * Definition language operations (read-only)
+   */
+  readonly languages: {
+    /** List all definition languages (ADL, CDL, WDL, PDL). */
+    list: () => Promise<LanguagesListResponse>;
+    /** Get a definition language with its current JSON Schema. */
+    get: (id: string) => Promise<LanguageWithSchema>;
+  };
+
   constructor(config: RegistryClientConfig = {}) {
     this.configTimeout = config.timeout;
     this.configOnTokenRefresh = config.onTokenRefresh;
@@ -317,6 +330,7 @@ export class RegistryClient {
     this.users = this.bindUsers();
     this.render = this.bindRender();
     this.analytics = this.bindAnalytics();
+    this.languages = this.bindLanguages();
   }
 
   // ============================================
@@ -531,6 +545,13 @@ export class RegistryClient {
       getTranslation: (type, name) => analyticsOps.getTranslation(this.http, type, name),
       compare: (type, name, versions) => analyticsOps.compare(this.http, type, name, versions),
       getDiffImpact: (type, name, fromVersion, toVersion) => analyticsOps.getDiffImpact(this.http, type, name, fromVersion, toVersion),
+    };
+  }
+
+  private bindLanguages(): RegistryClient['languages'] {
+    return {
+      list: () => languagesOps.list(this.http),
+      get: (id) => languagesOps.get(this.http, id),
     };
   }
 

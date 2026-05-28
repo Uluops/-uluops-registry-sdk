@@ -761,3 +761,37 @@ export const versionUnifiedDiffSchema = versionDiffBaseSchema.extend({
   toLineCount: z.number().int().nonnegative(),
 });
 
+// ============================================================================
+// Languages
+// ============================================================================
+
+/** Language summary (list item). */
+export const languageSummarySchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  abbreviation: z.string(),
+  description: z.string(),
+  definitionType: z.string(),
+  currentVersion: z.string(),
+  status: z.string(),
+});
+
+/** Embedded JSON Schema metadata. */
+const languageSchemaContentSchema = z.object({
+  version: z.string(),
+  title: z.string(),
+  schemaUrl: z.string(),
+  content: z.record(z.string(), z.unknown()),
+});
+
+/** Language with current JSON Schema (get response). */
+export const languageWithSchemaSchema = languageSummarySchema.extend({
+  schema: languageSchemaContentSchema,
+});
+
+/** Languages list response. */
+export const languagesListResponseSchema = z.object({
+  languages: z.array(languageSummarySchema),
+  total: z.number().int(),
+});
+

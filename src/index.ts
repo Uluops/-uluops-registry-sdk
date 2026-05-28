@@ -125,6 +125,15 @@ export type {
 } from './types/users.js';
 
 export type {
+  // Language types
+  Language,
+  LanguageSchema,
+  LanguageWithSchema,
+} from './types/languages.js';
+
+export type { LanguagesListResponse } from './operations/languages.js';
+
+export type {
   // Analytics types
   DefinitionEffectiveness,
   EffectivenessMetrics,

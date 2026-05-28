@@ -70,6 +70,7 @@ const client = new RegistryClient({
   - [Stars](#stars-clientstars)
   - [Translation](#translation-clienttranslation)
   - [Models](#models-clientmodels)
+  - [Languages](#languages-clientlanguages)
   - [Users](#users-clientusers)
   - [Render](#render-clientrender)
   - [Analytics](#analytics-clientanalytics)
@@ -83,7 +84,7 @@ const client = new RegistryClient({
 
 ## Features
 
-- **Full API Coverage**: Access all registry endpoints across 12 operation domains
+- **Full API Coverage**: Access all registry endpoints across 13 operation domains
 - **Browser Compatible**: Constructor is browser-safe — use in Next.js, React, or any browser bundler
 - **Type-Safe**: Complete TypeScript definitions for API operations with Zod runtime validation
 - **Dual Authentication**: API key (preferred) and JWT session support
@@ -695,6 +696,34 @@ Resolve an alias to a concrete model.
 ```typescript
 const resolution = await client.models.resolveAlias('opus');
 console.log(`${resolution.alias} → ${resolution.target}`);
+```
+
+---
+
+### Languages (`client.languages`)
+
+Access definition language schemas (ADL, CDL, WDL, PDL).
+
+#### `list()`
+
+List all definition languages with current version info.
+
+```typescript
+const result = await client.languages.list();
+for (const lang of result.languages) {
+  console.log(`${lang.abbreviation} v${lang.currentVersion}: ${lang.displayName}`);
+}
+```
+
+#### `get(id)`
+
+Get a definition language with its full JSON Schema.
+
+```typescript
+const adl = await client.languages.get('adl');
+console.log(adl.schema.title);    // "Agent Definition Language (ADL) Schema"
+console.log(adl.schema.version);  // "1.16.0"
+// adl.schema.content contains the full JSON Schema object
 ```
 
 ---
