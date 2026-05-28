@@ -114,6 +114,27 @@ export interface DefinitionEffectiveness {
 // ── Health ─────────────────────────────────────────────────────────
 
 /**
+ * Inherited health baseline from source definition at fork time.
+ *
+ * When a definition is forked, the source's current health score is captured
+ * as a transparent baseline. This gives consumers an initial trust signal for
+ * forks that contain identical content to a measured source. The baseline is
+ * explicitly labeled as inherited, not earned.
+ */
+export interface InheritedBaseline {
+  /** Source's health score at fork time (0-100). */
+  healthScore: number;
+  /** Source's grade at fork time (A-F). */
+  grade: string;
+  /** Source definition identity. */
+  source: { type: string; name: string; version: string };
+  /** When the baseline was captured (ISO 8601). */
+  inheritedAt: string;
+  /** 'active' = fork has insufficient own data; 'superseded' = fork has its own computed health. */
+  status: 'active' | 'superseded';
+}
+
+/**
  * Health assessment for a definition.
  *
  * **Provisionality:** Health scores are computed from factor weights that have
@@ -139,6 +160,8 @@ export interface DefinitionHealth {
     interpretation: string;
   } | null;
   factors: HealthFactor[];
+  /** Inherited health baseline from source definition, if this is a fork. */
+  inheritedBaseline?: InheritedBaseline;
   stale: boolean;
 }
 

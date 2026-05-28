@@ -272,53 +272,51 @@ export const aliasResolutionSchema = z.object({
   model: modelSchema.nullable().optional(),
 });
 
-/** Fork record */
+/**
+ * Fork record schema — matches the DB fork record shape returned by the API.
+ * Used by fork creation, list-forks, and lineage responses.
+ */
 export const forkSchema = z.object({
-  id: z.string().uuid(),
-  sourceDefinitionId: z.string().uuid(),
-  derivedDefinitionId: z.string().uuid(),
-  sourceVersion: z.string(),
-  createdAt: DateTimeStringSchema,
-});
-
-/** POST /definitions/{type}/{name}/{version}/fork */
-export const forkResponseSchema = z.object({
-  definition: definitionSchema,
-  fork: forkSchema,
-  source: definitionListItemSchema,
-  warnings: z.array(z.string()).optional(),
-});
-
-/** GET /definitions/{type}/{name}/{version}/lineage (forks) */
-export const forkLineageSchema = z.object({
-  current: definitionListItemSchema.optional(),
-  source: definitionListItemSchema.nullable().optional(),
-  chain: z.array(definitionListItemSchema).optional(),
-});
-
-/** Fork record schema */
-const forkRecordSchema = z.object({
   id: z.string().uuid(),
   definitionId: z.string().uuid(),
   sourceDefinitionId: z.string().uuid().nullable(),
   forkedAt: z.string(),
 });
 
-/** Fork definition summary schema */
-const forkDefinitionSummarySchema = z.object({
+/**
+ * Slim summary of a forked or source definition.
+ * The API intentionally returns a 6-field summary on fork endpoints rather than
+ * the full DefinitionListItem — this schema mirrors that contract.
+ */
+export const forkSummarySchema = z.object({
   id: z.string().uuid(),
   type: z.string(),
   name: z.string(),
   version: z.string(),
   authorId: z.string().uuid(),
-  orgId: z.string().uuid().nullable(),
+  orgId: z.string().nullable(),
+});
+
+/** POST /definitions/{type}/{name}/{version}/fork */
+export const forkResponseSchema = z.object({
+  definition: definitionSchema,
+  fork: forkSchema,
+  source: forkSummarySchema,
+  warnings: z.array(z.string()).optional(),
+});
+
+/** GET /definitions/{type}/{name}/{version}/lineage (forks) */
+export const forkLineageSchema = z.object({
+  isFork: z.boolean(),
+  fork: forkSchema.nullable(),
+  source: forkSummarySchema.nullable(),
 });
 
 /** GET /definitions/{type}/{name}/{version}/forks */
 export const forkListResponseSchema = z.object({
   forks: z.array(z.object({
-    fork: forkRecordSchema,
-    definition: forkDefinitionSummarySchema.nullable(),
+    fork: forkSchema,
+    definition: forkSummarySchema.nullable(),
   })),
   totalForks: z.number().int().nonnegative(),
 });

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-05-28
+
+### Breaking
+
+- **`Fork` type rewritten** — replaced the aspirational `{ id, sourceDefinitionId, derivedDefinitionId, sourceVersion, createdAt }` shape with the real DB record shape: `{ id, definitionId, sourceDefinitionId, forkedAt }`. `sourceDefinitionId` is now nullable to reflect `SET NULL` on source deletion. Consumers reading `.derivedDefinitionId` / `.sourceVersion` / `.createdAt` must migrate.
+- **`ForkLineage` type rewritten** — replaced the unused `{ current, source, chain }` structure with the actual lineage endpoint shape: `{ isFork, fork, source }`.
+- **`ForkResponse.source` narrowed** — was typed as the full `DefinitionListItem` (~20 fields), now correctly typed as `ForkSummary` (6 fields) to match the API.
+- **`ForkRecord` and `ForkDefinitionSummary` types removed** — replaced by the unified `Fork` and `ForkSummary` types.
+
+### Fixed
+
+- **Fork response schemas aligned with API contract** — the SDK's Zod schemas for `fork_definition`, `get_fork_lineage`, and `list_forks` previously expected fields the API never returns, causing `ResponseValidationError` on every fork-related call. Schemas now match the actual API shape.
+
+### Added
+
+- **`ForkSummary` type exported** — slim 6-field summary (`id, type, name, version, authorId, orgId`) used by fork endpoints. Consolidates the previously-duplicated `ForkDefinitionSummary`.
+- **`InheritedBaseline` type added to `DefinitionHealth`** — surfaces the source's health score and grade at fork time as a transparent baseline (`status: 'active' | 'superseded'`). Gives consumers an initial trust signal for forks that have not yet accumulated their own measurement data.
+
+### Internal
+
+- Removed stale `models.sync()` test that referenced the admin-only endpoint dropped in 0.27.1.
+
 ## [0.27.2] - 2026-05-27
 
 ### Added

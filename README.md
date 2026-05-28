@@ -538,12 +538,14 @@ if (check.canFork) {
 
 #### `getAncestry(type, name, version)`
 
-Get the fork ancestry chain.
+Get the fork lineage for a definition. Returns `{ isFork, fork, source }` — if the definition is a fork, `fork` is the fork record and `source` is a slim summary of the source definition.
 
 ```typescript
 const lineage = await client.forks.getAncestry('agent', 'my-validator', '1.0.0');
-console.log('Source:', lineage.source);
-console.log('Chain:', lineage.chain);
+if (lineage.isFork) {
+  console.log('Forked from:', lineage.source?.name);
+  console.log('Forked at:', lineage.fork?.forkedAt);
+}
 ```
 
 #### `list(type, name, version)`

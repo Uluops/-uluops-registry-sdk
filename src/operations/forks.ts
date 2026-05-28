@@ -4,6 +4,8 @@
 
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type {
+  Fork,
+  ForkSummary,
   ForkDefinitionBody,
   ForkResponse,
   ForkableCheck,
@@ -14,28 +16,13 @@ import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
 import { forkResponseSchema, forkableCheckSchema, forkLineageSchema, forkListResponseSchema } from '../types/response-schemas.js';
 
-/** Fork record linking a derived definition to its source */
-export interface ForkRecord {
-  id: string;
-  definitionId: string;
-  sourceDefinitionId: string | null;
-  forkedAt: string;
-}
-
-/** Summary of a forked definition */
-export interface ForkDefinitionSummary {
-  id: string;
-  type: string;
-  name: string;
-  version: string;
-  authorId: string;
-  orgId: string | null;
-}
-
-/** A single fork entry with the fork record and its definition details */
+/**
+ * A single fork entry returned by the list-forks endpoint.
+ * The `definition` may be null when the forked definition has been deleted.
+ */
 export interface ForkEntry {
-  fork: ForkRecord;
-  definition: ForkDefinitionSummary | null;
+  fork: Fork;
+  definition: ForkSummary | null;
 }
 
 /**

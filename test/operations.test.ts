@@ -474,28 +474,17 @@ describe('operations', () => {
               },
               fork: {
                 id: '00000000-0000-4000-a000-000000000003',
+                definitionId: '00000000-0000-4000-a000-000000000002',
                 sourceDefinitionId: '00000000-0000-4000-a000-000000000001',
-                derivedDefinitionId: '00000000-0000-4000-a000-000000000002',
-                sourceVersion: '1.0.0',
-                createdAt: '2026-01-01T00:00:00Z',
+                forkedAt: '2026-01-01T00:00:00Z',
               },
               source: {
                 id: '00000000-0000-4000-a000-000000000001',
                 type: 'agent',
                 name: 'original',
                 version: '1.0.0',
-                status: 'published',
-                displayName: 'Original Agent',
-                description: 'The original agent',
-                domain: 'software',
                 authorId: '00000000-0000-4000-a000-000000000001',
-                tier: 'user',
-                visibility: 'public',
-                createdAt: '2026-01-01T00:00:00Z',
-                updatedAt: '2026-01-01T00:00:00Z',
-                executionCount: 10,
-                forkCount: 1,
-                starCount: 0,
+                orgId: '00000000-0000-4000-a000-000000000001',
               },
             },
           });
@@ -524,35 +513,50 @@ describe('operations', () => {
     });
 
     describe('getAncestry', () => {
-      it('should get ancestry', async () => {
+      it('should get ancestry for a fork', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/lineage')
           .reply(200, {
             data: {
-              current: {
-                id: '00000000-0000-4000-a000-000000000001',
-                type: 'agent',
-                name: 'my-agent',
-                version: '1.0.0',
-                status: 'published',
-                displayName: 'My Agent',
-                description: 'A test agent',
-                domain: 'software',
-                authorId: '00000000-0000-4000-a000-000000000001',
-                tier: 'user',
-                visibility: 'public',
-                createdAt: '2026-01-01T00:00:00Z',
-                updatedAt: '2026-01-01T00:00:00Z',
-                executionCount: 0,
-                forkCount: 0,
-                starCount: 0,
+              isFork: true,
+              fork: {
+                id: '00000000-0000-4000-a000-000000000010',
+                definitionId: '00000000-0000-4000-a000-000000000001',
+                sourceDefinitionId: '00000000-0000-4000-a000-000000000002',
+                forkedAt: '2026-01-01T00:00:00Z',
               },
-              chain: [],
+              source: {
+                id: '00000000-0000-4000-a000-000000000002',
+                type: 'agent',
+                name: 'source-agent',
+                version: '1.0.0',
+                authorId: '00000000-0000-4000-a000-000000000003',
+                orgId: '00000000-0000-4000-a000-000000000004',
+              },
             },
           });
 
         const result = await forkOps.getAncestry(http, 'agent', 'my-agent', '1.0.0');
-        expect(result.chain).toEqual([]);
+        expect(result.isFork).toBe(true);
+        expect(result.fork?.sourceDefinitionId).toBe('00000000-0000-4000-a000-000000000002');
+        expect(result.source?.name).toBe('source-agent');
+      });
+
+      it('should get ancestry for a non-fork', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/standalone@1.0.0/lineage')
+          .reply(200, {
+            data: {
+              isFork: false,
+              fork: null,
+              source: null,
+            },
+          });
+
+        const result = await forkOps.getAncestry(http, 'agent', 'standalone', '1.0.0');
+        expect(result.isFork).toBe(false);
+        expect(result.fork).toBeNull();
+        expect(result.source).toBeNull();
       });
     });
 
@@ -791,16 +795,6 @@ describe('operations', () => {
       });
     });
 
-    describe('sync', () => {
-      it('should sync models', async () => {
-        nock(MOCK_BASE_URL)
-          .post('/models/sync')
-          .reply(200, { data: { providersAdded: 1, providersUpdated: 0, modelsAdded: 5, modelsUpdated: 2 } });
-
-        const result = await modelOps.sync(http);
-        expect(result.modelsAdded).toBe(5);
-      });
-    });
   });
 
   describe('render', () => {

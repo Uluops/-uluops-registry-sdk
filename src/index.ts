@@ -83,7 +83,7 @@ export type {
 export type { VersionsListResponse } from './operations/versions.js';
 export type { RenderGetOptions } from './operations/render.js';
 export type { DefinitionListResponse } from './operations/definitions.js';
-export type { ForkListResponse, ForkEntry, ForkRecord, ForkDefinitionSummary } from './operations/forks.js';
+export type { ForkListResponse, ForkEntry } from './operations/forks.js';
 export type {
   ModelsListResponse,
   ProvidersListResponse,
@@ -101,6 +101,7 @@ export type {
 export type {
   // Fork types
   Fork,
+  ForkSummary,
   ForkDefinitionBody,
   ForkResponse,
   ForkableCheck,
