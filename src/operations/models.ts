@@ -9,7 +9,6 @@ import type {
   AliasResolution,
   Provider,
   ListModelsQuery,
-  ModelSyncResult,
 } from '../types/models.js';
 import { ValidationError } from '../errors/errors.js';
 import {
@@ -18,7 +17,6 @@ import {
   providersListResponseSchema,
   aliasesListResponseSchema,
   aliasResolutionSchema,
-  modelSyncResultSchema,
 } from '../types/response-schemas.js';
 
 /**
@@ -119,15 +117,4 @@ export async function resolveAlias(
     throw new ValidationError('Alias is required', { field: 'alias' });
   }
   return http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined, { schema: aliasResolutionSchema });
-}
-
-/**
- * Sync models from models.dev.
- * Requires admin role or pro subscription.
- *
- * @param http - Registry HTTP client
- * @returns Sync result with counts of added, updated, and removed models
- */
-export async function sync(http: RegistryHttpClient): Promise<ModelSyncResult> {
-  return http.post<ModelSyncResult>('/models/sync', undefined, { schema: modelSyncResultSchema });
 }

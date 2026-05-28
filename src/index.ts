@@ -116,7 +116,6 @@ export type {
   Provider,
   ModelCapabilities,
   ListModelsQuery,
-  ModelSyncResult,
 } from './types/models.js';
 
 export type {

@@ -40,7 +40,7 @@ export const DEFAULT_BASE_URL =
  * Production auth base URL (ops API) for login/refresh.
  * The registry API has no auth endpoints -- it delegates to ops-uluops-api.
  */
-export const DEFAULT_AUTH_PROD_URL = 'https://api.uluops.ai/api/v1/ops';
+export const DEFAULT_AUTH_PROD_URL = 'https://api.uluops.ai/api/v1';
 
 /**
  * Development auth base URL (local ops API).

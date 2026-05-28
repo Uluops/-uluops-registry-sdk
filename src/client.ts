@@ -61,7 +61,6 @@ import type {
   Model,
   ListModelsQuery,
   AliasResolution,
-  ModelSyncResult,
 } from './types/models.js';
 import type { PublicUser, BatchUserResponse } from './types/users.js';
 import type {
@@ -113,7 +112,7 @@ export interface RegistryClientConfig {
   orgSlug?: string;
   /** Base URL for the registry API */
   baseUrl?: string;
-  /** Base URL for the ops API (login/refresh) — defaults to https://api.uluops.ai/api/v1/ops, or localhost:3100 in development */
+  /** Base URL for the ops API (login/refresh) — defaults to https://api.uluops.ai/api/v1, or localhost:3100 in development */
   authBaseUrl?: string;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
@@ -256,8 +255,6 @@ export class RegistryClient {
     listAliases: () => Promise<AliasesListResponse>;
     /** Resolve a model alias (e.g., 'sonnet') to its target provider and model. */
     resolveAlias: (alias: string) => Promise<AliasResolution>;
-    /** Sync models from models.dev. Requires admin role or pro subscription. */
-    sync: () => Promise<ModelSyncResult>;
   };
 
   /**
@@ -507,7 +504,6 @@ export class RegistryClient {
       listProviders: () => modelsOps.listProviders(this.http),
       listAliases: () => modelsOps.listAliases(this.http),
       resolveAlias: (alias) => modelsOps.resolveAlias(this.http, alias),
-      sync: () => modelsOps.sync(this.http),
     };
   }
 

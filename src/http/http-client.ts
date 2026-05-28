@@ -23,7 +23,7 @@ import { validateShortString } from '../config/validators.js';
 export interface HttpClientConfig {
   /** Registry API base URL (default: https://api.uluops.ai/api/v1/registry) */
   baseUrl?: string;
-  /** Auth API base URL for login/refresh (default: https://api.uluops.ai/api/v1/ops) */
+  /** Auth API base URL for login/refresh (default: https://api.uluops.ai/api/v1) */
   authBaseUrl?: string;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;

@@ -162,7 +162,7 @@ const tokenClient = new RegistryClient({
 sessionClient.clearLocalSession();
 ```
 
-The auth URL defaults to production (`https://api.uluops.ai/api/v1/ops`).
+The auth URL defaults to production (`https://api.uluops.ai/api/v1`).
 
 ### Validating Credentials
 
@@ -695,15 +695,6 @@ Resolve an alias to a concrete model.
 ```typescript
 const resolution = await client.models.resolveAlias('opus');
 console.log(`${resolution.alias} → ${resolution.target}`);
-```
-
-#### `sync()`
-
-Sync model catalog from models.dev (admin only).
-
-```typescript
-const result = await client.models.sync();
-console.log(`Synced: ${result.modelsAdded} added, ${result.modelsUpdated} updated`);
 ```
 
 ---
