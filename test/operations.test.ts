@@ -172,13 +172,32 @@ describe('operations', () => {
     });
 
     describe('publish', () => {
-      it('should publish definition', async () => {
+      it('returns { definition, warnings: [] } on a clean publish', async () => {
         nock(MOCK_BASE_URL)
           .post('/definitions/agent/my-agent@1.0.0/publish')
           .reply(200, { data: createMockDefinition({ name: 'my-agent', version: '1.0.0', status: 'published' }) });
 
         const result = await definitionOps.publish(http, 'agent', 'my-agent', '1.0.0');
-        expect(result.status).toBe('published');
+        expect(result.definition.status).toBe('published');
+        expect(result.warnings).toEqual([]);
+      });
+
+      it('surfaces non-fatal warnings on the response', async () => {
+        nock(MOCK_BASE_URL)
+          .post('/definitions/agent/my-agent@1.0.0/publish')
+          .reply(200, {
+            data: createMockDefinition({ name: 'my-agent', version: '1.0.0', status: 'published' }),
+            warnings: [{
+              code: 'TRANSLATION_FAILED',
+              message: 'Definition published, but translation failed.',
+              details: { error: 'Missing required "agent" key' },
+            }],
+          });
+
+        const result = await definitionOps.publish(http, 'agent', 'my-agent', '1.0.0');
+        expect(result.definition.status).toBe('published');
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]?.code).toBe('TRANSLATION_FAILED');
       });
     });
 

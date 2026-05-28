@@ -47,6 +47,7 @@ import type {
   CreateDefinitionBody,
   UpdateDefinitionBody,
   DeprecateDefinitionBody,
+  PublishResult,
 } from './types/definitions.js';
 import type { VersionDiff, VersionDiffSummary, VersionFieldDiff, VersionUnifiedDiff } from './types/versions.js';
 import type { VersionsListResponse } from './operations/versions.js';
@@ -155,8 +156,16 @@ export class RegistryClient {
     update: (type: DefinitionType, name: string, version: string, body: UpdateDefinitionBody) => Promise<Definition>;
     /** Delete a draft definition. */
     delete: (type: DefinitionType, name: string, version: string) => Promise<void>;
-    /** Publish a draft, making it discoverable. */
-    publish: (type: DefinitionType, name: string, version: string) => Promise<Definition>;
+    /**
+     * Publish a draft, making it discoverable.
+     *
+     * Returns `{ definition, warnings }`. The most consequential warning is
+     * `TRANSLATION_FAILED` — the definition is published but `runtimeMd` was
+     * not stamped and rendering will not work until the YAML is corrected.
+     *
+     * **Breaking change in 0.29.0** — previously returned `Definition` directly.
+     */
+    publish: (type: DefinitionType, name: string, version: string) => Promise<PublishResult>;
     /** Deprecate a published definition with reason and optional replacement. */
     deprecate: (type: DefinitionType, name: string, version: string, body: DeprecateDefinitionBody) => Promise<Definition>;
     /** Archive a deprecated definition. Terminal state — removes from discovery. */

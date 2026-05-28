@@ -266,3 +266,36 @@ export interface DeprecateDefinitionBody {
   reason: string;
   successor?: string;
 }
+
+/**
+ * Non-fatal warning emitted during a publish operation.
+ *
+ * Translation and safety scans run as part of publishing but never block — they
+ * log server-side and now surface as warnings on the response. Consumers
+ * receiving a `TRANSLATION_FAILED` warning should treat the publish as partial:
+ * the row is published but `runtimeMd` was not stamped and the definition will
+ * not render until the YAML is corrected.
+ *
+ * @remarks Known codes (more may be added without bumping major):
+ * - `TRANSLATION_FAILED` — YAML did not validate against the current schema.
+ * - `TRANSLATION_ERROR` — translator threw an unexpected error.
+ * - `SAFETY_SCAN_FAILED` — sync safety scan failed; version has no `riskProfile`.
+ * - `SAFETY_PROFILE_PERSIST_FAILED` — scan succeeded but persisting it failed.
+ * - `DEEP_ANALYSIS_ENQUEUE_FAILED` — background deep-safety queue unavailable.
+ */
+export interface PublishWarning {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Result of a publish operation.
+ *
+ * `warnings` is always present, possibly empty. The previous return type
+ * (`Definition` directly) is replaced — see CHANGELOG 0.29.0 for migration notes.
+ */
+export interface PublishResult {
+  definition: Definition;
+  warnings: PublishWarning[];
+}

@@ -72,7 +72,9 @@ describe('RegistryClient', () => {
       mockEndpoint('post', '/definitions/agent/test-agent@1.0.0/publish', mockDef);
 
       const result = await client.definitions.publish('agent', 'test-agent', '1.0.0');
-      expect(result.status).toBe('published');
+      // Breaking change in 0.29.0 — publish() returns { definition, warnings }
+      expect(result.definition.status).toBe('published');
+      expect(result.warnings).toEqual([]);
     });
   });
 

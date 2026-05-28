@@ -103,6 +103,25 @@ export const renderResultSchema = z.object({
   warnings: z.array(targetWarningSchema).optional(),
 });
 
+/** Non-fatal warning emitted during a publish operation. */
+export const publishWarningSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * POST /definitions/{type}/{name}/{version}/publish response envelope.
+ *
+ * `warnings` is omitted from the wire when empty (preserves the pre-0.49.3
+ * contract for the happy path) — the SDK normalizes that into an empty array
+ * so consumers always see a stable shape.
+ */
+export const publishResponseSchema = z.object({
+  data: definitionSchema,
+  warnings: z.array(publishWarningSchema).optional(),
+});
+
 /** GET /definitions/translation/version */
 export const translatorVersionSchema = z.object({
   translatorVersion: z.string(),

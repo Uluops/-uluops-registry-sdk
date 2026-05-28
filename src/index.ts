@@ -64,6 +64,8 @@ export type {
   CreateDefinitionBody,
   UpdateDefinitionBody,
   DeprecateDefinitionBody,
+  PublishResult,
+  PublishWarning,
   Provenance,
   AuthorshipType,
   ContributorRole,

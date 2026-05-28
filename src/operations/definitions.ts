@@ -11,11 +11,12 @@ import type {
   CreateDefinitionBody,
   UpdateDefinitionBody,
   DeprecateDefinitionBody,
+  PublishResult,
 } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateDefinitionType, validateYamlSize, validatePagination } from '../config/validators.js';
 import { definitionSchema } from '../types/schemas.js';
-import { definitionListResponseSchema } from '../types/response-schemas.js';
+import { definitionListResponseSchema, publishResponseSchema } from '../types/response-schemas.js';
 
 /**
  * Paginated list response
@@ -138,16 +139,37 @@ export async function remove(
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
  * @param version - Semver version of the draft to publish
- * @returns The definition with status changed to published
+ * @returns `{ definition, warnings }` — the published definition plus any
+ *   non-fatal warnings emitted during the publish (translation failure,
+ *   safety scan failure, etc.). `warnings` is always an array, possibly empty.
+ *
+ * @remarks
+ * **Breaking change in 0.29.0**: previously returned `Definition` directly.
+ * Consumers that don't care about warnings can destructure: `const { definition } = await ...`.
+ * A `TRANSLATION_FAILED` warning is the most consequential — it indicates the
+ * definition was published but cannot be rendered until the YAML is fixed.
  */
 export async function publish(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
   version: string
-): Promise<Definition> {
+): Promise<PublishResult> {
   const path = `${buildDefinitionPath(type, name, version)}/publish`;
-  return http.post<Definition>(path, undefined, { schema: definitionSchema, retryMutations: true });
+  // Use request() with rawEnvelope so we receive the full `{ data, warnings? }`
+  // envelope. The publish endpoint is the only one that emits a top-level field
+  // alongside `data`; everywhere else the SDK's default envelope-unwrapping is
+  // the right behavior.
+  type Envelope = { data: Definition; warnings?: Array<{ code: string; message: string; details?: Record<string, unknown> }> };
+  const envelope = await http.request<Envelope>('POST', path, undefined, {
+    schema: publishResponseSchema,
+    retryMutations: true,
+    rawEnvelope: true,
+  });
+  return {
+    definition: envelope.data,
+    warnings: envelope.warnings ?? [],
+  };
 }
 
 /**

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-05-28
+
+### Breaking
+
+- **`publish()` returns `PublishResult`** — previously returned `Definition` directly. The new return type is `{ definition: Definition; warnings: PublishWarning[] }`.
+  - Migration: replace `const def = await client.definitions.publish(...)` with `const { definition: def } = await client.definitions.publish(...)`.
+  - Rationale: the registry API (v0.49.3) now returns non-fatal publish warnings (translation failure, safety-scan failure, etc.) on the response. Without surfacing them through the SDK, a definition could publish "successfully" but be unrenderable with no signal to the caller — exactly the gap the API change was made to close.
+
+### Added
+
+- **`PublishWarning` type** — `{ code, message, details? }`. Known codes: `TRANSLATION_FAILED`, `TRANSLATION_ERROR`, `SAFETY_SCAN_FAILED`, `SAFETY_PROFILE_PERSIST_FAILED`, `DEEP_ANALYSIS_ENQUEUE_FAILED`. More codes may be added without bumping major.
+- **`PublishResult` type** — exported. `warnings` is always present, possibly empty.
+- **`publishWarningSchema` and `publishResponseSchema`** — Zod schemas for the new envelope.
+
+### Internal
+
+- `publish()` switches from `http.post` to `http.request('POST', ...)` with `rawEnvelope: true` so it can read the top-level `warnings` field. This is the only endpoint with non-`data` response fields; all other operations continue using the default envelope-unwrapping path.
+
 ## [0.28.0] - 2026-05-28
 
 ### Breaking
