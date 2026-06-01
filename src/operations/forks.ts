@@ -51,7 +51,7 @@ export async function create(
   body: ForkDefinitionBody
 ): Promise<ForkResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/fork`;
-  return http.post<ForkResponse>(path, body, { schema: forkResponseSchema });
+  return forkResponseSchema.parse(await http.post<ForkResponse>(path, body));
 }
 
 /**
@@ -72,7 +72,7 @@ export async function isForkable(
   options?: CheckForkableOptions
 ): Promise<ForkableCheck> {
   const path = `${buildDefinitionPath(type, name, version)}/forkable`;
-  return http.get<ForkableCheck>(path, options, { schema: forkableCheckSchema });
+  return forkableCheckSchema.parse(await http.get<ForkableCheck>(path, options));
 }
 
 /**
@@ -91,7 +91,7 @@ export async function getAncestry(
   version: string
 ): Promise<ForkLineage> {
   const path = `${buildDefinitionPath(type, name, version)}/lineage`;
-  return http.get<ForkLineage>(path, undefined, { schema: forkLineageSchema });
+  return forkLineageSchema.parse(await http.get<ForkLineage>(path, undefined));
 }
 
 /**
@@ -110,5 +110,5 @@ export async function list(
   version: string
 ): Promise<ForkListResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/forks`;
-  return http.get<ForkListResponse>(path, undefined, { schema: forkListResponseSchema });
+  return forkListResponseSchema.parse(await http.get<ForkListResponse>(path, undefined));
 }

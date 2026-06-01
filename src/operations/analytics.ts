@@ -57,11 +57,10 @@ export async function getEffectiveness(
 ): Promise<DefinitionEffectiveness> {
   if (version) validateVersion(version);
   const query = version ? { version } : undefined;
-  return http.get<DefinitionEffectiveness>(
+  return definitionEffectivenessSchema.parse(await http.get<DefinitionEffectiveness>(
     `${analyticsPath(type, name)}/effectiveness`,
     query,
-    { schema: definitionEffectivenessSchema },
-  );
+  ));
 }
 
 // ── Health ─────────────────────────────────────────────────────────
@@ -84,11 +83,10 @@ export async function getHealth(
 ): Promise<DefinitionHealth> {
   if (version) validateVersion(version);
   const query = version ? { version } : undefined;
-  return http.get<DefinitionHealth>(
+  return definitionHealthSchema.parse(await http.get<DefinitionHealth>(
     `${analyticsPath(type, name)}/health`,
     query,
-    { schema: definitionHealthSchema },
-  );
+  ));
 }
 
 // ── Ecosystem ─────────────────────────────────────────────────────
@@ -102,7 +100,7 @@ export async function getHealth(
 export async function getEcosystemOverview(
   http: RegistryHttpClient,
 ): Promise<EcosystemOverview> {
-  return http.get<EcosystemOverview>('/analytics/ecosystem/overview', undefined, { schema: ecosystemOverviewSchema });
+  return ecosystemOverviewSchema.parse(await http.get<EcosystemOverview>('/analytics/ecosystem/overview', undefined));
 }
 
 // ── Lineage ───────────────────────────────────────────────────────
@@ -120,11 +118,10 @@ export async function getLineage(
   type: DefinitionType,
   name: string,
 ): Promise<LineageResult> {
-  return http.get<LineageResult>(
+  return lineageResultSchema.parse(await http.get<LineageResult>(
     `${analyticsPath(type, name)}/lineage`,
     undefined,
-    { schema: lineageResultSchema },
-  );
+  ));
 }
 
 // ── Evolution ─────────────────────────────────────────────────────
@@ -142,11 +139,10 @@ export async function getEvolution(
   type: DefinitionType,
   name: string,
 ): Promise<EvolutionResult> {
-  return http.get<EvolutionResult>(
+  return evolutionResultSchema.parse(await http.get<EvolutionResult>(
     `${analyticsPath(type, name)}/evolution`,
     undefined,
-    { schema: evolutionResultSchema },
-  );
+  ));
 }
 
 // ── Translation Analytics ─────────────────────────────────────────
@@ -164,11 +160,10 @@ export async function getTranslation(
   type: DefinitionType,
   name: string,
 ): Promise<TranslationAnalyticsResult> {
-  return http.get<TranslationAnalyticsResult>(
+  return translationAnalyticsResultSchema.parse(await http.get<TranslationAnalyticsResult>(
     `${analyticsPath(type, name)}/translation`,
     undefined,
-    { schema: translationAnalyticsResultSchema },
-  );
+  ));
 }
 
 // ── Compare ───────────────────────────────────────────────────────
@@ -192,11 +187,10 @@ export async function compare(
     throw new ValidationError(`compare() requires 2-5 versions (received ${String(versions.length)})`, { field: 'versions', value: versions.length });
   }
   for (const v of versions) validateVersion(v);
-  return http.get<CompareResult>(
+  return compareResultSchema.parse(await http.get<CompareResult>(
     `${analyticsPath(type, name)}/effectiveness/compare`,
     { versions: versions.join(',') },
-    { schema: compareResultSchema },
-  );
+  ));
 }
 
 // ── Diff Impact ───────────────────────────────────────────────────
@@ -221,9 +215,8 @@ export async function getDiffImpact(
 ): Promise<DiffImpactResult> {
   validateVersion(fromVersion);
   validateVersion(toVersion);
-  return http.get<DiffImpactResult>(
+  return diffImpactResultSchema.parse(await http.get<DiffImpactResult>(
     `${analyticsPath(type, name)}/diff/${fromVersion}/${toVersion}/impact`,
     undefined,
-    { schema: diffImpactResultSchema },
-  );
+  ));
 }

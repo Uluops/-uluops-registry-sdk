@@ -55,7 +55,7 @@ export async function list(
   http: RegistryHttpClient,
   query?: ListModelsQuery
 ): Promise<ModelsListResponse> {
-  return http.get<ModelsListResponse>('/models', query, { schema: modelsListResponseSchema });
+  return modelsListResponseSchema.parse(await http.get<ModelsListResponse>('/models', query));
 }
 
 /**
@@ -78,7 +78,7 @@ export async function get(
   if (!modelId || typeof modelId !== 'string') {
     throw new ValidationError('Model ID is required', { field: 'modelId' });
   }
-  return http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined, { schema: modelSchema });
+  return modelSchema.parse(await http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined));
 }
 
 /**
@@ -88,7 +88,7 @@ export async function get(
  * @returns Provider list with total count
  */
 export async function listProviders(http: RegistryHttpClient): Promise<ProvidersListResponse> {
-  return http.get<ProvidersListResponse>('/models/providers', undefined, { schema: providersListResponseSchema });
+  return providersListResponseSchema.parse(await http.get<ProvidersListResponse>('/models/providers', undefined));
 }
 
 /**
@@ -98,7 +98,7 @@ export async function listProviders(http: RegistryHttpClient): Promise<Providers
  * @returns Alias list with total count
  */
 export async function listAliases(http: RegistryHttpClient): Promise<AliasesListResponse> {
-  return http.get<AliasesListResponse>('/models/aliases', undefined, { schema: aliasesListResponseSchema });
+  return aliasesListResponseSchema.parse(await http.get<AliasesListResponse>('/models/aliases', undefined));
 }
 
 /**
@@ -116,5 +116,5 @@ export async function resolveAlias(
   if (!alias || typeof alias !== 'string') {
     throw new ValidationError('Alias is required', { field: 'alias' });
   }
-  return http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined, { schema: aliasResolutionSchema });
+  return aliasResolutionSchema.parse(await http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined));
 }

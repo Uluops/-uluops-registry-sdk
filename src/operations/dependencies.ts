@@ -26,7 +26,7 @@ export async function get(
   options?: GetDependenciesOptions
 ): Promise<DependencyGraph> {
   const path = `${buildDefinitionPath(type, name, version)}/dependencies`;
-  return http.get<DependencyGraph>(path, options, { schema: dependencyGraphSchema });
+  return dependencyGraphSchema.parse(await http.get<DependencyGraph>(path, options));
 }
 
 /**
@@ -45,5 +45,5 @@ export async function getDependents(
   version: string
 ): Promise<DependencyGraph> {
   const path = `${buildDefinitionPath(type, name, version)}/dependents`;
-  return http.get<DependencyGraph>(path, undefined, { schema: dependencyGraphSchema });
+  return dependencyGraphSchema.parse(await http.get<DependencyGraph>(path, undefined));
 }

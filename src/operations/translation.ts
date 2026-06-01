@@ -2,6 +2,7 @@
  * Translation operations for the Registry SDK
  */
 
+import { z } from 'zod';
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type {
   TranslatorVersion,
@@ -9,11 +10,12 @@ import type {
   UpgradeDefinitionBody,
   UpgradeResult,
 } from '../types/responses.js';
-import type { Definition } from '../types/definitions.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateYamlSize } from '../config/validators.js';
-import { definitionSchema } from '../types/schemas.js';
-import { translatorVersionSchema, upgradeResultSchema } from '../types/response-schemas.js';
+import { translatorVersionSchema, upgradeResultSchema, retranslateResultSchema } from '../types/response-schemas.js';
+
+/** Narrow retranslate response — see retranslateResultSchema for docs. */
+export type RetranslateResult = z.infer<typeof retranslateResultSchema>;
 
 /**
  * Get the current translator version.
@@ -22,7 +24,7 @@ import { translatorVersionSchema, upgradeResultSchema } from '../types/response-
  * @returns Translator version info (version string, supported schemas)
  */
 export async function getVersion(http: RegistryHttpClient): Promise<TranslatorVersion> {
-  return http.get<TranslatorVersion>('/definitions/translation/version', undefined, { schema: translatorVersionSchema });
+  return translatorVersionSchema.parse(await http.get<TranslatorVersion>('/definitions/translation/version', undefined));
 }
 
 /**
@@ -41,9 +43,9 @@ export async function retranslate(
   name: string,
   version: string,
   options?: RetranslateOptions
-): Promise<Definition> {
+): Promise<RetranslateResult> {
   const path = `${buildDefinitionPath(type, name, version)}/retranslate`;
-  return http.post<Definition>(path, options, { schema: definitionSchema });
+  return retranslateResultSchema.parse(await http.post<unknown>(path, options));
 }
 
 /**
@@ -63,5 +65,5 @@ export async function upgradeDefinition(
 ): Promise<UpgradeResult> {
   validateYamlSize(body.yaml);
   const path = `${buildDefinitionPath(type, name)}/upgrade`;
-  return http.post<UpgradeResult>(path, body, { schema: upgradeResultSchema });
+  return upgradeResultSchema.parse(await http.post<UpgradeResult>(path, body));
 }

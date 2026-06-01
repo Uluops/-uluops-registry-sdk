@@ -46,7 +46,7 @@ export async function list(
     }
     validatePagination(query.limit, query.offset);
   }
-  return http.get<DefinitionListResponse>('/definitions', query, { schema: definitionListResponseSchema });
+  return definitionListResponseSchema.parse(await http.get<DefinitionListResponse>('/definitions', query));
 }
 
 /**
@@ -67,7 +67,7 @@ export async function get(
   options?: GetDefinitionOptions
 ): Promise<Definition> {
   const path = buildDefinitionPath(type, name, version);
-  return http.get<Definition>(path, options, { schema: definitionSchema });
+  return definitionSchema.parse(await http.get<Definition>(path, options));
 }
 
 /**
@@ -87,7 +87,7 @@ export async function create(
 ): Promise<Definition> {
   validateYamlSize(body.yaml);
   const path = buildDefinitionPath(type, name);
-  return http.post<Definition>(path, body, { schema: definitionSchema });
+  return definitionSchema.parse(await http.post<Definition>(path, body));
 }
 
 /**
@@ -111,7 +111,7 @@ export async function update(
     validateYamlSize(body.yaml);
   }
   const path = buildDefinitionPath(type, name, version);
-  return http.put<Definition>(path, body, { schema: definitionSchema });
+  return definitionSchema.parse(await http.put<Definition>(path, body));
 }
 
 /**
@@ -161,11 +161,8 @@ export async function publish(
   // alongside `data`; everywhere else the SDK's default envelope-unwrapping is
   // the right behavior.
   type Envelope = { data: Definition; warnings?: Array<{ code: string; message: string; details?: Record<string, unknown> }> };
-  const envelope = await http.request<Envelope>('POST', path, undefined, {
-    schema: publishResponseSchema,
-    retryMutations: true,
-    rawEnvelope: true,
-  });
+  const envelope = publishResponseSchema.parse(await http.request<Envelope>('POST', path, undefined, { retryMutations: true,
+    rawEnvelope: true, }));
   return {
     definition: envelope.data,
     warnings: envelope.warnings ?? [],
@@ -190,7 +187,7 @@ export async function deprecate(
   body: DeprecateDefinitionBody
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/deprecate`;
-  return http.post<Definition>(path, body, { schema: definitionSchema, retryMutations: true });
+  return definitionSchema.parse(await http.post<Definition>(path, body, { retryMutations: true }));
 }
 
 /**
@@ -210,5 +207,5 @@ export async function archive(
   version: string,
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/archive`;
-  return http.post<Definition>(path, {}, { schema: definitionSchema, retryMutations: true });
+  return definitionSchema.parse(await http.post<Definition>(path, {}, { retryMutations: true }));
 }

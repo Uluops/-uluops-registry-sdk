@@ -24,5 +24,5 @@ export async function validate(
   validateDefinitionType(type);
   validateYamlSize(yaml);
 
-  return http.post<ValidationResult>(`/validate/${type}`, { yaml }, { schema: validationResultSchema });
+  return validationResultSchema.parse(await http.post<ValidationResult>(`/validate/${type}`, { yaml }));
 }

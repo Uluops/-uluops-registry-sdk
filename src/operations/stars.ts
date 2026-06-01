@@ -29,7 +29,7 @@ export async function getStatus(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star/status`;
-  return http.get<StarResult>(path, undefined, { schema: starResultSchema });
+  return starResultSchema.parse(await http.get<StarResult>(path, undefined));
 }
 
 /**
@@ -49,7 +49,7 @@ export async function star(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
-  return http.post<StarResult>(path, undefined, { schema: starResultSchema, retryMutations: true });
+  return starResultSchema.parse(await http.post<StarResult>(path, undefined, { retryMutations: true }));
 }
 
 /**
@@ -69,5 +69,5 @@ export async function unstar(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
-  return http.delete<StarResult>(path, undefined, { schema: starResultSchema, retryMutations: true });
+  return starResultSchema.parse(await http.delete<StarResult>(path, undefined, { retryMutations: true }));
 }

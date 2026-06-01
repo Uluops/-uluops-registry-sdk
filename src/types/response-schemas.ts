@@ -129,6 +129,24 @@ export const translatorVersionSchema = z.object({
   schema: z.string().optional(),
 });
 
+/**
+ * POST /definitions/:type/:name/retranslate
+ *
+ * The API returns a narrow retranslation summary, NOT a full Definition.
+ * Earlier versions of this SDK parsed the response with `definitionSchema`,
+ * which raised ZodError on every retranslate call because the actual payload
+ * lacks id/status/hash/displayName/... Surfaced by live MCP smoke test
+ * on 2026-06-01.
+ */
+export const retranslateResultSchema = z.object({
+  type: z.string(),
+  name: z.string(),
+  version: z.string(),
+  translatorVersion: z.string(),
+  previousTranslatorVersion: z.string().nullable().optional(),
+  changes: z.unknown().optional(),
+});
+
 /** GET /definitions/{type}/{name}/{version}/forkable */
 export const forkableCheckSchema = z.object({
   canFork: z.boolean(),

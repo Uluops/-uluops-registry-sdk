@@ -93,6 +93,7 @@ import type {
 } from './types/responses.js';
 import type { DefinitionType } from './types/enums.js';
 import type { DefinitionListResponse } from './operations/definitions.js';
+import type { RetranslateResult } from './operations/translation.js';
 import type { ForkListResponse } from './operations/forks.js';
 import type {
   ModelsListResponse,
@@ -247,8 +248,12 @@ export class RegistryClient {
   readonly translation: {
     /** Get the current translator version. */
     getVersion: () => Promise<TranslatorVersion>;
-    /** Retranslate a definition using the latest translator. */
-    retranslate: (type: DefinitionType, name: string, version: string, options?: RetranslateOptions) => Promise<Definition>;
+    /**
+     * Retranslate a definition using the latest translator.
+     * Returns a narrow retranslation summary (NOT a full Definition) — the API
+     * response only includes type/name/version/translator metadata + changes.
+     */
+    retranslate: (type: DefinitionType, name: string, version: string, options?: RetranslateOptions) => Promise<RetranslateResult>;
     /** Upgrade a legacy definition to the dual-storage format. */
     upgradeDefinition: (type: DefinitionType, name: string, body: UpgradeDefinitionBody) => Promise<UpgradeResult>;
   };

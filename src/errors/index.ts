@@ -15,7 +15,6 @@ export {
   ServiceUnavailableError,
   NetworkError,
   TimeoutError,
-  ResponseValidationError,
   createErrorFromStatus,
   isRegistryApiError,
   isValidationError,
@@ -29,5 +28,4 @@ export {
   isServiceUnavailableError,
   isNetworkError,
   isTimeoutError,
-  isResponseValidationError,
 } from './errors.js';

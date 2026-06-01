@@ -45,7 +45,7 @@ export async function get(
     validateShortString(options.model, 'model');
     params.model = options.model;
   }
-  return http.get<RenderResult>(path, Object.keys(params).length > 0 ? params : undefined, { schema: renderResultSchema });
+  return renderResultSchema.parse(await http.get<RenderResult>(path, Object.keys(params).length > 0 ? params : undefined));
 }
 
 /**
@@ -63,5 +63,5 @@ export async function preview(
 ): Promise<RenderResult> {
   validateDefinitionType(type);
   validateYamlSize(body.yaml);
-  return http.post<RenderResult>(`/render/${type}/preview`, body, { schema: renderResultSchema });
+  return renderResultSchema.parse(await http.post<RenderResult>(`/render/${type}/preview`, body));
 }

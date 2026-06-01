@@ -31,7 +31,7 @@ export async function record(
   body: RecordExecutionBody
 ): Promise<RecordExecutionResult> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;
-  return http.post<RecordExecutionResult>(path, body, { schema: recordExecutionResultSchema, retryMutations: true });
+  return recordExecutionResultSchema.parse(await http.post<RecordExecutionResult>(path, body, { retryMutations: true }));
 }
 
 /**
@@ -52,5 +52,5 @@ export async function getStats(
   window?: number
 ): Promise<ExecutionStats> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;
-  return http.get<ExecutionStats>(path, window !== undefined ? { window } : undefined, { schema: executionStatsSchema });
+  return executionStatsSchema.parse(await http.get<ExecutionStats>(path, window !== undefined ? { window } : undefined));
 }

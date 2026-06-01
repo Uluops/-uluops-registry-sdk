@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import nock from 'nock';
+import { ZodError } from 'zod';
 import { RegistryHttpClient } from '../src/http/http-client.js';
 import * as userOps from '../src/operations/users.js';
 import * as definitionOps from '../src/operations/definitions.js';
@@ -1105,28 +1106,28 @@ describe('operations', () => {
   describe('response validation', () => {
     it('definitions.list rejects malformed response', async () => {
       nock(MOCK_BASE_URL).get('/definitions').reply(200, { data: { definitions: 'not-an-array' } });
-      await expect(definitionOps.list(http)).rejects.toThrow(/API response validation failed/);
+      await expect(definitionOps.list(http)).rejects.toThrow(ZodError);
     });
 
     it('definitions.get rejects response with wrong type for executionCount', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test').reply(200, {
         data: { ...createMockDefinition(), executionCount: 'not-a-number' },
       });
-      await expect(definitionOps.get(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+      await expect(definitionOps.get(http, 'agent', 'test')).rejects.toThrow(ZodError);
     });
 
     it('versions.list rejects missing versions array', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test/versions').reply(200, {
         data: { total: 0, limit: 20, offset: 0 },
       });
-      await expect(versionOps.list(http, 'agent', 'test')).rejects.toThrow(/API response validation failed/);
+      await expect(versionOps.list(http, 'agent', 'test')).rejects.toThrow(ZodError);
     });
 
     it('models.get rejects missing capabilities', async () => {
       nock(MOCK_BASE_URL).get('/models/anthropic/claude-3-opus').reply(200, {
         data: { provider: 'anthropic', modelId: 'claude-3-opus' },
       });
-      await expect(modelOps.get(http, 'anthropic', 'claude-3-opus')).rejects.toThrow(/API response validation failed/);
+      await expect(modelOps.get(http, 'anthropic', 'claude-3-opus')).rejects.toThrow(ZodError);
     });
 
     it('analytics.getEffectiveness rejects missing stale field', async () => {
@@ -1139,28 +1140,28 @@ describe('operations', () => {
       });
       await expect(
         (await import('../src/operations/analytics.js')).getEffectiveness(http, 'agent', 'test'),
-      ).rejects.toThrow(/API response validation failed/);
+      ).rejects.toThrow(ZodError);
     });
 
     it('render.get rejects missing markdown', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/render').reply(200, {
         data: { target: 'opencode' },
       });
-      await expect(renderOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+      await expect(renderOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
 
     it('forks.isForkable rejects wrong type for canFork', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/forkable').reply(200, {
         data: { canFork: 'yes' },
       });
-      await expect(forkOps.isForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+      await expect(forkOps.isForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
 
     it('dependencies.get rejects wrong type for nodes', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
         data: { nodes: 'not-an-array', edges: [], cycleDetected: false },
       });
-      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(/API response validation failed/);
+      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
   });
 });

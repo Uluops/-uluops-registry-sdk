@@ -30,9 +30,7 @@ export interface LanguagesListResponse {
 export async function list(
   http: RegistryHttpClient,
 ): Promise<LanguagesListResponse> {
-  return http.get<LanguagesListResponse>('/languages', undefined, {
-    schema: languagesListResponseSchema,
-  });
+  return languagesListResponseSchema.parse(await http.get<LanguagesListResponse>('/languages', undefined));
 }
 
 /**
@@ -50,7 +48,5 @@ export async function get(
   if (!id || typeof id !== 'string') {
     throw new ValidationError('Language ID is required', { field: 'id' });
   }
-  return http.get<LanguageWithSchema>(`/languages/${encodeURIComponent(id)}`, undefined, {
-    schema: languageWithSchemaSchema,
-  });
+  return languageWithSchemaSchema.parse(await http.get<LanguageWithSchema>(`/languages/${encodeURIComponent(id)}`, undefined));
 }

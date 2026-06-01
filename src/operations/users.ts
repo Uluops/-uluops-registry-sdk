@@ -17,7 +17,7 @@ import { publicUserSchema, batchUserResponseSchema } from '../types/response-sch
  */
 export async function get(http: RegistryHttpClient, id: string): Promise<PublicUser> {
   validateUuid(id, 'userId');
-  return http.get<PublicUser>(`/users/${id}`, undefined, { schema: publicUserSchema });
+  return publicUserSchema.parse(await http.get<PublicUser>(`/users/${id}`, undefined));
 }
 
 /**
@@ -44,5 +44,5 @@ export async function batch(
     validateUuid(id, 'userId');
   }
 
-  return http.post<BatchUserResponse>('/users/batch', { ids }, { schema: batchUserResponseSchema });
+  return batchUserResponseSchema.parse(await http.post<BatchUserResponse>('/users/batch', { ids }));
 }

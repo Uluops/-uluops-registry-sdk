@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.1] - 2026-06-01
+
+### Fixed
+
+- **`translation.retranslate()` now returns a narrow retranslation summary instead of trying
+  to parse the response as a full `Definition`.** The API endpoint `POST /definitions/:type/:name/retranslate`
+  returns `{type, name, version, translatorVersion, previousTranslatorVersion, changes}` —
+  not a complete Definition object. Previously every retranslate call threw
+  `ZodError: expected string, received undefined` on the missing id/status/hash/displayName/...
+  fields.
+
+  Added `retranslateResultSchema` + `RetranslateResult` type. Public return type changed
+  from `Definition` to `RetranslateResult` (typed breaking change, but the runtime payload
+  was always this shape — callers who used `result.id` etc. were already crashing).
+
+  Surfaced by live MCP smoke test (`retranslate_definition` via uluops-registry).
+
+## [0.30.0] - 2026-06-01
+
+### Breaking
+
+- **Requires `@uluops/sdk-core` 0.11.0.** sdk-core 0.11.0 removed the `options.schema`
+  parameter from HTTP methods. registry-sdk now compatible only with 0.11.x.
+- **Removed re-export of `ResponseValidationError` and `isResponseValidationError`.**
+  Both were removed from sdk-core in 0.11.0. Consumer code that caught
+  `ResponseValidationError` should now catch `ZodError` from `zod`.
+- **No public API changes** — every exported operation still returns the same validated
+  type. Schema validation moved from inside `http.METHOD(..., { schema })` to an external
+  `Schema.parse(await http.METHOD(...))` wrap. Behavior identical except for the error class.
+
+### Internal
+
+- 42 call sites across 17 operation files migrated to the external-parse pattern.
+- One file (`versions.ts`) had object-shorthand `{ schema }` (variable assignment) and was
+  migrated by hand; the rest went through `scripts/migrate-schema.mjs`.
+- Response-validation assertions in `analytics.test.ts` and `operations.test.ts` switched
+  from `/API response validation failed/` regex match to `ZodError` class match.
+
 ## [0.29.0] - 2026-05-28
 
 ### Breaking
