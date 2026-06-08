@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.1] - 2026-06-08
+
+Post-implementation hardening on the 0.31.0 envelope rewrite. No breaking
+changes; all improvements are defensive, type-precision, or doc-fix.
+
+### Security
+
+- **Pre-parse depth guard on the dependency graph** (CWE-674). `dependencies.get()` now checks the envelope's `maxDepth` field BEFORE the recursive Zod parse runs, throwing `RangeError` when it exceeds `MAX_SAFE_GRAPH_DEPTH` (50, ~7× the live-verified production max of 7). A malicious or pathological server returning a 10,000-deep graph would otherwise exhaust the V8 call stack via the recursive `z.lazy()` walk. The guard reads a shallow primitive so the check completes before any tree allocation.
+- **Defensive string-length ceilings** (CWE-20). `name` (100), `version` (20), `context` (255) on `dependencyNodeSchema`, `flatDepSchema`, and `dependentSchema` now have `.max()` bounds aligned with server-side DB column sizes. Oversized payloads convert from silent memory pressure into a loud ZodError at parse time.
+
+### Changed
+
+- Extracted a shared `dependencyEnvelopeDefinitionSchema` for the `{type, name, version}` envelope header used by both `dependencyGraphResponseSchema` and `dependentsResponseSchema` — was duplicated inline at two sites. NOT to be confused with the looser `definitionRefSchema` used by analytics endpoints (which has optional version and `z.string()` for type).
+- `DependencyNodeShape` now references `DefinitionType` directly instead of `z.infer<typeof definitionTypeResponseSchema>` (clarity; types are identical).
+
+### Docs
+
+- README `dependencies.get()` example rewritten to the post-R12 envelope shape (was still showing the removed `.nodes` / `.edges` / `.cycleDetected` fields — which would break for any consumer copy-pasting). `getDependents()` example added showing `Dependent.context` iteration. BREAKING change callout added in the Dependencies section. Pre-1.0 versioning policy note added to the API Compatibility section explaining why a typed breaking change can ship as MINOR pre-1.0.
+
+### Tests
+
+- 3 new tests: depth-2 tree (exercises the `z.lazy` recursion beyond depth 1 — prior tests only ran at depth 1, so a mutation replacing the recursive schema with a depth-1-only shape would have passed everything), CWE-20 oversized-string rejection, and CWE-674 depth-guard `RangeError`. Suite 457 → 460.
+
 ## [0.31.0] - 2026-06-08
 
 ### Changed

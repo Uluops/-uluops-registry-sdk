@@ -16,6 +16,23 @@ import {
 } from '../types/response-schemas.js';
 
 /**
+ * Defensive ceiling on recursive parse depth (post-impl r2, CWE-674).
+ *
+ * The dependency graph parser uses `z.lazy()` and walks every nested
+ * `dependencies[]` array synchronously. A malicious or pathological server
+ * payload nested 10,000+ levels deep would exhaust the V8 call stack before
+ * the parse returns. Production graphs run depth 7 max (live-verified
+ * 2026-06-08), so a 50-level ceiling is ~7× the real-world maximum and still
+ * far below the unsafe threshold.
+ *
+ * Enforced on the envelope's `maxDepth` field before the recursive parse runs,
+ * so we reject the response before allocating the tree. A server returning a
+ * depth above the ceiling will surface a `RangeError` to the caller rather
+ * than silently hanging or crashing the process.
+ */
+const MAX_SAFE_GRAPH_DEPTH = 50;
+
+/**
  * Get the dependency graph for a definition.
  *
  * @param http - Registry HTTP client
@@ -24,6 +41,8 @@ import {
  * @param version - Semver version
  * @param options - Options (e.g., depth limit)
  * @returns Envelope with root definition, recursive graph, flat list, and counts
+ * @throws RangeError if the server-reported `maxDepth` exceeds MAX_SAFE_GRAPH_DEPTH
+ * @throws ZodError if the response shape doesn't match `DependencyGraphResponse`
  */
 export async function get(
   http: RegistryHttpClient,
@@ -33,9 +52,24 @@ export async function get(
   options?: GetDependenciesOptions
 ): Promise<DependencyGraphResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/dependencies`;
-  return dependencyGraphResponseSchema.parse(
-    await http.get<unknown>(path, options)
-  );
+  const raw = await http.get<unknown>(path, options);
+
+  // Pre-parse depth guard (CWE-674). The envelope's maxDepth field is a
+  // shallow primitive validated separately by Zod below — read it before
+  // the recursive parse runs to short-circuit DoS-shaped responses.
+  if (
+    typeof raw === 'object' &&
+    raw !== null &&
+    'maxDepth' in raw &&
+    typeof (raw as { maxDepth: unknown }).maxDepth === 'number' &&
+    (raw as { maxDepth: number }).maxDepth > MAX_SAFE_GRAPH_DEPTH
+  ) {
+    throw new RangeError(
+      `Dependency graph maxDepth ${String((raw as { maxDepth: number }).maxDepth)} exceeds safe ceiling ${String(MAX_SAFE_GRAPH_DEPTH)}`,
+    );
+  }
+
+  return dependencyGraphResponseSchema.parse(raw);
 }
 
 /**

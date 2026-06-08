@@ -1260,5 +1260,25 @@ describe('operations', () => {
       });
       await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
+
+    it('dependencies.get throws RangeError when maxDepth exceeds safe ceiling (post-impl r2, CWE-674)', async () => {
+      // Pre-parse depth guard against pathological / malicious payloads. The
+      // recursive z.lazy schema would walk every nested dependencies[] array
+      // synchronously and could exhaust the call stack on a 10,000-deep tree.
+      // The guard reads maxDepth from the envelope (a shallow primitive)
+      // BEFORE the recursive parse runs and rejects responses above the
+      // ceiling. Production graphs run at depth 7 max (live-verified
+      // 2026-06-08); the ceiling is 50 (~7× real-world max).
+      nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
+        data: {
+          definition: { type: 'agent', name: 'test', version: '1.0.0' },
+          graph: { id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'test', version: '1.0.0', dependencies: [] },
+          flat: [],
+          totalCount: 0,
+          maxDepth: 100, // > MAX_SAFE_GRAPH_DEPTH (50)
+        },
+      });
+      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(RangeError);
+    });
   });
 });

@@ -250,6 +250,8 @@ This SDK targets the **UluOps Registry API v1** (`/api/v1`). The SDK version fol
 - **Minor** (0.x.0): New features, backward-compatible
 - **Major** (x.0.0): Breaking changes (method signatures, removed endpoints)
 
+**Note (pre-1.0):** While this project is pre-1.0, minor releases may include breaking changes when the impact is demonstrably contained — for example, when fields were typed but never populated by the live API (see v0.31.0 / R12 envelope rewrite). The CHANGELOG `### Changed` / `### Removed` sections always carry the exact migration steps. Post-1.0 we will follow strict semver.
+
 The base URL defaults to `https://api.uluops.ai/api/v1/registry`.
 
 ## API Reference
@@ -488,25 +490,56 @@ if (result.valid) {
 
 Query dependency relationships between definitions.
 
+> **v0.31.0 — shape change (live-tests T2 §3.5, R12):** `dependencies.get()` and `dependencies.getDependents()` now return real envelopes. Prior versions exported `DependencyGraph` (`{nodes?, edges?, cycleDetected?, cycles?}`) — every field was optional, so the schema silently parsed every real API response as `{}`. The types `DependencyGraph` and `DependencyEdge` have been removed; the new shapes are `DependencyGraphResponse` (recursive `graph` + flat list) and `DependentsResponse`. Consumers who accessed `.nodes` / `.edges` / `.cycleDetected` need to migrate to `.graph.dependencies` / `.flat` / (cycle-detect client-side if needed). In practice every pre-fix consumer was reading `{}` so real-world breakage is small. See the [CHANGELOG](./CHANGELOG.md#0310---2026-06-08) for the full migration story.
+
 #### `get(type, name, version, options?)`
 
-Get the dependency graph for a definition.
+Get the dependency graph for a definition. Returns `DependencyGraphResponse`:
+`{definition, graph: DependencyNode (recursive), flat: FlatDep[], totalCount, maxDepth}`.
 
 ```typescript
-const graph = await client.dependencies.get('workflow', 'my-workflow', '1.0.0', {
+const result = await client.dependencies.get('workflow', 'my-workflow', '1.0.0', {
   maxDepth: 3,
 });
-console.log('Nodes:', graph.nodes);
-console.log('Edges:', graph.edges);
-console.log('Cycles detected:', graph.cycleDetected);
+
+// result.graph is the root DependencyNode (recursive tree)
+console.log('Root:', result.graph.name, result.graph.version);
+console.log('Direct deps:', result.graph.dependencies.length);
+
+// result.flat is a pre-flattened list with depth labels for table rendering
+for (const dep of result.flat) {
+  console.log(`  depth ${dep.depth}: ${dep.type}/${dep.name}@${dep.version}`);
+}
+
+console.log('Total transitive deps:', result.totalCount);
+console.log('Max depth resolved:', result.maxDepth);
+
+// Or walk the recursive tree directly:
+function walk(node: DependencyNode, depth = 0) {
+  const ctx = node.context ? `  [${node.context}]` : '';
+  console.log('  '.repeat(depth) + `${node.type}/${node.name}@${node.version}${ctx}`);
+  for (const child of node.dependencies) walk(child, depth + 1);
+}
+walk(result.graph);
 ```
 
 #### `getDependents(type, name, version)`
 
-Get definitions that depend on this one.
+Get definitions that depend on this one. Returns `DependentsResponse`:
+`{definition, dependents: Dependent[], totalCount}`. Each `Dependent` carries a
+`context` field describing how it references the target (e.g. `"invokes.agent"`,
+`"phase validate"`, `"dependencies.requires"`).
 
 ```typescript
-const dependents = await client.dependencies.getDependents('agent', 'code-validator', '1.0.0');
+const result = await client.dependencies.getDependents('agent', 'code-validator', '1.0.0');
+
+console.log(`${result.totalCount} dependents of`,
+  `${result.definition.type}/${result.definition.name}@${result.definition.version}`);
+
+for (const dep of result.dependents) {
+  // dep.context describes how the dependent uses this definition
+  console.log(`  ${dep.type}/${dep.name}@${dep.version}  ←  ${dep.context}`);
+}
 ```
 
 ---

@@ -44,6 +44,7 @@ import {
   MODEL_STATUSES,
   CHANGE_TYPES,
 } from './enums.js';
+import type { DefinitionType } from './enums.js';
 import { definitionSchema } from './schemas.js';
 
 // ============================================================================
@@ -372,6 +373,19 @@ export const forkListResponseSchema = z.object({
 // with a recursive node schema for the nested dependency tree.
 // ─────────────────────────────────────────────────────────────────
 
+// Defensive string-length ceilings on dependency graph fields (post-impl r2,
+// CWE-20). The registry-api server-side DB column sizes:
+//   definitions.name      VARCHAR(100)
+//   definition_versions.semver VARCHAR(20)
+// `context` is a free-form ref-context label ("invokes.agent", "phase validate",
+// "dependencies.requires") with no enforced server limit — bound it
+// generously here so a malicious server can't blow up consumer memory.
+// A compliant server is never affected; oversized payloads convert from
+// silent memory pressure into a loud ZodError at parse time.
+const MAX_DEFINITION_NAME = 100;
+const MAX_DEFINITION_VERSION = 20;
+const MAX_CONTEXT_LABEL = 255;
+
 /**
  * Recursive shape for the dependency graph node. Local to the schema module —
  * the public type alias lives in types/dependencies.ts (as `DependencyNode`)
@@ -383,11 +397,13 @@ export const forkListResponseSchema = z.object({
  * at compile time (the bound forces the schema's output type to match).
  * But adding a field to `DependencyNodeShape` without updating the inner
  * z.object will not error — strip-mode would silently drop the field at
- * parse time. When adding fields, edit BOTH places.
+ * parse time. Same risk applies inversely: adding an OPTIONAL field to the
+ * shape but not to the z.object compiles fine but silently drops. When
+ * adding fields (required OR optional), edit BOTH places.
  */
 type DependencyNodeShape = {
   id: string;
-  type: z.infer<typeof definitionTypeResponseSchema>;
+  type: DefinitionType;
   name: string;
   version: string;
   context?: string;
@@ -403,9 +419,9 @@ export const dependencyNodeSchema: z.ZodType<DependencyNodeShape> = z.lazy(() =>
   z.object({
     id: z.string().uuid(),
     type: definitionTypeResponseSchema,
-    name: z.string(),
-    version: z.string(),
-    context: z.string().optional(),
+    name: z.string().max(MAX_DEFINITION_NAME),
+    version: z.string().max(MAX_DEFINITION_VERSION),
+    context: z.string().max(MAX_CONTEXT_LABEL).optional(),
     dependencies: z.array(dependencyNodeSchema),
   })
 );
@@ -414,8 +430,8 @@ export const dependencyNodeSchema: z.ZodType<DependencyNodeShape> = z.lazy(() =>
 export const flatDepSchema = z.object({
   id: z.string().uuid(),
   type: definitionTypeResponseSchema,
-  name: z.string(),
-  version: z.string(),
+  name: z.string().max(MAX_DEFINITION_NAME),
+  version: z.string().max(MAX_DEFINITION_VERSION),
   depth: z.number().int().nonnegative(),
 });
 
@@ -426,29 +442,35 @@ export const flatDepSchema = z.object({
 export const dependentSchema = z.object({
   id: z.string().uuid(),
   type: definitionTypeResponseSchema,
-  name: z.string(),
-  version: z.string(),
-  context: z.string(),
+  name: z.string().max(MAX_DEFINITION_NAME),
+  version: z.string().max(MAX_DEFINITION_VERSION),
+  context: z.string().max(MAX_CONTEXT_LABEL),
+});
+
+/**
+ * Strict {type, name, version} envelope header used by both dependency
+ * response shapes. NOT to be confused with `definitionRefSchema` later in
+ * this file — that one uses `z.string()` for type (no enum validation) and
+ * has `version` optional, both intentional for analytics endpoints that
+ * serve cross-version data. The dependency envelopes need the enum
+ * constraint AND a required version.
+ */
+const dependencyEnvelopeDefinitionSchema = z.object({
+  type: definitionTypeResponseSchema,
+  name: z.string().max(MAX_DEFINITION_NAME),
+  version: z.string().max(MAX_DEFINITION_VERSION),
 });
 
 /** Envelope returned by GET /definitions/{type}/{name}/{version}/dependents. */
 export const dependentsResponseSchema = z.object({
-  definition: z.object({
-    type: definitionTypeResponseSchema,
-    name: z.string(),
-    version: z.string(),
-  }),
+  definition: dependencyEnvelopeDefinitionSchema,
   dependents: z.array(dependentSchema),
   totalCount: z.number().int().nonnegative(),
 });
 
 /** Envelope returned by GET /definitions/{type}/{name}/{version}/dependencies. */
 export const dependencyGraphResponseSchema = z.object({
-  definition: z.object({
-    type: definitionTypeResponseSchema,
-    name: z.string(),
-    version: z.string(),
-  }),
+  definition: dependencyEnvelopeDefinitionSchema,
   graph: dependencyNodeSchema,
   flat: z.array(flatDepSchema),
   totalCount: z.number().int().nonnegative(),

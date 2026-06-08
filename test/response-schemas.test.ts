@@ -28,6 +28,7 @@ import {
   forkLineageSchema,
   forkListResponseSchema,
   dependencyGraphResponseSchema,
+  dependencyNodeSchema,
   dependentsResponseSchema,
   dependentSchema,
   flatDepSchema,
@@ -263,6 +264,69 @@ describe('dependencyGraphResponseSchema (R12)', () => {
 
   it('rejects a bare {} (the pre-R12 degenerate case)', () => {
     expect(dependencyGraphResponseSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('accepts a depth-2 tree (post-impl r2 — exercises z.lazy recursion beyond depth 1)', () => {
+    // The wave's z.lazy() schema is the highest-risk pattern. Prior tests only
+    // exercised depth 1 (root + one child with empty dependencies), so a
+    // mutation replacing the recursive schema with a hardcoded depth-1-only
+    // shape would pass them all. This test puts a grandchild at depth 2 and
+    // asserts the parser walks the full tree.
+    const grandchild = {
+      id: '00000000-0000-4000-a000-000000000040',
+      type: 'command' as const,
+      name: 'grandchild-cmd',
+      version: '1.0.0',
+      dependencies: [],
+    };
+    const child = {
+      id: '00000000-0000-4000-a000-000000000041',
+      type: 'agent' as const,
+      name: 'child-agent',
+      version: '1.0.0',
+      context: 'invokes.agent',
+      dependencies: [grandchild],
+    };
+    const envelope = createMockDependencyGraphResponse({
+      graph: {
+        id: '00000000-0000-4000-a000-000000000042',
+        type: 'workflow' as const,
+        name: 'root-workflow',
+        version: '1.0.0',
+        dependencies: [child],
+      },
+      flat: [
+        createMockFlatDep({ name: 'child-agent', depth: 1 }),
+        createMockFlatDep({ name: 'grandchild-cmd', depth: 2 }),
+      ],
+      totalCount: 2,
+      maxDepth: 2,
+    });
+    const result = dependencyGraphResponseSchema.safeParse(envelope);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      // Reach all the way to the grandchild — proves the recursive walk works.
+      expect(result.data.graph.dependencies[0]?.dependencies[0]?.name).toBe(
+        'grandchild-cmd',
+      );
+      // And the flat[] matches the tree: 2 entries with depths 1 and 2.
+      const namesInFlat = result.data.flat.map((d) => d.name).sort();
+      expect(namesInFlat).toEqual(['child-agent', 'grandchild-cmd']);
+    }
+  });
+
+  it('rejects oversized string fields on dependencyNodeSchema (post-impl r2, CWE-20)', () => {
+    // Defensive ceiling at 100 chars for definition name; a malicious server
+    // returning a 200-char name would otherwise allocate it into the parsed
+    // output before any consumer-side gate could apply.
+    const oversized = {
+      id: '00000000-0000-4000-a000-000000000050',
+      type: 'agent' as const,
+      name: 'x'.repeat(200), // > MAX_DEFINITION_NAME (100)
+      version: '1.0.0',
+      dependencies: [],
+    };
+    expect(dependencyNodeSchema.safeParse(oversized).success).toBe(false);
   });
 
   it('accepts a mixed-context graph (some nodes with context, some without — post-impl r1)', () => {
