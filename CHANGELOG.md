@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] - 2026-06-08
+
+### Changed
+
+- **BREAKING (small surface): `dependencies.get()` and `dependencies.getDependents()` now return real envelopes.** Live-tests T2 §3.5 (R12). Both methods used to parse responses through a single `dependencyGraphSchema` with optional `nodes / edges / cycleDetected / cycles` fields that bore no relation to the API response — every field was optional, so any response (including the actual `{ data: { definition, graph, flat, totalCount, maxDepth } }` shape) parsed as `{}`. Callers received a degenerate object the type system happily accepted, then defended against it with runtime `data.nodes ?? data.flat ?? []` fallbacks.
+
+  After R12:
+  - `dependencies.get()` returns `DependencyGraphResponse = { definition, graph: DependencyNode (recursive), flat: FlatDep[], totalCount, maxDepth }`. The graph is a true recursive tree (`DependencyNode.dependencies: DependencyNode[]`) with optional `context` per node (`"invokes.agent"`, `"phase validate"`, etc).
+  - `dependencies.getDependents()` returns `DependentsResponse = { definition, dependents: Dependent[], totalCount }`. Each `Dependent` carries `{ id, type, name, version, context }`.
+
+  TS consumers typed against the old `DependencyGraph` shape will see compile errors at `.nodes`, `.edges`, `.cycleDetected`, `.cycles` — there are no migration shims because, in practice, those fields never carried data; the migration is to read the real fields (`graph` / `flat` / `dependents`) instead.
+
+### Added
+
+- New exported types: `DependencyNode` (recursive), `FlatDep`, `Dependent`, `DependentsResponse`, `DependencyGraphResponse`.
+- New exported Zod schemas: `dependencyNodeSchema` (recursive via `z.lazy`), `flatDepSchema`, `dependentSchema`, `dependentsResponseSchema`, `dependencyGraphResponseSchema`.
+
+### Removed
+
+- `DependencyGraph` (interface) and `DependencyEdge` (interface) — these typed something the API never returned.
+- `dependencyGraphSchema` (Zod) and `dependencyEdgeSchema` (Zod) — same reason.
+
+### Internal
+
+- 7 new schema tests covering recursive graphs, the no-deps and no-dependents envelopes, the pre-R12 bare-`{}` degenerate shape rejection, and `flatDep` depth bounds. 2 new operations tests round-trip the full envelope via `nock`. Suite 448 → 455.
+
 ## [0.30.2] - 2026-06-01
 
 ### Security

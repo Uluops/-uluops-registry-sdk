@@ -27,7 +27,10 @@ import {
   forkResponseSchema,
   forkLineageSchema,
   forkListResponseSchema,
-  dependencyGraphSchema,
+  dependencyGraphResponseSchema,
+  dependentsResponseSchema,
+  dependentSchema,
+  flatDepSchema,
   upgradeResultSchema,
   batchUserResponseSchema,
   definitionEffectivenessSchema,
@@ -50,7 +53,10 @@ import {
   createMockModel,
   createMockPublicUser,
   createMockProvider,
-  createMockDependencyGraph,
+  createMockDependencyGraphResponse,
+  createMockDependentsResponse,
+  createMockDependent,
+  createMockFlatDep,
   createMockRenderResult,
   createMockValidationResult,
   createMockVersionDiffSummary,
@@ -210,13 +216,104 @@ describe('modelSchema', () => {
   });
 });
 
-describe('dependencyGraphSchema', () => {
-  it('accepts valid graph', () => {
-    expect(dependencyGraphSchema.safeParse(createMockDependencyGraph()).success).toBe(true);
+describe('dependencyGraphResponseSchema (R12)', () => {
+  it('accepts an empty-deps envelope (no children, no flat rows)', () => {
+    expect(
+      dependencyGraphResponseSchema.safeParse(createMockDependencyGraphResponse())
+        .success,
+    ).toBe(true);
   });
 
-  it('rejects wrong type for nodes', () => {
-    expect(dependencyGraphSchema.safeParse({ nodes: 'not-an-array' }).success).toBe(false);
+  it('accepts a recursive graph with nested dependencies', () => {
+    const child = {
+      id: '00000000-0000-4000-a000-000000000020',
+      type: 'agent' as const,
+      name: 'child-agent',
+      version: '1.0.0',
+      context: 'invokes.agent',
+      dependencies: [],
+    };
+    const envelope = createMockDependencyGraphResponse({
+      graph: {
+        id: '00000000-0000-4000-a000-000000000010',
+        type: 'agent' as const,
+        name: 'root-agent',
+        version: '1.0.0',
+        dependencies: [child],
+      },
+      flat: [createMockFlatDep({ name: 'child-agent', depth: 1 })],
+      totalCount: 1,
+      maxDepth: 1,
+    });
+    expect(dependencyGraphResponseSchema.safeParse(envelope).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects an envelope missing the graph field', () => {
+    expect(
+      dependencyGraphResponseSchema.safeParse({
+        definition: { type: 'agent', name: 'x', version: '1.0.0' },
+        flat: [],
+        totalCount: 0,
+        maxDepth: 0,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects a bare {} (the pre-R12 degenerate case)', () => {
+    expect(dependencyGraphResponseSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('dependentsResponseSchema (R12)', () => {
+  it('accepts a no-dependents envelope', () => {
+    expect(
+      dependentsResponseSchema.safeParse(createMockDependentsResponse()).success,
+    ).toBe(true);
+  });
+
+  it('accepts a populated dependents list', () => {
+    const envelope = createMockDependentsResponse({
+      dependents: [
+        createMockDependent({ name: 'caller-a' }),
+        createMockDependent({ name: 'caller-b', context: 'phase validate' }),
+      ],
+      totalCount: 2,
+    });
+    expect(dependentsResponseSchema.safeParse(envelope).success).toBe(true);
+  });
+
+  it('rejects a bare {} (the pre-R12 degenerate case)', () => {
+    expect(dependentsResponseSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('requires context on each dependent', () => {
+    const result = dependentSchema.safeParse({
+      id: '00000000-0000-4000-a000-000000000030',
+      type: 'agent',
+      name: 'caller',
+      version: '1.0.0',
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('flatDepSchema (R12)', () => {
+  it('accepts a valid flat row', () => {
+    expect(flatDepSchema.safeParse(createMockFlatDep()).success).toBe(true);
+  });
+
+  it('rejects negative depth', () => {
+    expect(
+      flatDepSchema.safeParse({
+        id: '00000000-0000-4000-a000-000000000040',
+        type: 'agent',
+        name: 'dep',
+        version: '1.0.0',
+        depth: -1,
+      }).success,
+    ).toBe(false);
   });
 });
 

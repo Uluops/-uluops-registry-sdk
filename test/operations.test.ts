@@ -405,14 +405,33 @@ describe('operations', () => {
 
   describe('dependencies', () => {
     describe('get', () => {
-      it('should get dependency graph', async () => {
+      it('returns the full DependencyGraphResponse envelope', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
           .reply(200, {
             data: {
-              nodes: [{ id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'dep1', version: '1.0.0', status: 'published' }],
-              edges: [],
-              cycleDetected: false,
+              definition: { type: 'workflow', name: 'my-workflow', version: '1.0.0' },
+              graph: {
+                id: '00000000-0000-4000-a000-000000000001',
+                type: 'workflow',
+                name: 'my-workflow',
+                version: '1.0.0',
+                dependencies: [
+                  {
+                    id: '00000000-0000-4000-a000-000000000002',
+                    type: 'agent',
+                    name: 'dep1',
+                    version: '1.0.0',
+                    context: 'invokes.agent',
+                    dependencies: [],
+                  },
+                ],
+              },
+              flat: [
+                { id: '00000000-0000-4000-a000-000000000002', type: 'agent', name: 'dep1', version: '1.0.0', depth: 1 },
+              ],
+              totalCount: 1,
+              maxDepth: 1,
             },
           });
 
@@ -422,16 +441,33 @@ describe('operations', () => {
           'my-workflow',
           '1.0.0'
         );
-        expect(result.nodes).toHaveLength(1);
-        expect(result.cycleDetected).toBe(false);
+        expect(result.definition).toEqual({ type: 'workflow', name: 'my-workflow', version: '1.0.0' });
+        expect(result.graph.dependencies).toHaveLength(1);
+        expect(result.graph.dependencies[0]?.name).toBe('dep1');
+        expect(result.flat).toHaveLength(1);
+        expect(result.flat[0]?.depth).toBe(1);
+        expect(result.totalCount).toBe(1);
+        expect(result.maxDepth).toBe(1);
       });
 
-      it('should include maxDepth option', async () => {
+      it('returns the no-deps envelope (empty graph)', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/workflow/my-workflow@1.0.0/dependencies')
           .query({ maxDepth: '3' })
           .reply(200, {
-            data: { nodes: [], edges: [], cycleDetected: false },
+            data: {
+              definition: { type: 'workflow', name: 'my-workflow', version: '1.0.0' },
+              graph: {
+                id: '00000000-0000-4000-a000-000000000001',
+                type: 'workflow',
+                name: 'my-workflow',
+                version: '1.0.0',
+                dependencies: [],
+              },
+              flat: [],
+              totalCount: 0,
+              maxDepth: 0,
+            },
           });
 
         const result = await dependencyOps.get(
@@ -441,17 +477,30 @@ describe('operations', () => {
           '1.0.0',
           { maxDepth: 3 }
         );
-        expect(result.nodes).toEqual([]);
-        expect(result.cycleDetected).toBe(false);
+        expect(result.graph.dependencies).toEqual([]);
+        expect(result.flat).toEqual([]);
+        expect(result.totalCount).toBe(0);
       });
     });
 
     describe('getDependents', () => {
-      it('should get dependents', async () => {
+      it('returns the full DependentsResponse envelope', async () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/dependents')
           .reply(200, {
-            data: { nodes: [{ id: '00000000-0000-4000-a000-000000000001', type: 'agent', name: 'dep1', version: '1.0.0', status: 'published' }], edges: [], cycleDetected: false },
+            data: {
+              definition: { type: 'agent', name: 'my-agent', version: '1.0.0' },
+              dependents: [
+                {
+                  id: '00000000-0000-4000-a000-000000000001',
+                  type: 'workflow',
+                  name: 'caller-workflow',
+                  version: '1.0.0',
+                  context: 'phase validate',
+                },
+              ],
+              totalCount: 1,
+            },
           });
 
         const result = await dependencyOps.getDependents(
@@ -460,7 +509,31 @@ describe('operations', () => {
           'my-agent',
           '1.0.0'
         );
-        expect(result.nodes).toHaveLength(1);
+        expect(result.definition).toEqual({ type: 'agent', name: 'my-agent', version: '1.0.0' });
+        expect(result.dependents).toHaveLength(1);
+        expect(result.dependents[0]?.context).toBe('phase validate');
+        expect(result.totalCount).toBe(1);
+      });
+
+      it('returns the no-dependents envelope (the case the old schema parsed as {})', async () => {
+        nock(MOCK_BASE_URL)
+          .get('/definitions/agent/my-agent@1.0.0/dependents')
+          .reply(200, {
+            data: {
+              definition: { type: 'agent', name: 'my-agent', version: '1.0.0' },
+              dependents: [],
+              totalCount: 0,
+            },
+          });
+
+        const result = await dependencyOps.getDependents(
+          http,
+          'agent',
+          'my-agent',
+          '1.0.0'
+        );
+        expect(result.dependents).toEqual([]);
+        expect(result.totalCount).toBe(0);
       });
     });
   });
@@ -1157,11 +1230,23 @@ describe('operations', () => {
       await expect(forkOps.isForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
 
-    it('dependencies.get rejects wrong type for nodes', async () => {
+    it('dependencies.get rejects an envelope missing the graph field', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
-        data: { nodes: 'not-an-array', edges: [], cycleDetected: false },
+        data: {
+          definition: { type: 'agent', name: 'test', version: '1.0.0' },
+          flat: [],
+          totalCount: 0,
+          maxDepth: 0,
+        },
       });
       await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+    });
+
+    it('dependencies.getDependents rejects a bare {} (the pre-R12 degenerate shape)', async () => {
+      nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependents').reply(200, {
+        data: {},
+      });
+      await expect(dependencyOps.getDependents(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
   });
 });

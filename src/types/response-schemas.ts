@@ -358,28 +358,92 @@ export const forkListResponseSchema = z.object({
   totalForks: z.number().int().nonnegative(),
 });
 
-/** Dependency graph node */
-export const dependencyNodeSchema = z.object({
+// ─────────────────────────────────────────────────────────────────
+// Dependency graph schemas (live-tests T2 §3.5 — R12)
+//
+// Before R12: a single `dependencyGraphSchema` with optional nodes/edges/
+// cycleDetected/cycles fields that bore no relation to the API response.
+// Server returned `{ definition, graph: DependencyNode, flat, totalCount,
+// maxDepth }` for deps and `{ definition, dependents, totalCount }` for
+// dependents — both got parsed as `{}` because every field was optional.
+// Callers received a degenerate object the type system happily accepted.
+//
+// After R12: two distinct envelope schemas matching the actual API shape,
+// with a recursive node schema for the nested dependency tree.
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Recursive shape for the dependency graph node. Local to the schema module —
+ * the public type alias lives in types/dependencies.ts (as `DependencyNode`)
+ * and is exported there.
+ */
+type DependencyNodeShape = {
+  id: string;
+  type: z.infer<typeof definitionTypeResponseSchema>;
+  name: string;
+  version: string;
+  context?: string;
+  dependencies: DependencyNodeShape[];
+};
+
+/**
+ * A node in the dependency graph — recursively contains its own dependencies.
+ * Mirrors `DependencyNode` in uluops-registry-api/services/dependency/index.ts.
+ */
+export const dependencyNodeSchema: z.ZodType<DependencyNodeShape> = z.lazy(() =>
+  z.object({
+    id: z.string().uuid(),
+    type: definitionTypeResponseSchema,
+    name: z.string(),
+    version: z.string(),
+    context: z.string().optional(),
+    dependencies: z.array(dependencyNodeSchema),
+  })
+);
+
+/** A flat row in the dependency graph's pre-flattened view. */
+export const flatDepSchema = z.object({
   id: z.string().uuid(),
   type: definitionTypeResponseSchema,
   name: z.string(),
   version: z.string(),
-  status: definitionStatusResponseSchema,
+  depth: z.number().int().nonnegative(),
 });
 
-/** Dependency graph edge */
-export const dependencyEdgeSchema = z.object({
-  from: z.string(),
-  to: z.string(),
-  type: z.string(),
+/**
+ * A single dependent — a definition that references this one.
+ * Mirrors `Dependent` in uluops-registry-api/services/dependency/index.ts.
+ */
+export const dependentSchema = z.object({
+  id: z.string().uuid(),
+  type: definitionTypeResponseSchema,
+  name: z.string(),
+  version: z.string(),
+  context: z.string(),
 });
 
-/** GET /definitions/{type}/{name}/{version}/dependencies|dependents */
-export const dependencyGraphSchema = z.object({
-  nodes: z.array(dependencyNodeSchema).optional(),
-  edges: z.array(dependencyEdgeSchema).optional(),
-  cycleDetected: z.boolean().optional(),
-  cycles: z.array(z.array(z.string())).optional(),
+/** Envelope returned by GET /definitions/{type}/{name}/{version}/dependents. */
+export const dependentsResponseSchema = z.object({
+  definition: z.object({
+    type: definitionTypeResponseSchema,
+    name: z.string(),
+    version: z.string(),
+  }),
+  dependents: z.array(dependentSchema),
+  totalCount: z.number().int().nonnegative(),
+});
+
+/** Envelope returned by GET /definitions/{type}/{name}/{version}/dependencies. */
+export const dependencyGraphResponseSchema = z.object({
+  definition: z.object({
+    type: definitionTypeResponseSchema,
+    name: z.string(),
+    version: z.string(),
+  }),
+  graph: dependencyNodeSchema,
+  flat: z.array(flatDepSchema),
+  totalCount: z.number().int().nonnegative(),
+  maxDepth: z.number().int().nonnegative(),
 });
 
 /** POST /definitions/{type}/{name}/upgrade */

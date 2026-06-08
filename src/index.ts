@@ -93,10 +93,13 @@ export type {
 } from './operations/models.js';
 
 export type {
-  // Dependency types
-  DependencyGraph,
+  // Dependency types (R12 — live-tests T2 §3.5; replaces the
+  // never-matching DependencyGraph/DependencyEdge shape).
   DependencyNode,
-  DependencyEdge,
+  FlatDep,
+  Dependent,
+  DependentsResponse,
+  DependencyGraphResponse,
   GetDependenciesOptions,
 } from './types/dependencies.js';
 

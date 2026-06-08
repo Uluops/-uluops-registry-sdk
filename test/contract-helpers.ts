@@ -36,7 +36,10 @@ import {
   forkLineageSchema,
   forkListResponseSchema,
   dependencyNodeSchema,
-  dependencyGraphSchema,
+  dependencyGraphResponseSchema,
+  dependentsResponseSchema,
+  dependentSchema,
+  flatDepSchema,
   upgradeResultSchema,
   batchUserResponseSchema,
   // Phase 3
@@ -261,21 +264,81 @@ export function createMockProvider(overrides: Record<string, unknown> = {}): z.i
   return data as z.infer<typeof providerSchema>;
 }
 
-export function createMockDependencyGraph(overrides: Record<string, unknown> = {}): z.infer<typeof dependencyGraphSchema> {
+export function createMockDependencyGraphResponse(
+  overrides: Record<string, unknown> = {},
+): z.infer<typeof dependencyGraphResponseSchema> {
+  const rootId = generateId();
   const data = {
-    nodes: [{
-      id: generateId(),
-      type: 'agent',
+    definition: {
+      type: 'agent' as const,
       name: 'test-agent',
       version: '1.0.0',
-      status: 'published',
-    }],
-    edges: [],
-    cycleDetected: false,
+    },
+    graph: {
+      id: rootId,
+      type: 'agent' as const,
+      name: 'test-agent',
+      version: '1.0.0',
+      dependencies: [],
+    },
+    flat: [],
+    totalCount: 0,
+    maxDepth: 0,
     ...overrides,
   };
-  validateMock(dependencyGraphSchema, data, 'dependencyGraph');
-  return data as z.infer<typeof dependencyGraphSchema>;
+  validateMock(
+    dependencyGraphResponseSchema,
+    data,
+    'dependencyGraphResponse',
+  );
+  return data as z.infer<typeof dependencyGraphResponseSchema>;
+}
+
+export function createMockDependentsResponse(
+  overrides: Record<string, unknown> = {},
+): z.infer<typeof dependentsResponseSchema> {
+  const data = {
+    definition: {
+      type: 'agent' as const,
+      name: 'test-agent',
+      version: '1.0.0',
+    },
+    dependents: [],
+    totalCount: 0,
+    ...overrides,
+  };
+  validateMock(dependentsResponseSchema, data, 'dependentsResponse');
+  return data as z.infer<typeof dependentsResponseSchema>;
+}
+
+export function createMockDependent(
+  overrides: Record<string, unknown> = {},
+): z.infer<typeof dependentSchema> {
+  const data = {
+    id: generateId(),
+    type: 'agent' as const,
+    name: 'caller-agent',
+    version: '1.0.0',
+    context: 'invokes.agent',
+    ...overrides,
+  };
+  validateMock(dependentSchema, data, 'dependent');
+  return data as z.infer<typeof dependentSchema>;
+}
+
+export function createMockFlatDep(
+  overrides: Record<string, unknown> = {},
+): z.infer<typeof flatDepSchema> {
+  const data = {
+    id: generateId(),
+    type: 'agent' as const,
+    name: 'dep-agent',
+    version: '1.0.0',
+    depth: 1,
+    ...overrides,
+  };
+  validateMock(flatDepSchema, data, 'flatDep');
+  return data as z.infer<typeof flatDepSchema>;
 }
 
 export function createMockRenderResult(overrides: Record<string, unknown> = {}): z.infer<typeof renderResultSchema> {
@@ -398,7 +461,10 @@ export {
   forkLineageSchema,
   forkListResponseSchema,
   dependencyNodeSchema,
-  dependencyGraphSchema,
+  dependencyGraphResponseSchema,
+  dependentsResponseSchema,
+  dependentSchema,
+  flatDepSchema,
   upgradeResultSchema,
   batchUserResponseSchema,
   failureDomainDistributionSchema,

@@ -51,7 +51,11 @@ import type {
 } from './types/definitions.js';
 import type { VersionDiff, VersionDiffSummary, VersionFieldDiff, VersionUnifiedDiff } from './types/versions.js';
 import type { VersionsListResponse } from './operations/versions.js';
-import type { DependencyGraph, GetDependenciesOptions } from './types/dependencies.js';
+import type {
+  DependencyGraphResponse,
+  DependentsResponse,
+  GetDependenciesOptions,
+} from './types/dependencies.js';
 import type {
   ForkDefinitionBody,
   ForkResponse,
@@ -201,9 +205,9 @@ export class RegistryClient {
    */
   readonly dependencies: {
     /** Get the dependency graph for a definition version. */
-    get: (type: DefinitionType, name: string, version: string, options?: GetDependenciesOptions) => Promise<DependencyGraph>;
+    get: (type: DefinitionType, name: string, version: string, options?: GetDependenciesOptions) => Promise<DependencyGraphResponse>;
     /** Get definitions that depend on this definition version. */
-    getDependents: (type: DefinitionType, name: string, version: string) => Promise<DependencyGraph>;
+    getDependents: (type: DefinitionType, name: string, version: string) => Promise<DependentsResponse>;
   };
 
   /**

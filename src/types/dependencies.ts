@@ -2,40 +2,42 @@
  * Dependency graph types for the Registry SDK
  */
 
-import type { DefinitionStatus, DefinitionType } from './enums.js';
+import type { z } from 'zod';
+import type {
+  dependencyNodeSchema,
+  dependentSchema,
+  dependentsResponseSchema,
+  dependencyGraphResponseSchema,
+  flatDepSchema,
+} from './response-schemas.js';
 
 /**
- * Node in the dependency graph
+ * A node in the dependency graph — recursively contains its own dependencies.
  */
-export interface DependencyNode {
-  id: string;
-  type: DefinitionType;
-  name: string;
-  version: string;
-  status: DefinitionStatus;
-}
+export type DependencyNode = z.infer<typeof dependencyNodeSchema>;
 
 /**
- * Edge in the dependency graph
+ * A flat row in the dependency graph's pre-flattened view.
  */
-export interface DependencyEdge {
-  from: string;
-  to: string;
-  type: string;
-}
+export type FlatDep = z.infer<typeof flatDepSchema>;
 
 /**
- * Full dependency graph
+ * A single dependent — a definition that references the target.
  */
-export interface DependencyGraph {
-  nodes?: DependencyNode[];
-  edges?: DependencyEdge[];
-  cycleDetected?: boolean;
-  cycles?: string[][];
-}
+export type Dependent = z.infer<typeof dependentSchema>;
 
 /**
- * Query options for dependency operations
+ * Envelope returned by `getDependents()`.
+ */
+export type DependentsResponse = z.infer<typeof dependentsResponseSchema>;
+
+/**
+ * Envelope returned by `get()` (the dependency graph).
+ */
+export type DependencyGraphResponse = z.infer<typeof dependencyGraphResponseSchema>;
+
+/**
+ * Query options for dependency operations.
  */
 export interface GetDependenciesOptions {
   maxDepth?: number;

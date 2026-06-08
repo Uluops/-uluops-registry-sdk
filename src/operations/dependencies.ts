@@ -3,10 +3,17 @@
  */
 
 import type { RegistryHttpClient } from '../http/http-client.js';
-import type { DependencyGraph, GetDependenciesOptions } from '../types/dependencies.js';
+import type {
+  DependencyGraphResponse,
+  DependentsResponse,
+  GetDependenciesOptions,
+} from '../types/dependencies.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
-import { dependencyGraphSchema } from '../types/response-schemas.js';
+import {
+  dependencyGraphResponseSchema,
+  dependentsResponseSchema,
+} from '../types/response-schemas.js';
 
 /**
  * Get the dependency graph for a definition.
@@ -16,7 +23,7 @@ import { dependencyGraphSchema } from '../types/response-schemas.js';
  * @param name - Definition name
  * @param version - Semver version
  * @param options - Options (e.g., depth limit)
- * @returns Dependency graph with nodes and edges
+ * @returns Envelope with root definition, recursive graph, flat list, and counts
  */
 export async function get(
   http: RegistryHttpClient,
@@ -24,9 +31,11 @@ export async function get(
   name: string,
   version: string,
   options?: GetDependenciesOptions
-): Promise<DependencyGraph> {
+): Promise<DependencyGraphResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/dependencies`;
-  return dependencyGraphSchema.parse(await http.get<DependencyGraph>(path, options));
+  return dependencyGraphResponseSchema.parse(
+    await http.get<unknown>(path, options)
+  );
 }
 
 /**
@@ -36,14 +45,16 @@ export async function get(
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
  * @param version - Semver version
- * @returns Reverse dependency graph showing dependents
+ * @returns Envelope with root definition, dependents array, and total count
  */
 export async function getDependents(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
   version: string
-): Promise<DependencyGraph> {
+): Promise<DependentsResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/dependents`;
-  return dependencyGraphSchema.parse(await http.get<DependencyGraph>(path, undefined));
+  return dependentsResponseSchema.parse(
+    await http.get<unknown>(path, undefined)
+  );
 }
