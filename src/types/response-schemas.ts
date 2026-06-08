@@ -376,6 +376,14 @@ export const forkListResponseSchema = z.object({
  * Recursive shape for the dependency graph node. Local to the schema module —
  * the public type alias lives in types/dependencies.ts (as `DependencyNode`)
  * and is exported there.
+ *
+ * NOTE: `DependencyNodeShape` and the `z.object({...})` body inside the
+ * `z.lazy()` below MUST stay in sync. The `z.ZodType<DependencyNodeShape>`
+ * annotation on the schema export catches *missing* fields in the z.object
+ * at compile time (the bound forces the schema's output type to match).
+ * But adding a field to `DependencyNodeShape` without updating the inner
+ * z.object will not error — strip-mode would silently drop the field at
+ * parse time. When adding fields, edit BOTH places.
  */
 type DependencyNodeShape = {
   id: string;
@@ -389,6 +397,7 @@ type DependencyNodeShape = {
 /**
  * A node in the dependency graph — recursively contains its own dependencies.
  * Mirrors `DependencyNode` in uluops-registry-api/services/dependency/index.ts.
+ * See `DependencyNodeShape` above for the dual-definition sync note.
  */
 export const dependencyNodeSchema: z.ZodType<DependencyNodeShape> = z.lazy(() =>
   z.object({

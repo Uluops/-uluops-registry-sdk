@@ -264,6 +264,54 @@ describe('dependencyGraphResponseSchema (R12)', () => {
   it('rejects a bare {} (the pre-R12 degenerate case)', () => {
     expect(dependencyGraphResponseSchema.safeParse({}).success).toBe(false);
   });
+
+  it('accepts a mixed-context graph (some nodes with context, some without — post-impl r1)', () => {
+    // The `context` field on DependencyNode is `.optional()`. Real registry
+    // responses interleave nodes with explicit context strings ("invokes.agent",
+    // "phase validate") and nodes without — the latter typically appear when
+    // the dependency is implicit or when context wasn't recorded at ref time.
+    // No prior test exercises both states together; without this, a regression
+    // that made `context` required would be caught only on the all-context
+    // case, not the mixed one.
+    const childWithContext = {
+      id: '00000000-0000-4000-a000-000000000030',
+      type: 'agent' as const,
+      name: 'child-with-context',
+      version: '1.0.0',
+      context: 'invokes.agent',
+      dependencies: [],
+    };
+    const childWithoutContext = {
+      id: '00000000-0000-4000-a000-000000000031',
+      type: 'agent' as const,
+      name: 'child-without-context',
+      version: '1.0.0',
+      // context omitted
+      dependencies: [],
+    };
+    const envelope = createMockDependencyGraphResponse({
+      graph: {
+        id: '00000000-0000-4000-a000-000000000010',
+        type: 'agent' as const,
+        name: 'root-agent',
+        version: '1.0.0',
+        dependencies: [childWithContext, childWithoutContext],
+      },
+      flat: [
+        createMockFlatDep({ name: 'child-with-context', depth: 1 }),
+        createMockFlatDep({ name: 'child-without-context', depth: 1 }),
+      ],
+      totalCount: 2,
+      maxDepth: 1,
+    });
+    const result = dependencyGraphResponseSchema.safeParse(envelope);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const [first, second] = result.data.graph.dependencies;
+      expect(first?.context).toBe('invokes.agent');
+      expect(second?.context).toBeUndefined();
+    }
+  });
 });
 
 describe('dependentsResponseSchema (R12)', () => {

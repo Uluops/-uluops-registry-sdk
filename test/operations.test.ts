@@ -1248,5 +1248,17 @@ describe('operations', () => {
       });
       await expect(dependencyOps.getDependents(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
     });
+
+    it('dependencies.get rejects a bare {} (the pre-R12 degenerate shape — post-impl r1)', async () => {
+      // Symmetric regression guard with getDependents above. The pre-R12
+      // bug affected BOTH operations equally — both parsed any response
+      // (including the right envelope) as {} because every field on the
+      // old dependencyGraphSchema was optional. Without this test, only
+      // half the regression surface is documented at the operation tier.
+      nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
+        data: {},
+      });
+      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+    });
   });
 });
