@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] - 2026-06-13
+
+Additive, non-breaking. Ships as MINOR per the pre-1.0 versioning policy (a new
+optional field on an existing type).
+
+### Added
+
+- **`limits` on the `Model` type** (`ModelLimits = { context: number; output: number }`, also exported). `context` is the model's maximum context window in tokens; `output` is its max output tokens. The registry API already returned this object on `GET /models/:provider/:modelId`, `GET /models/resolve/:alias`, and (as of the paired API release) `GET /models` — but the SDK's `modelSchema` did not declare it, so Zod **silently stripped it** before consumers ever saw it. `limits` is now declared on `modelSchema` and survives validation on every model-returning path (`list`, `get`, `resolveAlias`). The field is optional: the list endpoint historically omitted it, and upstream-synced rows with a null/0 limit surface as absent or `{ context: 0, output: 0 }` — consumers should treat a `0`/missing window as "unknown."
+
+### Tests
+
+- 2 new `modelSchema` tests: `limits.context` is preserved through validation, and a model with no `limits` still parses (optional). Suite 460 → 462.
+
 ## [0.31.1] - 2026-06-08
 
 Post-implementation hardening on the 0.31.0 envelope rewrite. No breaking

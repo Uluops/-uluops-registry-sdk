@@ -121,6 +121,7 @@ export type {
   AliasResolution,
   Provider,
   ModelCapabilities,
+  ModelLimits,
   ListModelsQuery,
 } from './types/models.js';
 

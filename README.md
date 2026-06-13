@@ -695,7 +695,10 @@ const result = await client.models.list({
   tier: 'premium',
 });
 for (const model of result.models) {
-  console.log(`${model.provider}/${model.modelId}: ${model.displayName}`);
+  // `limits.context` is the model's max context window (tokens). Optional:
+  // treat a missing window or `0` as "unknown" — some synced rows have no limit.
+  const window = model.limits?.context || undefined;
+  console.log(`${model.provider}/${model.modelId}: ${model.displayName} (window: ${window ?? 'unknown'})`);
 }
 ```
 
@@ -706,6 +709,7 @@ Get details for a specific model.
 ```typescript
 const model = await client.models.get('anthropic', 'claude-3-opus');
 console.log(model.capabilities);
+console.log(model.limits); // { context: 200000, output: 4096 }
 ```
 
 #### `listProviders()`

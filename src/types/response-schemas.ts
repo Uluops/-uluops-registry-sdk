@@ -268,6 +268,7 @@ export const modelSchema = z.object({
   description: z.string().optional(),
   providerModelId: z.string().optional(),
   capabilities: modelCapabilitiesSchema,
+  limits: z.object({ context: z.number(), output: z.number() }).optional(),
   tier: modelTierResponseSchema,
   status: modelStatusResponseSchema,
   regions: z.array(z.string()).nullable().optional(),

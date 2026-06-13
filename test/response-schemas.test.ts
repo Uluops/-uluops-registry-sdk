@@ -215,6 +215,19 @@ describe('modelSchema', () => {
     delete (model as Record<string, unknown>).capabilities;
     expect(modelSchema.safeParse(model).success).toBe(false);
   });
+
+  it('preserves limits.context through validation', () => {
+    const model = { ...createMockModel(), limits: { context: 128_000, output: 16_384 } };
+    const result = modelSchema.safeParse(model);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.limits?.context).toBe(128_000);
+  });
+
+  it('accepts a model with no limits (optional)', () => {
+    const model = createMockModel();
+    delete (model as Record<string, unknown>).limits;
+    expect(modelSchema.safeParse(model).success).toBe(true);
+  });
 });
 
 describe('dependencyGraphResponseSchema (R12)', () => {

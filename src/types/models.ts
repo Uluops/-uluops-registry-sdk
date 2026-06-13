@@ -16,6 +16,18 @@ export interface ModelCapabilities {
 }
 
 /**
+ * Model token limits.
+ *
+ * `context` is the model's maximum context window (input + output) in tokens.
+ * Optional because the list endpoint historically omitted it and some
+ * upstream-synced rows have a null/0 limit.
+ */
+export interface ModelLimits {
+  context: number;
+  output: number;
+}
+
+/**
  * AI model entity
  */
 export interface Model {
@@ -25,6 +37,7 @@ export interface Model {
   description?: string;
   providerModelId?: string;
   capabilities: ModelCapabilities;
+  limits?: ModelLimits;
   tier: ModelTier;
   status: ModelStatus;
   regions?: string[] | null;
