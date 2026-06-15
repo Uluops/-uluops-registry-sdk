@@ -12,7 +12,13 @@ export interface ModelCapabilities {
   tools?: boolean;
   streaming?: boolean;
   extendedThinking?: boolean;
+  /** Supports structured (JSON-schema) output on its own. */
   structuredOutput?: boolean;
+  /** Supports structured output AND tool calling in the same request. Absent or
+   * true means allowed; false means the provider rejects the combination (e.g.
+   * Google/Gemini returns a 400). Consumers sending tools should fall back to
+   * text extraction when this is false. */
+  structuredOutputWithTools?: boolean;
 }
 
 /**

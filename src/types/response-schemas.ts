@@ -258,6 +258,7 @@ export const modelCapabilitiesSchema = z.object({
   streaming: z.boolean().optional(),
   extendedThinking: z.boolean().optional(),
   structuredOutput: z.boolean().optional(),
+  structuredOutputWithTools: z.boolean().optional(),
 });
 
 /** Model entity — many fields optional for upstream-synced models */
