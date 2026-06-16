@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-06-16
+
+Ships as MINOR per the pre-1.0 versioning policy (dependency bump pulling in
+behavioral fixes).
+
+### Changed
+
+- **Bumped `@uluops/sdk-core` to `0.13.0`** (exact pin), which carries three fixes that affect this SDK at runtime:
+  - `retries: 0` now makes one attempt and surfaces the real typed error (e.g. `NetworkError`) instead of a contextless `Error('Request failed')`.
+  - A 401 with credentials present now yields an actionable `UnauthorizedError` (server reason preserved, plus guidance that the credential may be expired/revoked/invalid), distinct from the no-credentials case; the broken private-monorepo link was removed from the no-credentials message.
+  - `isApiKey()` now enforces the minimum key length, so it agrees with the `ApiKeyAuth` constructor.
+
 ## [0.34.0] - 2026-06-16
 
 Ships as MINOR per the pre-1.0 versioning policy. Mostly additive; one contained
