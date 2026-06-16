@@ -28,4 +28,5 @@ export {
   isServiceUnavailableError,
   isNetworkError,
   isTimeoutError,
+  ResponseValidationError,
 } from './errors.js';

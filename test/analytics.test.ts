@@ -7,9 +7,9 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import nock from 'nock';
-import { ZodError } from 'zod';
 import { RegistryHttpClient } from '../src/http/http-client.js';
 import * as analyticsOps from '../src/operations/analytics.js';
+import { ResponseValidationError } from '../src/errors/errors.js';
 import { TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
 
 describe('analytics', () => {
@@ -340,21 +340,21 @@ describe('analytics', () => {
             stale: false,
           },
         });
-      await expect(analyticsOps.getHealth(http, 'agent', 'test')).rejects.toThrow(ZodError);
+      await expect(analyticsOps.getHealth(http, 'agent', 'test')).rejects.toThrow(ResponseValidationError);
     });
 
     it('getEcosystemOverview rejects missing definitions field', async () => {
       nock(MOCK_BASE_URL)
         .get('/analytics/ecosystem/overview')
         .reply(200, { data: { execution: { totalRuns: 0, uniqueProjects: 0 }, effectiveness: {}, stale: false } });
-      await expect(analyticsOps.getEcosystemOverview(http)).rejects.toThrow(ZodError);
+      await expect(analyticsOps.getEcosystemOverview(http)).rejects.toThrow(ResponseValidationError);
     });
 
     it('getLineage rejects missing root field', async () => {
       nock(MOCK_BASE_URL)
         .get('/analytics/definitions/agent/test/lineage')
         .reply(200, { data: { totalVersions: 0, totalForks: 0, statistics: {}, stale: false } });
-      await expect(analyticsOps.getLineage(http, 'agent', 'test')).rejects.toThrow(ZodError);
+      await expect(analyticsOps.getLineage(http, 'agent', 'test')).rejects.toThrow(ResponseValidationError);
     });
 
     it('getEvolution rejects missing versions array', async () => {
@@ -369,7 +369,7 @@ describe('analytics', () => {
             stale: false,
           },
         });
-      await expect(analyticsOps.getEvolution(http, 'agent', 'test')).rejects.toThrow(ZodError);
+      await expect(analyticsOps.getEvolution(http, 'agent', 'test')).rejects.toThrow(ResponseValidationError);
     });
 
     it('getTranslation rejects missing groups array', async () => {
@@ -384,7 +384,7 @@ describe('analytics', () => {
             stale: false,
           },
         });
-      await expect(analyticsOps.getTranslation(http, 'agent', 'test')).rejects.toThrow(ZodError);
+      await expect(analyticsOps.getTranslation(http, 'agent', 'test')).rejects.toThrow(ResponseValidationError);
     });
 
     it('compare rejects missing versions array in response', async () => {
@@ -398,7 +398,7 @@ describe('analytics', () => {
             stale: false,
           },
         });
-      await expect(analyticsOps.compare(http, 'agent', 'test', ['1.0.0', '2.0.0'])).rejects.toThrow(ZodError);
+      await expect(analyticsOps.compare(http, 'agent', 'test', ['1.0.0', '2.0.0'])).rejects.toThrow(ResponseValidationError);
     });
 
     it('getDiffImpact rejects missing deltas', async () => {
@@ -417,7 +417,7 @@ describe('analytics', () => {
             stale: false,
           },
         });
-      await expect(analyticsOps.getDiffImpact(http, 'agent', 'test', '1.0.0', '2.0.0')).rejects.toThrow(ZodError);
+      await expect(analyticsOps.getDiffImpact(http, 'agent', 'test', '1.0.0', '2.0.0')).rejects.toThrow(ResponseValidationError);
     });
   });
 });

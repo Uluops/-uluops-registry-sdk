@@ -13,6 +13,7 @@ import type {
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateYamlSize } from '../config/validators.js';
 import { translatorVersionSchema, upgradeResultSchema, retranslateResultSchema } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /** Narrow retranslate response — see retranslateResultSchema for docs. */
 export type RetranslateResult = z.infer<typeof retranslateResultSchema>;
@@ -24,7 +25,7 @@ export type RetranslateResult = z.infer<typeof retranslateResultSchema>;
  * @returns Translator version info (version string, supported schemas)
  */
 export async function getVersion(http: RegistryHttpClient): Promise<TranslatorVersion> {
-  return translatorVersionSchema.parse(await http.get<TranslatorVersion>('/definitions/translation/version', undefined));
+  return parseResponse(translatorVersionSchema, await http.get<TranslatorVersion>('/definitions/translation/version', undefined), 'translation.getVersion');
 }
 
 /**
@@ -45,7 +46,7 @@ export async function retranslate(
   options?: RetranslateOptions
 ): Promise<RetranslateResult> {
   const path = `${buildDefinitionPath(type, name, version)}/retranslate`;
-  return retranslateResultSchema.parse(await http.post<unknown>(path, options));
+  return parseResponse(retranslateResultSchema, await http.post<unknown>(path, options), 'translation.retranslate');
 }
 
 /**
@@ -65,5 +66,5 @@ export async function upgradeDefinition(
 ): Promise<UpgradeResult> {
   validateYamlSize(body.yaml);
   const path = `${buildDefinitionPath(type, name)}/upgrade`;
-  return upgradeResultSchema.parse(await http.post<UpgradeResult>(path, body));
+  return parseResponse(upgradeResultSchema, await http.post<UpgradeResult>(path, body), 'translation.upgradeDefinition');
 }

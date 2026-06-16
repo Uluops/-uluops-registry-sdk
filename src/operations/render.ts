@@ -7,6 +7,7 @@ import type { RenderResult, RenderPreviewBody, RenderProfile } from '../types/re
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateDefinitionType, validateYamlSize, validateShortString } from '../config/validators.js';
 import { renderResultSchema } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /** Options for getting rendered markdown. */
 export interface RenderGetOptions {
@@ -45,7 +46,7 @@ export async function get(
     validateShortString(options.model, 'model');
     params.model = options.model;
   }
-  return renderResultSchema.parse(await http.get<RenderResult>(path, Object.keys(params).length > 0 ? params : undefined));
+  return parseResponse(renderResultSchema, await http.get<RenderResult>(path, Object.keys(params).length > 0 ? params : undefined), 'render.get');
 }
 
 /**
@@ -63,5 +64,5 @@ export async function preview(
 ): Promise<RenderResult> {
   validateDefinitionType(type);
   validateYamlSize(body.yaml);
-  return renderResultSchema.parse(await http.post<RenderResult>(`/render/${type}/preview`, body));
+  return parseResponse(renderResultSchema, await http.post<RenderResult>(`/render/${type}/preview`, body), 'render.preview');
 }

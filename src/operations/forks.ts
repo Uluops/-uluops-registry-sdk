@@ -15,6 +15,7 @@ import type {
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
 import { forkResponseSchema, forkableCheckSchema, forkLineageSchema, forkListResponseSchema } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * A single fork entry returned by the list-forks endpoint.
@@ -51,7 +52,7 @@ export async function create(
   body: ForkDefinitionBody
 ): Promise<ForkResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/fork`;
-  return forkResponseSchema.parse(await http.post<ForkResponse>(path, body));
+  return parseResponse(forkResponseSchema, await http.post<ForkResponse>(path, body), 'forks.create');
 }
 
 /**
@@ -72,7 +73,7 @@ export async function isForkable(
   options?: CheckForkableOptions
 ): Promise<ForkableCheck> {
   const path = `${buildDefinitionPath(type, name, version)}/forkable`;
-  return forkableCheckSchema.parse(await http.get<ForkableCheck>(path, options));
+  return parseResponse(forkableCheckSchema, await http.get<ForkableCheck>(path, options), 'forks.isForkable');
 }
 
 /**
@@ -91,7 +92,7 @@ export async function getAncestry(
   version: string
 ): Promise<ForkLineage> {
   const path = `${buildDefinitionPath(type, name, version)}/lineage`;
-  return forkLineageSchema.parse(await http.get<ForkLineage>(path, undefined));
+  return parseResponse(forkLineageSchema, await http.get<ForkLineage>(path, undefined), 'forks.getAncestry');
 }
 
 /**
@@ -110,5 +111,5 @@ export async function list(
   version: string
 ): Promise<ForkListResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/forks`;
-  return forkListResponseSchema.parse(await http.get<ForkListResponse>(path, undefined));
+  return parseResponse(forkListResponseSchema, await http.get<ForkListResponse>(path, undefined), 'forks.list');
 }

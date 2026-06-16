@@ -18,6 +18,7 @@ import {
   aliasesListResponseSchema,
   aliasResolutionSchema,
 } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Models list response
@@ -55,7 +56,7 @@ export async function list(
   http: RegistryHttpClient,
   query?: ListModelsQuery
 ): Promise<ModelsListResponse> {
-  return modelsListResponseSchema.parse(await http.get<ModelsListResponse>('/models', query));
+  return parseResponse(modelsListResponseSchema, await http.get<ModelsListResponse>('/models', query), 'models.list');
 }
 
 /**
@@ -78,7 +79,7 @@ export async function get(
   if (!modelId || typeof modelId !== 'string') {
     throw new ValidationError('Model ID is required', { field: 'modelId' });
   }
-  return modelSchema.parse(await http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined));
+  return parseResponse(modelSchema, await http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined), 'models.get');
 }
 
 /**
@@ -88,7 +89,7 @@ export async function get(
  * @returns Provider list with total count
  */
 export async function listProviders(http: RegistryHttpClient): Promise<ProvidersListResponse> {
-  return providersListResponseSchema.parse(await http.get<ProvidersListResponse>('/models/providers', undefined));
+  return parseResponse(providersListResponseSchema, await http.get<ProvidersListResponse>('/models/providers', undefined), 'models.listProviders');
 }
 
 /**
@@ -98,7 +99,7 @@ export async function listProviders(http: RegistryHttpClient): Promise<Providers
  * @returns Alias list with total count
  */
 export async function listAliases(http: RegistryHttpClient): Promise<AliasesListResponse> {
-  return aliasesListResponseSchema.parse(await http.get<AliasesListResponse>('/models/aliases', undefined));
+  return parseResponse(aliasesListResponseSchema, await http.get<AliasesListResponse>('/models/aliases', undefined), 'models.listAliases');
 }
 
 /**
@@ -116,5 +117,5 @@ export async function resolveAlias(
   if (!alias || typeof alias !== 'string') {
     throw new ValidationError('Alias is required', { field: 'alias' });
   }
-  return aliasResolutionSchema.parse(await http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined));
+  return parseResponse(aliasResolutionSchema, await http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined), 'models.resolveAlias');
 }

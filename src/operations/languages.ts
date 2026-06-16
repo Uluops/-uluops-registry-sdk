@@ -12,6 +12,7 @@ import {
   languagesListResponseSchema,
   languageWithSchemaSchema,
 } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Languages list response.
@@ -30,7 +31,7 @@ export interface LanguagesListResponse {
 export async function list(
   http: RegistryHttpClient,
 ): Promise<LanguagesListResponse> {
-  return languagesListResponseSchema.parse(await http.get<LanguagesListResponse>('/languages', undefined));
+  return parseResponse(languagesListResponseSchema, await http.get<LanguagesListResponse>('/languages', undefined), 'languages.list');
 }
 
 /**
@@ -48,5 +49,5 @@ export async function get(
   if (!id || typeof id !== 'string') {
     throw new ValidationError('Language ID is required', { field: 'id' });
   }
-  return languageWithSchemaSchema.parse(await http.get<LanguageWithSchema>(`/languages/${encodeURIComponent(id)}`, undefined));
+  return parseResponse(languageWithSchemaSchema, await http.get<LanguageWithSchema>(`/languages/${encodeURIComponent(id)}`, undefined), 'languages.get');
 }

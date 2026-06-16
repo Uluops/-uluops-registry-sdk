@@ -10,6 +10,7 @@ import type { StarResult } from '../types/responses.js';
 import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath } from '../config/validators.js';
 import { starResultSchema } from '../types/schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Check if the authenticated user has starred a definition.
@@ -29,7 +30,7 @@ export async function getStatus(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star/status`;
-  return starResultSchema.parse(await http.get<StarResult>(path, undefined));
+  return parseResponse(starResultSchema, await http.get<StarResult>(path, undefined), 'stars.getStatus');
 }
 
 /**
@@ -49,7 +50,7 @@ export async function star(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
-  return starResultSchema.parse(await http.post<StarResult>(path, undefined, { retryMutations: true }));
+  return parseResponse(starResultSchema, await http.post<StarResult>(path, undefined, { retryMutations: true }), 'stars.star');
 }
 
 /**
@@ -69,5 +70,5 @@ export async function unstar(
   version?: string,
 ): Promise<StarResult> {
   const path = `${buildDefinitionPath(type, name, version)}/star`;
-  return starResultSchema.parse(await http.delete<StarResult>(path, undefined, { retryMutations: true }));
+  return parseResponse(starResultSchema, await http.delete<StarResult>(path, undefined, { retryMutations: true }), 'stars.unstar');
 }

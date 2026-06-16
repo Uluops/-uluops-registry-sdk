@@ -7,6 +7,7 @@ import type { PublicUser, BatchUserResponse } from '../types/users.js';
 import { validateUuid } from '../config/validators.js';
 import { ValidationError } from '../errors/errors.js';
 import { publicUserSchema, batchUserResponseSchema } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Get public user information by ID.
@@ -17,7 +18,7 @@ import { publicUserSchema, batchUserResponseSchema } from '../types/response-sch
  */
 export async function get(http: RegistryHttpClient, id: string): Promise<PublicUser> {
   validateUuid(id, 'userId');
-  return publicUserSchema.parse(await http.get<PublicUser>(`/users/${id}`, undefined));
+  return parseResponse(publicUserSchema, await http.get<PublicUser>(`/users/${id}`, undefined), 'users.get');
 }
 
 /**
@@ -44,5 +45,5 @@ export async function batch(
     validateUuid(id, 'userId');
   }
 
-  return batchUserResponseSchema.parse(await http.post<BatchUserResponse>('/users/batch', { ids }));
+  return parseResponse(batchUserResponseSchema, await http.post<BatchUserResponse>('/users/batch', { ids }), 'users.batch');
 }

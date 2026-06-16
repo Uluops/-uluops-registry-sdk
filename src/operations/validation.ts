@@ -7,6 +7,7 @@ import type { ValidationResult } from '../types/responses.js';
 import type { DefinitionType } from '../types/enums.js';
 import { validateDefinitionType, validateYamlSize } from '../config/validators.js';
 import { validationResultSchema } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Validate YAML content without storing.
@@ -24,5 +25,5 @@ export async function validate(
   validateDefinitionType(type);
   validateYamlSize(yaml);
 
-  return validationResultSchema.parse(await http.post<ValidationResult>(`/validate/${type}`, { yaml }));
+  return parseResponse(validationResultSchema, await http.post<ValidationResult>(`/validate/${type}`, { yaml }), 'validation.validate');
 }

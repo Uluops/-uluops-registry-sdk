@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.34.0] - 2026-06-16
+
+Ships as MINOR per the pre-1.0 versioning policy. Mostly additive; one contained
+behavioral change to response-validation error typing (see **Changed**).
+
+### Added
+
+- **`ResponseValidationError`** (exported from `@uluops/registry-sdk/errors`). Thrown when a Registry API response fails the SDK's Zod schema (contract drift, malformed bodies). It extends `RegistryApiError`, so it is caught by `isRegistryApiError()` and any `catch (e) { if (e instanceof RegistryApiError) }` block. The original `ZodError` is preserved on `.zodError`; `code` is `RESPONSE_VALIDATION`, `statusCode` is `0`, and it is non-retryable. This makes the previously-documented-but-nonexistent error-table entry real (AF-003).
+- **Safety-analysis types now exported from the package root**: `RiskProfile`, `RiskLevel`, `SignalSeverity`, `SafetySignal`, `SyncScanResult`, `DeepAnalysisResult`, `DeepFinding`, `DefinitionCapabilities` — previously reachable only via the `/types` subpath even though `Definition.riskProfile` is a root-level surface. `DefinitionRef` is now exported from the root too.
+- **`RetranslateResult`** is now re-exported from the package root (the only operation return type that was previously inaccessible for explicit annotation).
+
+### Changed
+
+- **Response-schema validation failures now throw `ResponseValidationError` instead of a raw `ZodError`.** All 33 response parses across the operation layer route through an internal `parseResponse()` helper. Validation failures stay inside the documented error hierarchy and are caught by `isRegistryApiError()`. **Migration:** consumers that explicitly caught `ZodError` from SDK calls should catch `ResponseValidationError` (or use `isRegistryApiError`); the underlying `ZodError` remains available on `err.zodError`. The `isRegistryApiError()` path now *also* catches these failures (it did not before) — a strict improvement for the documented catch pattern.
+
+### Docs
+
+- Fixed the `publish()` example to use `result.definition.status` and surface `warnings`, matching the `PublishResult` shape introduced in 0.29.0.
+- Documented `executions.record()` in the API reference (body fields + example).
+- Added a **Safety Analysis** section documenting `Definition.riskProfile` (`sync` / `deep` / `aggregateRiskLevel`).
+- Corrected the `ResponseValidationError` error-table row (statusCode `0`, `.zodError`).
+- Added `@returns` / `@throws` JSDoc to `parseDefinitionRef` and `buildDefinitionPath`.
+
+### Tests
+
+- Response-validation tests now assert `ResponseValidationError`; added a test verifying the thrown error is a `RegistryApiError` and wraps the original `ZodError`. Suite 462 → 467.
+
 ## [0.33.0] - 2026-06-16
 
 Additive, non-breaking. Ships as MINOR per the pre-1.0 versioning policy.

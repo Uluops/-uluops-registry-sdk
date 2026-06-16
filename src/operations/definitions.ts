@@ -17,6 +17,7 @@ import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateDefinitionType, validateYamlSize, validatePagination } from '../config/validators.js';
 import { definitionSchema } from '../types/schemas.js';
 import { definitionListResponseSchema, publishResponseSchema } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Paginated list response
@@ -46,7 +47,7 @@ export async function list(
     }
     validatePagination(query.limit, query.offset);
   }
-  return definitionListResponseSchema.parse(await http.get<DefinitionListResponse>('/definitions', query));
+  return parseResponse(definitionListResponseSchema, await http.get<DefinitionListResponse>('/definitions', query), 'definitions.list');
 }
 
 /**
@@ -67,7 +68,7 @@ export async function get(
   options?: GetDefinitionOptions
 ): Promise<Definition> {
   const path = buildDefinitionPath(type, name, version);
-  return definitionSchema.parse(await http.get<Definition>(path, options));
+  return parseResponse(definitionSchema, await http.get<Definition>(path, options), 'definitions.get');
 }
 
 /**
@@ -87,7 +88,7 @@ export async function create(
 ): Promise<Definition> {
   validateYamlSize(body.yaml);
   const path = buildDefinitionPath(type, name);
-  return definitionSchema.parse(await http.post<Definition>(path, body));
+  return parseResponse(definitionSchema, await http.post<Definition>(path, body), 'definitions.create');
 }
 
 /**
@@ -111,7 +112,7 @@ export async function update(
     validateYamlSize(body.yaml);
   }
   const path = buildDefinitionPath(type, name, version);
-  return definitionSchema.parse(await http.put<Definition>(path, body));
+  return parseResponse(definitionSchema, await http.put<Definition>(path, body), 'definitions.update');
 }
 
 /**
@@ -161,8 +162,8 @@ export async function publish(
   // alongside `data`; everywhere else the SDK's default envelope-unwrapping is
   // the right behavior.
   type Envelope = { data: Definition; warnings?: Array<{ code: string; message: string; details?: Record<string, unknown> }> };
-  const envelope = publishResponseSchema.parse(await http.request<Envelope>('POST', path, undefined, { retryMutations: true,
-    rawEnvelope: true, }));
+  const envelope = parseResponse(publishResponseSchema, await http.request<Envelope>('POST', path, undefined, { retryMutations: true,
+    rawEnvelope: true, }), 'definitions.publish');
   return {
     definition: envelope.data,
     warnings: envelope.warnings ?? [],
@@ -187,7 +188,7 @@ export async function deprecate(
   body: DeprecateDefinitionBody
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/deprecate`;
-  return definitionSchema.parse(await http.post<Definition>(path, body, { retryMutations: true }));
+  return parseResponse(definitionSchema, await http.post<Definition>(path, body, { retryMutations: true }), 'definitions.deprecate');
 }
 
 /**
@@ -207,5 +208,5 @@ export async function archive(
   version: string,
 ): Promise<Definition> {
   const path = `${buildDefinitionPath(type, name, version)}/archive`;
-  return definitionSchema.parse(await http.post<Definition>(path, {}, { retryMutations: true }));
+  return parseResponse(definitionSchema, await http.post<Definition>(path, {}, { retryMutations: true }), 'definitions.archive');
 }

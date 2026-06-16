@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import nock from 'nock';
 import { ZodError } from 'zod';
 import { RegistryHttpClient } from '../src/http/http-client.js';
+import { ResponseValidationError, RegistryApiError } from '../src/errors/errors.js';
 import * as userOps from '../src/operations/users.js';
 import * as definitionOps from '../src/operations/definitions.js';
 import * as versionOps from '../src/operations/versions.js';
@@ -1179,28 +1180,40 @@ describe('operations', () => {
   describe('response validation', () => {
     it('definitions.list rejects malformed response', async () => {
       nock(MOCK_BASE_URL).get('/definitions').reply(200, { data: { definitions: 'not-an-array' } });
-      await expect(definitionOps.list(http)).rejects.toThrow(ZodError);
+      await expect(definitionOps.list(http)).rejects.toThrow(ResponseValidationError);
+    });
+
+    it('response validation errors stay inside the RegistryApiError hierarchy and wrap the ZodError', async () => {
+      nock(MOCK_BASE_URL).get('/definitions').reply(200, { data: { definitions: 'not-an-array' } });
+      const err = await definitionOps.list(http).catch((e: unknown) => e);
+      // Issue #3: schema-validation failures no longer escape as raw ZodError —
+      // they are catchable via the SDK's documented error hierarchy.
+      expect(err).toBeInstanceOf(ResponseValidationError);
+      expect(err).toBeInstanceOf(RegistryApiError);
+      expect((err as ResponseValidationError).zodError).toBeInstanceOf(ZodError);
+      expect((err as ResponseValidationError).code).toBe('RESPONSE_VALIDATION');
+      expect((err as ResponseValidationError).statusCode).toBe(0);
     });
 
     it('definitions.get rejects response with wrong type for executionCount', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test').reply(200, {
         data: { ...createMockDefinition(), executionCount: 'not-a-number' },
       });
-      await expect(definitionOps.get(http, 'agent', 'test')).rejects.toThrow(ZodError);
+      await expect(definitionOps.get(http, 'agent', 'test')).rejects.toThrow(ResponseValidationError);
     });
 
     it('versions.list rejects missing versions array', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test/versions').reply(200, {
         data: { total: 0, limit: 20, offset: 0 },
       });
-      await expect(versionOps.list(http, 'agent', 'test')).rejects.toThrow(ZodError);
+      await expect(versionOps.list(http, 'agent', 'test')).rejects.toThrow(ResponseValidationError);
     });
 
     it('models.get rejects missing capabilities', async () => {
       nock(MOCK_BASE_URL).get('/models/anthropic/claude-3-opus').reply(200, {
         data: { provider: 'anthropic', modelId: 'claude-3-opus' },
       });
-      await expect(modelOps.get(http, 'anthropic', 'claude-3-opus')).rejects.toThrow(ZodError);
+      await expect(modelOps.get(http, 'anthropic', 'claude-3-opus')).rejects.toThrow(ResponseValidationError);
     });
 
     it('analytics.getEffectiveness rejects missing stale field', async () => {
@@ -1213,21 +1226,21 @@ describe('operations', () => {
       });
       await expect(
         (await import('../src/operations/analytics.js')).getEffectiveness(http, 'agent', 'test'),
-      ).rejects.toThrow(ZodError);
+      ).rejects.toThrow(ResponseValidationError);
     });
 
     it('render.get rejects missing markdown', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/render').reply(200, {
         data: { target: 'opencode' },
       });
-      await expect(renderOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+      await expect(renderOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ResponseValidationError);
     });
 
     it('forks.isForkable rejects wrong type for canFork', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/forkable').reply(200, {
         data: { canFork: 'yes' },
       });
-      await expect(forkOps.isForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+      await expect(forkOps.isForkable(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ResponseValidationError);
     });
 
     it('dependencies.get rejects an envelope missing the graph field', async () => {
@@ -1239,14 +1252,14 @@ describe('operations', () => {
           maxDepth: 0,
         },
       });
-      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ResponseValidationError);
     });
 
     it('dependencies.getDependents rejects a bare {} (the pre-R12 degenerate shape)', async () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependents').reply(200, {
         data: {},
       });
-      await expect(dependencyOps.getDependents(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+      await expect(dependencyOps.getDependents(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ResponseValidationError);
     });
 
     it('dependencies.get rejects a bare {} (the pre-R12 degenerate shape — post-impl r1)', async () => {
@@ -1258,7 +1271,7 @@ describe('operations', () => {
       nock(MOCK_BASE_URL).get('/definitions/agent/test@1.0.0/dependencies').reply(200, {
         data: {},
       });
-      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ZodError);
+      await expect(dependencyOps.get(http, 'agent', 'test', '1.0.0')).rejects.toThrow(ResponseValidationError);
     });
 
     it('dependencies.get throws RangeError when maxDepth exceeds safe ceiling (post-impl r2, CWE-674)', async () => {

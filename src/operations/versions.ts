@@ -13,6 +13,7 @@ import {
   versionFieldDiffSchema,
   versionUnifiedDiffSchema,
 } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Versions list response
@@ -42,10 +43,10 @@ export async function list(
   validateDefinitionType(type);
   validateDefinitionName(name);
   if (options) validatePagination(options.limit, options.offset);
-  return versionsListResponseSchema.parse(await http.get<VersionsListResponse>(`/definitions/${type}/${encodeURIComponent(name)}/versions`, {
+  return parseResponse(versionsListResponseSchema, await http.get<VersionsListResponse>(`/definitions/${type}/${encodeURIComponent(name)}/versions`, {
     ...(options?.limit !== undefined && { limit: String(options.limit) }),
     ...(options?.offset !== undefined && { offset: String(options.offset) }),
-  }));
+  }), 'versions.list');
 }
 
 /**
@@ -91,10 +92,10 @@ export async function diff(
         ? versionUnifiedDiffSchema
         : versionDiffSummarySchema;
 
-  return schema.parse(await http.get<unknown>(`/definitions/${type}/${encodeURIComponent(name)}/diff`, {
+  return parseResponse(schema, await http.get<unknown>(`/definitions/${type}/${encodeURIComponent(name)}/diff`, {
     from: fromVersion,
     to: toVersion,
     ...(options?.full === true && { full: 'true' }),
     ...(options?.format && options.format !== 'sections' && { format: options.format }),
-  })) as VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff;
+  }), 'versions.diff') as VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff;
 }

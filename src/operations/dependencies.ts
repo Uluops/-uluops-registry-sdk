@@ -14,6 +14,7 @@ import {
   dependencyGraphResponseSchema,
   dependentsResponseSchema,
 } from '../types/response-schemas.js';
+import { parseResponse } from '../http/parse-response.js';
 
 /**
  * Defensive ceiling on recursive parse depth (post-impl r2, CWE-674).
@@ -69,7 +70,7 @@ export async function get(
     );
   }
 
-  return dependencyGraphResponseSchema.parse(raw);
+  return parseResponse(dependencyGraphResponseSchema, raw, 'dependencies.get');
 }
 
 /**
@@ -88,7 +89,9 @@ export async function getDependents(
   version: string
 ): Promise<DependentsResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/dependents`;
-  return dependentsResponseSchema.parse(
-    await http.get<unknown>(path, undefined)
+  return parseResponse(
+    dependentsResponseSchema,
+    await http.get<unknown>(path, undefined),
+    'dependencies.getDependents',
   );
 }

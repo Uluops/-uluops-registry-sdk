@@ -393,9 +393,16 @@ await client.definitions.delete('agent', 'my-agent', '1.0.0');
 
 Publish a draft definition to make it available.
 
+**Returns `PublishResult` (`{ definition, warnings }`) since 0.29.0** — not a bare
+`Definition`. `warnings` is always an array (possibly empty) of non-fatal publish
+warnings (e.g. `TRANSLATION_FAILED`, safety-scan failures).
+
 ```typescript
-const def = await client.definitions.publish('agent', 'my-agent', '1.0.0');
-console.log(def.status); // 'published'
+const result = await client.definitions.publish('agent', 'my-agent', '1.0.0');
+console.log(result.definition.status); // 'published'
+if (result.warnings.length > 0) {
+  console.warn('Publish warnings:', result.warnings.map((w) => w.code));
+}
 ```
 
 #### `deprecate(type, name, version, body)`
@@ -416,6 +423,35 @@ Archive a deprecated definition. This is a terminal state that removes the defin
 ```typescript
 await client.definitions.archive('agent', 'my-agent', '1.0.0');
 ```
+
+#### Safety Analysis (`definition.riskProfile`)
+
+Definitions may carry a `riskProfile` populated by the registry's safety scanner
+at publish time. It is `undefined`/`null` when the version has not been scanned
+(or the scan failed — see the `SAFETY_SCAN_FAILED` publish warning). All safety
+types are exported from the package root and from `@uluops/registry-sdk/types`:
+
+```typescript
+import type { RiskProfile, RiskLevel, SafetySignal } from '@uluops/registry-sdk';
+
+const def = await client.definitions.get('agent', 'my-agent', '1.0.0');
+if (def.riskProfile && def.riskProfile.aggregateRiskLevel !== 'none') {
+  for (const signal of def.riskProfile.sync.signals) {
+    console.warn(`[${signal.severity}] ${signal.title} — ${signal.detail}`);
+  }
+}
+```
+
+| `riskProfile` field | Type | Description |
+|---------------------|------|-------------|
+| `aggregateRiskLevel` | `RiskLevel` (`'none' \| 'medium' \| 'high'`) | Combined risk across sync + deep analysis |
+| `sync` | `SyncScanResult` | Synchronous publish-time scan: `capabilities`, `signals[]`, `riskLevel` |
+| `deep` | `DeepAnalysisResult \| null` | Background deep analysis (`findings[]`), `null` until it runs |
+| `lastUpdated` | `string` | ISO timestamp of the most recent scan |
+
+Risk levels are `none`, `medium`, or `high` — there is deliberately no `low`
+(a signal always means something). Risk reflects *evidence of misuse*, not
+capability count or provenance.
 
 ---
 
@@ -604,7 +640,28 @@ result.forks.forEach(({ fork, definition }) => {
 
 ### Executions (`client.executions`)
 
-Query execution statistics.
+Record executions and query aggregated statistics.
+
+#### `record(type, name, version, body)`
+
+Record an execution of a definition — the write side that feeds execution
+analytics. **Idempotent**: if `body.runId` is provided and already recorded, the
+existing count is returned (`duplicate: true`) without double-counting.
+
+| `body` field | Type | Description |
+|--------------|------|-------------|
+| `source` | `string` | Attribution label — `'cli'`, `'api'`, `'sdk'`, `'mcp'`, or any custom string |
+| `runId` | `string?` | Optional idempotency key; repeat calls with the same `runId` are deduplicated |
+
+```typescript
+const result = await client.executions.record('agent', 'code-validator', '1.0.0', {
+  source: 'sdk',
+  runId: 'run-abc-123',
+});
+console.log(result.recorded, result.duplicate, result.executionCount);
+```
+
+Returns `RecordExecutionResult`: `{ recorded, duplicate, executionCount, definition }`.
 
 #### `getStats(type, name, version, window?)`
 
@@ -1016,10 +1073,10 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
 | `NetworkError` | - | DNS failure, connection refused, network unreachable (auto-retried) |
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
-| `ResponseValidationError` | * | API response did not match expected Zod schema (from `@uluops/registry-sdk/errors`) |
+| `ResponseValidationError` | 0 | API response did not match the SDK's expected Zod schema (contract drift). Extends `RegistryApiError`; original `ZodError` preserved on `.zodError`. Non-retryable. |
 
 All API errors extend `RegistryApiError` and include:
-- `statusCode` — HTTP status code (0 for network/timeout)
+- `statusCode` — HTTP status code (0 for network/timeout/response-validation)
 - `code` — Machine-readable error code (e.g., `'NOT_FOUND'`, `'RATE_LIMIT_ERROR'`)
 - `message` — Human-readable description
 - `details` — Optional structured metadata

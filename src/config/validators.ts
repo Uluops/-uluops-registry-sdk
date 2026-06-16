@@ -82,6 +82,12 @@ export function validateYamlSize(yaml: string): void {
 /**
  * Parse a definition reference string
  * Format: "name" or "name@version"
+ *
+ * @param ref - Reference string, either `"name"` or `"name@version"`
+ * @returns The parsed `name` and optional semver `version` (omitted when the
+ *   reference has no `@version` suffix)
+ * @throws {ValidationError} If the reference is empty, has more than one `@`,
+ *   or contains an invalid name/version
  */
 export function parseDefinitionRef(ref: string): { name: string; version?: string } {
   if (!ref || typeof ref !== 'string') {
@@ -113,6 +119,15 @@ export function parseDefinitionRef(ref: string): { name: string; version?: strin
 
 /**
  * Build a definition path from type, name, and optional version
+ *
+ * @param type - Definition type (agent, command, workflow, pipeline)
+ * @param name - Definition name
+ * @param version - Optional semver version, or `'latest'` when `allowLatest` is set
+ * @param options - When `allowLatest` is true, a `version` of `'latest'` is
+ *   omitted from the path so the API resolves to the latest published version
+ * @returns A URL path segment of the form `/definitions/{type}/{name}` or
+ *   `/definitions/{type}/{name}@{version}`, with name and version URL-encoded
+ * @throws {ValidationError} If type, name, or version is invalid
  */
 export function buildDefinitionPath(
   type: DefinitionType,
