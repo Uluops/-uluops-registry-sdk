@@ -571,12 +571,19 @@ if (check.canFork) {
 
 #### `getAncestry(type, name, version)`
 
-Get the fork lineage for a definition. Returns `{ isFork, fork, source }` — if the definition is a fork, `fork` is the fork record and `source` is a slim summary of the source definition.
+Get the fork lineage for a definition. Returns `{ isFork, fork, source, sourceAvailable }` — if the definition is a fork, `fork` is the fork record and `source` is a slim summary of the **live** source definition.
+
+`source` becomes `null` (and `sourceAvailable` becomes `false`) once the source is deleted. The origin is still readable from the durable snapshot on the fork record — `fork.sourceType` / `fork.sourceName` / `fork.sourceVersion` — captured at fork time and surviving source deletion (registry API ≥ V1 `2026-06-16`).
 
 ```typescript
 const lineage = await client.forks.getAncestry('agent', 'my-validator', '1.0.0');
 if (lineage.isFork) {
-  console.log('Forked from:', lineage.source?.name);
+  if (lineage.sourceAvailable) {
+    console.log('Forked from (live):', lineage.source?.name);
+  } else {
+    // Source deleted — origin still known from the durable snapshot.
+    console.log('Forked from (origin):', `${lineage.fork?.sourceName}@${lineage.fork?.sourceVersion}`);
+  }
   console.log('Forked at:', lineage.fork?.forkedAt);
 }
 ```
