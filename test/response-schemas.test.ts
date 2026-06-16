@@ -24,6 +24,7 @@ import {
   modelsListResponseSchema,
   aliasesListResponseSchema,
   aliasResolutionSchema,
+  forkSchema,
   forkResponseSchema,
   forkLineageSchema,
   forkListResponseSchema,
@@ -452,6 +453,56 @@ describe('forkListResponseSchema', () => {
       totalForks: 1,
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe('forkSchema (source-identity snapshot)', () => {
+  const base = {
+    id: '00000000-0000-4000-a000-000000000010',
+    definitionId: '00000000-0000-4000-a000-000000000001',
+    sourceDefinitionId: '00000000-0000-4000-a000-000000000002',
+    forkedAt: '2026-01-01T00:00:00Z',
+  };
+
+  it('parses and RETAINS the source snapshot fields (not stripped)', () => {
+    const result = forkSchema.safeParse({
+      ...base,
+      sourceType: 'agent',
+      sourceName: 'source-agent',
+      sourceVersion: '1.2.3',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.sourceType).toBe('agent');
+      expect(result.data.sourceName).toBe('source-agent');
+      expect(result.data.sourceVersion).toBe('1.2.3');
+    }
+  });
+
+  it('tolerates the snapshot keys being ABSENT (new SDK against a pre-2026-06-16 API)', () => {
+    // Critical: bare .nullable() would reject the absent key and throw. .nullish() must allow it.
+    const result = forkSchema.safeParse(base);
+    expect(result.success).toBe(true);
+  });
+
+  it('tolerates null snapshot values (pre-050 row whose source was already gone)', () => {
+    const result = forkSchema.safeParse({
+      ...base,
+      sourceDefinitionId: null,
+      sourceType: null,
+      sourceName: null,
+      sourceVersion: null,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('forkLineageSchema (sourceAvailable)', () => {
+  it('accepts sourceAvailable and tolerates its absence', () => {
+    const withFlag = forkLineageSchema.safeParse({ isFork: false, fork: null, source: null, sourceAvailable: false });
+    expect(withFlag.success).toBe(true);
+    const withoutFlag = forkLineageSchema.safeParse({ isFork: false, fork: null, source: null });
+    expect(withoutFlag.success).toBe(true);
   });
 });
 

@@ -315,11 +315,20 @@ export const aliasResolutionSchema = z.object({
 /**
  * Fork record schema — matches the DB fork record shape returned by the API.
  * Used by fork creation, list-forks, and lineage responses.
+ *
+ * `sourceType`/`sourceName`/`sourceVersion` are the durable source-identity snapshot
+ * (API ≥ V1 2026-06-16). They survive source deletion, so a fork's origin is readable
+ * even when `sourceDefinitionId` is null. Declared `.nullish()` (optional + nullable),
+ * NOT `.nullable()`: an API older than 2026-06-16 omits the keys entirely, and bare
+ * `.nullable()` would reject the absent key and throw on every parse (new-SDK/old-API).
  */
 export const forkSchema = z.object({
   id: z.string().uuid(),
   definitionId: z.string().uuid(),
   sourceDefinitionId: z.string().uuid().nullable(),
+  sourceType: z.string().nullish(),
+  sourceName: z.string().nullish(),
+  sourceVersion: z.string().nullish(),
   forkedAt: z.string(),
 });
 
@@ -350,6 +359,10 @@ export const forkLineageSchema = z.object({
   isFork: z.boolean(),
   fork: forkSchema.nullable(),
   source: forkSummarySchema.nullable(),
+  // True when the live source still exists; false when deleted (origin then readable
+  // from fork.source*). Always a boolean from the API (never null); .optional() so the
+  // SDK tolerates APIs older than 2026-06-16 that omit the key.
+  sourceAvailable: z.boolean().optional(),
 });
 
 /** GET /definitions/{type}/{name}/{version}/forks */
