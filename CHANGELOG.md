@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0] - 2026-06-16
+
+Additive, non-breaking. Ships as MINOR per the pre-1.0 versioning policy.
+
+### Added
+
+- **Fork source-identity snapshot on `Fork`** (`sourceType` / `sourceName` / `sourceVersion`) and **`sourceAvailable`** on `ForkLineage`. Surfaces the durable provenance the registry added in V1 `2026-06-16`: a fork's origin is now readable through `forks.getAncestry` / `forks.list` / `forks.create` even after the source is deleted (live `source` becomes `null`, but `fork.source*` survives). All declared with `.nullish()` so the SDK keeps parsing fork responses from APIs older than `2026-06-16` (the keys are simply absent there) — bare `.nullable()` would have thrown on the absent key. Requires registry API ≥ V1 `2026-06-16` to be populated.
+
 ## [0.32.0] - 2026-06-13
 
 Additive, non-breaking. Ships as MINOR per the pre-1.0 versioning policy (a new

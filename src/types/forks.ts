@@ -11,12 +11,18 @@ import type { Visibility } from './enums.js';
  * @remarks Field names align with `forks` table columns:
  * - `definitionId` is the derived (forked) definition's id
  * - `sourceDefinitionId` is the parent's id; null when the source was deleted (SET NULL on delete)
+ * - `sourceType`/`sourceName`/`sourceVersion` are the durable source-identity snapshot
+ *   (API ≥ V1 2026-06-16); they survive source deletion, so the origin is readable even
+ *   when `sourceDefinitionId` is null. Optional/null for older APIs or pre-snapshot rows.
  * - `forkedAt` is the creation timestamp
  */
 export interface Fork {
   id: string;
   definitionId: string;
   sourceDefinitionId: string | null;
+  sourceType?: string | null;
+  sourceName?: string | null;
+  sourceVersion?: string | null;
   forkedAt: string;
 }
 
@@ -70,12 +76,16 @@ export interface ForkableCheck {
  * @remarks Shape reflects the API contract: a definition either is or isn't a fork.
  * - `isFork`: true if this definition was forked from another
  * - `fork`: the fork record (null if not a fork)
- * - `source`: slim summary of the source definition (null if not a fork or source was deleted)
+ * - `source`: slim summary of the LIVE source definition (null if not a fork or source was deleted)
+ * - `sourceAvailable`: true when the live source still exists (API ≥ V1 2026-06-16). When
+ *   false but `isFork` is true, the origin is still readable from `fork.source*` (durable
+ *   snapshot). Optional — absent from APIs older than 2026-06-16.
  */
 export interface ForkLineage {
   isFork: boolean;
   fork: Fork | null;
   source: ForkSummary | null;
+  sourceAvailable?: boolean;
 }
 
 /**
