@@ -16,6 +16,7 @@ is transparent to all legitimate responses.
 ### Security
 
 - **`analytics.getLineage()` now guards against a malicious/MITM'd recursive response (CWE-674).** `lineageResultSchema.root` is a `z.lazy()` tree whose `versions[]`/`forks[]` arrays recurse; a pathological payload nested thousands of levels deep would exhaust the V8 call stack during the recursive Zod parse (empirically ~2,200 levels on a main-thread stack, ~1,100 on a worker thread) and crash the process. An iterative pre-parse walk (explicit stack — cannot itself overflow) now rejects any response exceeding a depth ceiling of **50** or **100,000** total nodes with a `RangeError` before the recursive parse runs. The legitimate endpoint returns a flat depth-2 tree (forks capped server-side at 100/definition, fork-chains at depth 10), so this is invisible to real traffic. Mirrors the existing `MAX_SAFE_GRAPH_DEPTH` guard in the dependency-graph parser.
+- **Bumped `tsx` devDependency `4.19.2` → `4.22.4`**, which pulls `esbuild` `0.28.1` and clears advisory GHSA-67mh-4wv8-2f99 (and the sibling GHSA-gv7w-rqvm-qjhr). Dev-only and not shipped to consumers (`files` is `dist`/`README`/`CHANGELOG`), so this has no runtime effect.
 
 ### Added
 
