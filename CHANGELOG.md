@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-06-16
+
+Ships as MINOR per the pre-1.0 versioning policy. Additive — one new optional
+parameter, one new exported type, plus a security hardening of `getLineage` that
+is transparent to all legitimate responses.
+
+### Security
+
+- **`analytics.getLineage()` now guards against a malicious/MITM'd recursive response (CWE-674).** `lineageResultSchema.root` is a `z.lazy()` tree whose `versions[]`/`forks[]` arrays recurse; a pathological payload nested thousands of levels deep would exhaust the V8 call stack during the recursive Zod parse (empirically ~2,200 levels on a main-thread stack, ~1,100 on a worker thread) and crash the process. An iterative pre-parse walk (explicit stack — cannot itself overflow) now rejects any response exceeding a depth ceiling of **50** or **100,000** total nodes with a `RangeError` before the recursive parse runs. The legitimate endpoint returns a flat depth-2 tree (forks capped server-side at 100/definition, fork-chains at depth 10), so this is invisible to real traffic. Mirrors the existing `MAX_SAFE_GRAPH_DEPTH` guard in the dependency-graph parser.
+
+### Added
+
+- **`GetLineageOptions`** (exported from the package root) with an optional **`maxDepth`** field, accepted as a third argument by `client.analytics.getLineage(type, name, options)`. Lets callers tighten the depth ceiling below the hard safety cap as defense-in-depth; values above 50 clamp to 50. Defaults to the hard ceiling when omitted, so existing calls are unaffected.
+
+### Removed
+
+- **Dead `ModelSyncResult` interface** (`src/types/models.ts`). It was never exported from the package root and had no consumer or producing operation — a hand-written duplicate of the contract-tested `modelSyncResultSchema` (which is retained). Non-breaking: nothing public referenced it.
+
+### Docs
+
+- Added `@throws {ValidationError}` JSDoc to `users.batch` (>100 IDs / invalid UUID) and `analytics.compare` (version count / invalid semver).
+- Added `DefinitionRef` to the README "Types only" import example with a one-line description.
+
+### Tests
+
+- Added three `getLineage` depth-guard tests: rejects an over-deep tree with `RangeError`, honors a caller-supplied lower `maxDepth`, and accepts a legitimate flat tree under a tightened ceiling.
+
 ## [0.35.0] - 2026-06-16
 
 Ships as MINOR per the pre-1.0 versioning policy (dependency bump pulling in

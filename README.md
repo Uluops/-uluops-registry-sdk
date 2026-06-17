@@ -213,6 +213,7 @@ import type {
   Definition,
   DefinitionType,
   DefinitionStatus,
+  DefinitionRef,        // lightweight { type, name, version } reference, embedded in analytics/execution results
   ValidationFieldError,
   Model,
   PublicUser,

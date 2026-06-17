@@ -98,15 +98,3 @@ export interface ListModelsQuery {
   status?: ModelStatus;
   capability?: keyof ModelCapabilities;
 }
-
-/**
- * Model sync response
- */
-export interface ModelSyncResult {
-  message?: string;
-  providersAdded: number;
-  providersUpdated: number;
-  modelsAdded: number;
-  modelsUpdated: number;
-  duration?: string | number;
-}

@@ -95,6 +95,7 @@ export type {
 export type { VersionsListResponse } from './operations/versions.js';
 export type { RenderGetOptions } from './operations/render.js';
 export type { RetranslateResult } from './operations/translation.js';
+export type { GetLineageOptions } from './operations/analytics.js';
 export type { DefinitionListResponse } from './operations/definitions.js';
 export type { ForkListResponse, ForkEntry } from './operations/forks.js';
 export type {

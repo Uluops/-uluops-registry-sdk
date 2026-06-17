@@ -168,6 +168,66 @@ describe('analytics', () => {
     });
   });
 
+  // ── getLineage CWE-674 recursion guard ────────────────────────
+
+  describe('getLineage depth guard (CWE-674)', () => {
+    interface RawNode {
+      type: string; name: string; version: string; authorId: string;
+      relationship: string; healthScore: number; translatorVersion: string;
+      status: string; createdAt: string; versions: RawNode[]; forks: RawNode[];
+    }
+    const leaf = (relationship: string): RawNode => ({
+      type: 'agent', name: 'code-validator', version: '1.0.0', authorId: 'u1',
+      relationship, healthScore: 67, translatorVersion: '4.0.0',
+      status: 'published', createdAt: '2026-01-01', versions: [], forks: [],
+    });
+    const deepRoot = (depth: number): RawNode => {
+      const root = leaf('root');
+      let cur = root;
+      for (let i = 0; i < depth; i++) { const n = leaf('fork'); cur.forks = [n]; cur = n; }
+      return root;
+    };
+    const envelope = (root: RawNode) => ({
+      data: {
+        root, totalVersions: 1, totalForks: 0,
+        statistics: { totalExecutions: 0, activeVariants: 0, mostForked: null, mostExecuted: null, highestEffectiveness: null },
+        stale: false,
+      },
+    });
+
+    it('rejects a tree deeper than the safe ceiling (50) with RangeError', async () => {
+      // 200 levels comfortably exceeds the depth-50 ceiling. (Deeper trees
+      // cannot be exercised here because JSON.stringify itself overflows long
+      // before the z.lazy() parser does; the iterative guard rejects this at
+      // level 51, before the recursive parse ever runs.)
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/lineage')
+        .reply(200, envelope(deepRoot(200)));
+      await expect(analyticsOps.getLineage(http, 'agent', 'code-validator'))
+        .rejects.toThrow(RangeError);
+    });
+
+    it('honors a caller-supplied lower maxDepth', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/lineage')
+        .reply(200, envelope(deepRoot(10)));
+      await expect(analyticsOps.getLineage(http, 'agent', 'code-validator', { maxDepth: 3 }))
+        .rejects.toThrow(RangeError);
+    });
+
+    it('accepts a legitimate flat (depth-2) tree under a tightened maxDepth', async () => {
+      const root = leaf('root');
+      root.versions = [leaf('version')];
+      root.forks = [leaf('fork')];
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/lineage')
+        .reply(200, envelope(root));
+      const result = await analyticsOps.getLineage(http, 'agent', 'code-validator', { maxDepth: 2 });
+      expect(result.root.relationship).toBe('root');
+      expect(result.root.forks).toHaveLength(1);
+    });
+  });
+
   // ── getEvolution ──────────────────────────────────────────────
 
   describe('getEvolution', () => {

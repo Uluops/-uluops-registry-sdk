@@ -27,6 +27,7 @@ export async function get(http: RegistryHttpClient, id: string): Promise<PublicU
  * @param http - Registry HTTP client
  * @param ids - Array of user UUIDs (max 100)
  * @returns Map of user ID to public user profile
+ * @throws {ValidationError} If more than 100 IDs are supplied, or if any ID is not a valid UUID
  */
 export async function batch(
   http: RegistryHttpClient,

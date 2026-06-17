@@ -98,6 +98,7 @@ import type {
 import type { DefinitionType } from './types/enums.js';
 import type { DefinitionListResponse } from './operations/definitions.js';
 import type { RetranslateResult } from './operations/translation.js';
+import type { GetLineageOptions } from './operations/analytics.js';
 import type { ForkListResponse } from './operations/forks.js';
 import type {
   ModelsListResponse,
@@ -311,7 +312,7 @@ export class RegistryClient {
     /** Get ecosystem-wide overview: counts, aggregate health, top performers. */
     getEcosystemOverview: () => Promise<EcosystemOverview>;
     /** Get lineage graph: versions and forks as a tree. */
-    getLineage: (type: DefinitionType, name: string) => Promise<LineageResult>;
+    getLineage: (type: DefinitionType, name: string, options?: GetLineageOptions) => Promise<LineageResult>;
     /** Get version-over-version metrics with trend detection. */
     getEvolution: (type: DefinitionType, name: string) => Promise<EvolutionResult>;
     /** Get versions grouped by translator version with aggregate metrics. */
@@ -558,7 +559,7 @@ export class RegistryClient {
       getEffectiveness: (type, name, version) => analyticsOps.getEffectiveness(this.http, type, name, version),
       getHealth: (type, name, version) => analyticsOps.getHealth(this.http, type, name, version),
       getEcosystemOverview: () => analyticsOps.getEcosystemOverview(this.http),
-      getLineage: (type, name) => analyticsOps.getLineage(this.http, type, name),
+      getLineage: (type, name, options) => analyticsOps.getLineage(this.http, type, name, options),
       getEvolution: (type, name) => analyticsOps.getEvolution(this.http, type, name),
       getTranslation: (type, name) => analyticsOps.getTranslation(this.http, type, name),
       compare: (type, name, versions) => analyticsOps.compare(this.http, type, name, versions),
