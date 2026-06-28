@@ -68,7 +68,7 @@ export const CHANGE_TYPES = ['major', 'minor', 'patch'] as const;
 export type ChangeType = (typeof CHANGE_TYPES)[number];
 
 // Sort options for listing
-export const SORT_FIELDS = ['name', 'createdAt', 'updatedAt', 'executionCount'] as const;
+export const SORT_FIELDS = ['name', 'createdAt', 'updatedAt', 'executionCount', 'uniqueExecutionCount'] as const;
 export type SortField = (typeof SORT_FIELDS)[number];
 
 export const SORT_ORDERS = ['asc', 'desc'] as const;

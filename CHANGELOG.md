@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-06-28
+
+Ships as MINOR per the pre-1.0 versioning policy. Purely additive — one new
+field on the definition shapes and one new sort option; existing consumers are
+unaffected.
+
+### Added
+
+- **`uniqueExecutionCount`** on `Definition` and `DefinitionListItem` (and their
+  Zod schemas `definitionSchema` / `definitionListItemSchema`). The registry now
+  exposes **two** execution counts: `executionCount` is the total number of runs
+  (all-time, name-scoped across versions) and `uniqueExecutionCount` is the number
+  of **distinct actors** who ran the definition (all-time, name-scoped) — a
+  gaming-resistant signal (one actor's repeated runs collapse to 1) that drives
+  discovery ranking. The total/unique ratio is a usage-quality tell. Requires
+  registry API `V1_API_VERSION` ≥ `2026-06-28`; older API responses simply omit
+  the field.
+- **`'uniqueExecutionCount'`** added to `SORT_FIELDS` / the `SortField` type, so
+  `client.definitions.list({ ... }, { sortBy: 'uniqueExecutionCount' })` ranks by
+  distinct users. (The registry's "popular" discovery rail now sorts on this.)
+
 ## [0.36.0] - 2026-06-16
 
 Ships as MINOR per the pre-1.0 versioning policy. Additive — one new optional

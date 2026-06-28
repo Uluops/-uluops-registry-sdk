@@ -560,6 +560,7 @@ describe('operations', () => {
                 tier: 'user',
                 visibility: 'private',
                 executionCount: 0,
+                uniqueExecutionCount: 0,
                 forkCount: 0,
                 starCount: 0,
                 forkedFromId: '00000000-0000-4000-a000-000000000001',

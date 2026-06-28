@@ -217,6 +217,7 @@ export const definitionListItemSchema = z.object({
   updatedAt: DateTimeStringSchema,
   publishedAt: NullableDateTimeSchema.optional(),
   executionCount: z.number().int().nonnegative(),
+  uniqueExecutionCount: z.number().int().nonnegative(),
   forkCount: z.number().int().nonnegative(),
   starCount: z.number().int().nonnegative(),
   authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']).nullable().optional(),

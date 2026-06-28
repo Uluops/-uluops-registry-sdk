@@ -154,6 +154,7 @@ export interface Definition {
   /** Error message if normalization failed (present when normalized is null) */
   normalizationError?: string;
   executionCount: number;
+  uniqueExecutionCount: number;
   forkCount: number;
   starCount: number;
   /** UUID of the source definition this was forked from. Null if original. */
@@ -191,6 +192,7 @@ export interface DefinitionListItem {
   updatedAt: string;
   publishedAt?: string | null;
   executionCount: number;
+  uniqueExecutionCount: number;
   forkCount: number;
   starCount: number;
   authorshipType?: AuthorshipType | null;

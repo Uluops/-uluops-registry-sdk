@@ -318,7 +318,7 @@ List definitions with optional filters.
 | `authorshipType` | `AuthorshipType` | Filter by authorship ('human', 'agent', 'collaborative', 'automated') |
 | `agentType` | `AgentType` | Filter by agent type |
 | `tier` | `Tier` | Filter by subscription tier |
-| `sortBy` | `SortField` | Sort field ('name', 'createdAt', 'executionCount', etc.) |
+| `sortBy` | `SortField` | Sort field — `'name'`, `'createdAt'`, `'updatedAt'`, `'executionCount'` (total runs), `'uniqueExecutionCount'` (distinct users) |
 | `sortOrder` | `SortOrder` | 'asc' or 'desc' |
 | `limit` | `number` | Max results (default: 50, max: 200) |
 | `offset` | `number` | Pagination offset |
