@@ -16,11 +16,13 @@ public API.
 ### Added
 
 - **Structured security-event channel.** `onSecurityEvent` is now a typed option
-  on `HttpClientConfig` and is threaded to the underlying sdk-core client. The
-  `SecurityEvent` union and its member types (`SecurityEventHandler`,
-  `SecurityEventType`, `AuthType`, `AuthFailureEvent`, `RedirectRejectedEvent`,
-  `TokenRefreshFailedEvent`, `AuthStrategyReplacedEvent`) are re-exported for
-  typing handlers.
+  on both `RegistryClientConfig` (high-level `RegistryClient`) and `HttpClientConfig`
+  (low-level `RegistryHttpClient`), threaded to the underlying sdk-core client —
+  including the temporary client used for the `login()` POST, so a redirect on the
+  credential-carrying login is observable. The `SecurityEvent` union and its
+  member types (`SecurityEventHandler`, `SecurityEventType`, `AuthType`,
+  `AuthFailureEvent`, `RedirectRejectedEvent`, `TokenRefreshFailedEvent`,
+  `AuthStrategyReplacedEvent`) are re-exported for typing handlers.
 - **`RedirectError` + `isRedirectError`** re-exported from `@uluops/registry-sdk/errors`.
   An upstream 3xx now throws this dedicated, non-retryable error.
 

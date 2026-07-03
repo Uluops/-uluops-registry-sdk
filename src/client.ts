@@ -25,6 +25,7 @@
  */
 
 import { RegistryHttpClient } from './http/http-client.js';
+import type { SecurityEventHandler } from '@uluops/sdk-core/http';
 import { JwtSessionAuth } from './http/auth-strategy.js';
 import * as definitionsOps from './operations/definitions.js';
 import * as versionsOps from './operations/versions.js';
@@ -138,6 +139,12 @@ export interface RegistryClientConfig {
   rateLimitThreshold?: number;
   /** Called before each retry attempt with attempt info and backoff delay */
   onRetry?: (info: { attempt: number; maxAttempts: number; error: Error; delayMs: number }) => void;
+  /**
+   * Called when a security-relevant event occurs — a rejected credential, a
+   * blocked upstream redirect, a failed token refresh, or a credential swap.
+   * Structured, routable telemetry (see `SecurityEvent`). Forwarded to sdk-core.
+   */
+  onSecurityEvent?: SecurityEventHandler;
 }
 
 /**
@@ -147,6 +154,7 @@ export class RegistryClient {
   private readonly http: RegistryHttpClient;
   private readonly configTimeout?: number;
   private readonly configOnTokenRefresh?: (token: string) => void;
+  private readonly configOnSecurityEvent?: SecurityEventHandler;
 
   /**
    * Definition operations (CRUD, publish, deprecate)
@@ -336,6 +344,7 @@ export class RegistryClient {
   constructor(config: RegistryClientConfig = {}) {
     this.configTimeout = config.timeout;
     this.configOnTokenRefresh = config.onTokenRefresh;
+    this.configOnSecurityEvent = config.onSecurityEvent;
     this.http = this.createHttpClient(config);
     this.definitions = this.bindDefinitions();
     this.versions = this.bindVersions();
@@ -383,6 +392,9 @@ export class RegistryClient {
       timeout: this.configTimeout,
       email,
       password,
+      // Carry the security-event handler so a redirect on this credential-carrying
+      // login POST (or an auth failure) is still observable.
+      onSecurityEvent: this.configOnSecurityEvent,
     });
     const tempStrategy = tempHttp.getAuthStrategy();
     if (tempStrategy instanceof JwtSessionAuth) {
@@ -454,6 +466,7 @@ export class RegistryClient {
       onRateLimitApproaching: config.onRateLimitApproaching,
       rateLimitThreshold: config.rateLimitThreshold,
       onRetry: config.onRetry,
+      onSecurityEvent: config.onSecurityEvent,
     });
   }
 
