@@ -10,6 +10,20 @@ import {
   type HttpClientConfig as CoreHttpClientConfig,
 } from '@uluops/sdk-core/http';
 import type { RateLimitInfo } from '@uluops/sdk-core';
+import type { SecurityEventHandler } from '@uluops/sdk-core/http';
+
+// Re-export the structured security-event types so consumers can type their
+// onSecurityEvent handler (threaded to sdk-core in the constructor below).
+export type {
+  SecurityEvent,
+  SecurityEventType,
+  SecurityEventHandler,
+  AuthType,
+  AuthFailureEvent,
+  RedirectRejectedEvent,
+  TokenRefreshFailedEvent,
+  AuthStrategyReplacedEvent,
+} from '@uluops/sdk-core/http';
 import {
   DEFAULT_BASE_URL,
   DEFAULT_AUTH_BASE_URL,
@@ -49,6 +63,12 @@ export interface HttpClientConfig {
   rateLimitThreshold?: number;
   /** Called before each retry attempt with attempt info and backoff delay */
   onRetry?: (info: { attempt: number; maxAttempts: number; error: Error; delayMs: number }) => void;
+  /**
+   * Called when a security-relevant event occurs — a rejected credential, a
+   * blocked upstream redirect, a failed token refresh, or a credential swap.
+   * Structured, routable telemetry (see `SecurityEvent`). Forwarded to sdk-core.
+   */
+  onSecurityEvent?: SecurityEventHandler;
 }
 
 /**
@@ -82,6 +102,7 @@ export class RegistryHttpClient extends HttpClient {
       onRateLimitApproaching: config.onRateLimitApproaching,
       rateLimitThreshold: config.rateLimitThreshold,
       onRetry: config.onRetry,
+      onSecurityEvent: config.onSecurityEvent,
     };
     super(coreConfig);
   }

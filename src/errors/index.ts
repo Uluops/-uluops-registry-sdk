@@ -14,6 +14,7 @@ export {
   RateLimitError,
   ServiceUnavailableError,
   NetworkError,
+  RedirectError,
   TimeoutError,
   createErrorFromStatus,
   isRegistryApiError,
@@ -27,6 +28,7 @@ export {
   isRateLimitError,
   isServiceUnavailableError,
   isNetworkError,
+  isRedirectError,
   isTimeoutError,
   ResponseValidationError,
 } from './errors.js';

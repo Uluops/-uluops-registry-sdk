@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-07-02
+
+Ships as MINOR per the pre-1.0 versioning policy — purely additive. Adopts
+`@uluops/sdk-core@0.14.0` (security-observability release) and surfaces its new
+public API.
+
+### Added
+
+- **Structured security-event channel.** `onSecurityEvent` is now a typed option
+  on `HttpClientConfig` and is threaded to the underlying sdk-core client. The
+  `SecurityEvent` union and its member types (`SecurityEventHandler`,
+  `SecurityEventType`, `AuthType`, `AuthFailureEvent`, `RedirectRejectedEvent`,
+  `TokenRefreshFailedEvent`, `AuthStrategyReplacedEvent`) are re-exported for
+  typing handlers.
+- **`RedirectError` + `isRedirectError`** re-exported from `@uluops/registry-sdk/errors`.
+  An upstream 3xx now throws this dedicated, non-retryable error.
+
+### Changed
+
+- **Bump `@uluops/sdk-core` 0.13.0 → 0.14.0.** Pulls in redirect hardening
+  (`redirect: 'manual'`, no credential body replay — relevant here because the
+  registry SDK runs a separate `authBaseUrl`; an auth-endpoint redirect is now
+  reported against `authBaseUrl`), `baseUrl` embedded-credential rejection
+  (CWE-200), sanitized `requestId`, and logger routing. **Migration:** catch
+  `RedirectError` (or `isRedirectError(e)`) where you previously caught
+  `NetworkError` for a redirect; redirects are no longer auto-retried.
+
 ## [0.37.0] - 2026-06-28
 
 Ships as MINOR per the pre-1.0 versioning policy. Purely additive — one new

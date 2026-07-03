@@ -29,6 +29,16 @@ export {
   RegistryHttpClient,
   type HttpClientConfig,
 } from './http/http-client.js';
+export type {
+  SecurityEvent,
+  SecurityEventType,
+  SecurityEventHandler,
+  AuthType,
+  AuthFailureEvent,
+  RedirectRejectedEvent,
+  TokenRefreshFailedEvent,
+  AuthStrategyReplacedEvent,
+} from './http/http-client.js';
 
 export {
   ApiKeyAuth,
