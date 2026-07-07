@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-07-07
+
+### Added
+
+- **Provenance-aware quality analytics types** (registry-api >= 0.52, spec Phase 2). New
+  `QualityProvenance` / `QualitySegment` types and schemas let the additive `provenance`
+  block THROUGH the default `.strip()` (older SDKs silently drop it):
+  - `metrics.provenance` on effectiveness: `{ actorCount, voterCount, confidence,
+    minActorRuns, independent?, selfReported? }` — `independent` is the headline figure
+    wherever one number is shown
+  - optional name-scoped `provenance` on evolution / translation / compare / diff-impact
+    (values on those surfaces stay runs-weighted by design)
+  - `compositionLift.confidence` label; `confidence` + `weightsProvisional` on ecosystem
+    ranked rows (ranked lanes only admit established-confidence definitions)
+
+### Changed
+
+- Doc-level semantics: effectiveness `passRate` / `runAvgScore` are VOTER-WEIGHTED
+  (one actor, one vote) from registry-api >= 0.52; `scoreStdDev` is the std dev over
+  voter means (null below 2 scored voters); `uniqueUsers` documented as the all-time
+  distinct-actor count. Types/fields unchanged — weighting happens server-side.
+
 ## [0.39.0] - 2026-07-06
 
 Ships as MINOR per the pre-1.0 versioning policy — purely additive.

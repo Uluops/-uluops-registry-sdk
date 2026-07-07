@@ -35,12 +35,62 @@ export interface HealthFactor {
 
 // ── Effectiveness ─────────────────────────────────────────────────
 
+/**
+ * One side of the self-reported/independent quality split.
+ * Means follow the same voting rules as the headline; `voterCount` counts
+ * qualifying actors in the segment, so
+ * `independent.voterCount + selfReported.voterCount === provenance.voterCount`.
+ */
+export interface QualitySegment {
+  /** Mean of the segment's per-actor score means; null when the segment has no scored actors */
+  runAvgScore: number | null;
+  /** Mean of the segment's per-actor pass rates; null when the segment is empty */
+  passRate: number | null;
+  /** Qualifying actors (>= minActorRuns attributed runs) in this segment */
+  voterCount: number;
+}
+
+/**
+ * Provenance of the headline quality numbers — who is behind them and how much
+ * weight that carries. Present on effectiveness responses from registry-api
+ * >= 0.52 (provenance-aware quality analytics); optional for compatibility
+ * with older servers.
+ */
+export interface QualityProvenance {
+  /** Distinct attributed actors with runs in the window */
+  actorCount: number;
+  /** Actors meeting the minActorRuns qualification floor */
+  voterCount: number;
+  /**
+   * 'established' iff voterCount >= 3. Provisional metrics are still computed
+   * and returned — thin data reads as thin, not absent. This is an API enum
+   * value, not UI copy: render the count ("N users"), not the adjective.
+   */
+  confidence: 'provisional' | 'established';
+  /** The qualification floor, echoed so consumers can render it honestly */
+  minActorRuns: number;
+  /**
+   * Voters whose identity differs from the definition author's — THE headline
+   * figure wherever one number is shown. Org-mates count as independent (v1
+   * compares user identity only).
+   */
+  independent?: QualitySegment;
+  /** The definition author's own runs — present but labeled */
+  selfReported?: QualitySegment;
+}
+
 export interface EffectivenessMetrics {
-  /** Percentage of runs that passed the gate threshold (0–1) */
+  /**
+   * VOTER-WEIGHTED since registry-api 0.52: mean of the voting population's
+   * per-actor pass rates — one actor, one vote (0–1)
+   */
   passRate: number;
-  /** Mean score across all runs */
+  /**
+   * VOTER-WEIGHTED since registry-api 0.52: mean of the voting population's
+   * per-actor score means — one actor's N runs are one vote
+   */
   runAvgScore: number;
-  /** Standard deviation of run scores; null if fewer than 2 runs */
+  /** Std dev over the voting population's actor-means; null below 2 scored voters */
   scoreStdDev: number | null;
   /** Average number of actionable issues found per run */
   issueYield: number;
@@ -93,6 +143,12 @@ export interface CompositionLiftResult {
   statistics: LiftStatistics | null;
   /** Explanatory notes about data limitations or methodology */
   caveats: string[];
+  /**
+   * 'established' only when both the pipeline side and the pooled constituent
+   * side have >= 3 qualifying voters. Label-only — provisional lift is still
+   * computed. Present from registry-api >= 0.52.
+   */
+  confidence?: 'provisional' | 'established';
 }
 
 export interface DefinitionEffectiveness {
@@ -101,7 +157,10 @@ export interface DefinitionEffectiveness {
   metrics: {
     executionCount: number;
     uniqueProjects: number;
+    /** ALL-TIME distinct-actor count (pairs with the lifetime execution total); provenance counts are windowed */
     uniqueUsers: number;
+    /** Who stands behind the quality numbers. Present from registry-api >= 0.52. */
+    provenance?: QualityProvenance;
     effectiveness: EffectivenessMetrics | null;
     healthScore: number | null;
     factorCompleteness: number;
@@ -177,8 +236,19 @@ export interface EcosystemOverview {
       failureDomainDistribution: FailureDomainDistribution;
       avgEpistemicDensity: number;
     } | null;
-    topPerformers: Array<{ type: string; name: string; healthScore: number; epistemicDensity: number }>;
-    needsAttention: Array<{ type: string; name: string; healthScore: number; reason: string }>;
+    /** Ranked lanes only admit 'established'-confidence definitions from registry-api >= 0.52 */
+    topPerformers: Array<{
+      type: string; name: string; healthScore: number; epistemicDensity: number;
+      /** Actor-diversity confidence from persisted provenance */
+      confidence?: 'provisional' | 'established';
+      /** ADR-001 hedge: health weight tables are design conjectures pending calibration (renamed from `provisional`) */
+      weightsProvisional?: boolean;
+    }>;
+    needsAttention: Array<{
+      type: string; name: string; healthScore: number; reason: string;
+      confidence?: 'provisional' | 'established';
+      weightsProvisional?: boolean;
+    }>;
   };
   stale: boolean;
 }
@@ -244,6 +314,12 @@ export interface EvolutionResult {
   trend: 'improving' | 'declining' | 'stable' | 'insufficient_data';
   trendConfidence: 'low' | 'medium' | 'high' | null;
   overallTrend: OverallTrend;
+  /**
+   * Name-scoped actor provenance. Values on this surface stay RUNS-WEIGHTED by
+   * design — this block tells you how many actors stand behind the window.
+   * Present from registry-api >= 0.52; absent when the aggregate fetch degrades.
+   */
+  provenance?: QualityProvenance;
   stale: boolean;
 }
 
@@ -272,6 +348,8 @@ export interface TranslationAnalyticsResult {
   upgradeAvailable: boolean;
   projectedImprovement: ProjectedImprovement | null;
   recommendation: string | null;
+  /** Name-scoped actor provenance — values on this surface stay runs-weighted by design. Present from registry-api >= 0.52. */
+  provenance?: QualityProvenance;
   stale: boolean;
 }
 
@@ -291,6 +369,8 @@ export interface VersionComparisonEntry {
 export interface CompareResult {
   definition: { type: string; name: string };
   versions: VersionComparisonEntry[];
+  /** Name-scoped actor provenance — values on this surface stay runs-weighted by design. Present from registry-api >= 0.52. */
+  provenance?: QualityProvenance;
   stale: boolean;
 }
 
@@ -329,5 +409,7 @@ export interface DiffImpactResult {
   categorizedChanges: CategorizedChange[];
   taxonomyShift: TaxonomyShift | null;
   caveats: string[];
+  /** Name-scoped actor provenance — values on this surface stay runs-weighted by design. Present from registry-api >= 0.52. */
+  provenance?: QualityProvenance;
   stale: boolean;
 }

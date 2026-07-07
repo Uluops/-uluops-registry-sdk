@@ -576,6 +576,28 @@ const compositionLiftResultSchema = z.object({
   constituentAgents: z.array(constituentAgentMetricsSchema),
   statistics: liftStatisticsSchema.nullable(),
   caveats: z.array(z.string()),
+  confidence: z.enum(['provisional', 'established']).optional(),
+});
+
+/** One side of the self/independent split (provenance-aware quality analytics). */
+const qualitySegmentSchema = z.object({
+  runAvgScore: z.number().nullable(),
+  passRate: z.number().nullable(),
+  voterCount: z.number().int().nonnegative(),
+});
+
+/**
+ * Provenance of the headline quality numbers. Optional throughout for
+ * compatibility with registry-api < 0.52 (default .strip() would otherwise
+ * silently drop it — this schema is what lets it THROUGH).
+ */
+const qualityProvenanceSchema = z.object({
+  actorCount: z.number().int().nonnegative(),
+  voterCount: z.number().int().nonnegative(),
+  confidence: z.enum(['provisional', 'established']),
+  minActorRuns: z.number().int().positive(),
+  independent: qualitySegmentSchema.optional(),
+  selfReported: qualitySegmentSchema.optional(),
 });
 
 /** GET /analytics/definitions/{type}/{name}/effectiveness */
@@ -589,6 +611,7 @@ export const definitionEffectivenessSchema = z.object({
     executionCount: z.number().int().nonnegative(),
     uniqueProjects: z.number().int().nonnegative(),
     uniqueUsers: z.number().int().nonnegative(),
+    provenance: qualityProvenanceSchema.optional(),
     effectiveness: effectivenessMetricsSchema.nullable(),
     healthScore: z.number().nullable(),
     factorCompleteness: z.number(),
@@ -641,12 +664,16 @@ export const ecosystemOverviewSchema = z.object({
       name: z.string(),
       healthScore: z.number(),
       epistemicDensity: z.number(),
+      confidence: z.enum(['provisional', 'established']).optional(),
+      weightsProvisional: z.boolean().optional(),
     })),
     needsAttention: z.array(z.object({
       type: z.string(),
       name: z.string(),
       healthScore: z.number(),
       reason: z.string(),
+      confidence: z.enum(['provisional', 'established']).optional(),
+      weightsProvisional: z.boolean().optional(),
     })),
   }),
   stale: z.boolean(),
@@ -728,6 +755,7 @@ export const evolutionResultSchema = z.object({
   trend: z.enum(['improving', 'declining', 'stable', 'insufficient_data']),
   trendConfidence: z.enum(['low', 'medium', 'high']).nullable(),
   overallTrend: overallTrendSchema,
+  provenance: qualityProvenanceSchema.optional(),
   stale: z.boolean(),
 });
 
@@ -757,6 +785,7 @@ export const translationAnalyticsResultSchema = z.object({
   upgradeAvailable: z.boolean(),
   projectedImprovement: projectedImprovementSchema.nullable(),
   recommendation: z.string().nullable(),
+  provenance: qualityProvenanceSchema.optional(),
   stale: z.boolean(),
 });
 
@@ -776,6 +805,7 @@ const versionComparisonEntrySchema = z.object({
 export const compareResultSchema = z.object({
   definition: definitionRefSchema,
   versions: z.array(versionComparisonEntrySchema),
+  provenance: qualityProvenanceSchema.optional(),
   stale: z.boolean(),
 });
 
@@ -825,6 +855,7 @@ export const diffImpactResultSchema = z.object({
   categorizedChanges: z.array(categorizedChangeSchema),
   taxonomyShift: taxonomyShiftSchema.nullable(),
   caveats: z.array(z.string()),
+  provenance: qualityProvenanceSchema.optional(),
   stale: z.boolean(),
 });
 

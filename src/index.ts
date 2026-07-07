@@ -187,6 +187,8 @@ export type {
   CompositionLiftResult,
   ConstituentAgentMetrics,
   LiftStatistics,
+  QualityProvenance,
+  QualitySegment,
 } from './types/analytics.js';
 
 export type {
