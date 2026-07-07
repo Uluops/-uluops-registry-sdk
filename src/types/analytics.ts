@@ -48,6 +48,13 @@ export interface QualitySegment {
   passRate: number | null;
   /** Qualifying actors (>= minActorRuns attributed runs) in this segment */
   voterCount: number;
+  /**
+   * Actors in the segment's voting population — what the numbers actually rest
+   * on. Exceeds voterCount in blend mode (sub-floor actors vote); use THIS for
+   * "based on N users" copy, never voterCount (which can honestly be 0 under a
+   * real score). Optional: present from registry-api >= 0.52.1.
+   */
+  actorCount?: number;
 }
 
 /**

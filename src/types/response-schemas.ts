@@ -584,6 +584,7 @@ const qualitySegmentSchema = z.object({
   runAvgScore: z.number().nullable(),
   passRate: z.number().nullable(),
   voterCount: z.number().int().nonnegative(),
+  actorCount: z.number().int().nonnegative().optional(),
 });
 
 /**
