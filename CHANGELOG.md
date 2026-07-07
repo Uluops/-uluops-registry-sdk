@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-07-06
+
+Ships as MINOR per the pre-1.0 versioning policy — purely additive.
+
+### Changed
+
+- **Bumped `@uluops/sdk-core` pin `0.14.0` → `0.15.0`.** sdk-core 0.15.0 adds the
+  streaming transport (`requestStream`/`getStream`). Because `RegistryHttpClient
+  extends HttpClient` and is a public export, these methods are now **inherited on
+  `RegistryHttpClient`** for advanced consumers holding the low-level client — a
+  resilient way to obtain an unconsumed `Response` for stream passthrough (auth,
+  redirect rejection, error mapping, and security-event emission through the
+  headers; no retry after handoff). See the sdk-core README for the contract.
+- **`engines.node` raised `>=18.0.0` → `>=20.3.0`** to match sdk-core's real
+  runtime floor: the inherited `getStream` composes the caller's `AbortSignal` via
+  `AbortSignal.any` (Node 20.3.0+). Buffered operations are unaffected.
+
 ## [0.38.0] - 2026-07-02
 
 Ships as MINOR per the pre-1.0 versioning policy — purely additive. Adopts
