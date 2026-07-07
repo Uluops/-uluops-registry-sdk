@@ -537,7 +537,8 @@ export const definitionRefSchema = z.object({
 
 /** Effectiveness metrics */
 const effectivenessMetricsSchema = z.object({
-  passRate: z.number(),
+  // NULL for agents (D11: participation-based, score-only quality)
+  passRate: z.number().nullable(),
   runAvgScore: z.number(),
   scoreStdDev: z.number().nullable(),
   issueYield: z.number(),

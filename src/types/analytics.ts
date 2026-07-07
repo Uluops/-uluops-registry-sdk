@@ -89,9 +89,12 @@ export interface QualityProvenance {
 export interface EffectivenessMetrics {
   /**
    * VOTER-WEIGHTED since registry-api 0.52: mean of the voting population's
-   * per-actor pass rates — one actor, one vote (0–1)
+   * per-actor pass rates — one actor, one vote (0–1). NULL for agents (D11):
+   * agent quality is participation-based (snapshot scores across every run
+   * the agent appears in) and a whole run's gate result cannot be attributed
+   * to one constituent — null means "no data", never 0 ("all failed").
    */
-  passRate: number;
+  passRate: number | null;
   /**
    * VOTER-WEIGHTED since registry-api 0.52: mean of the voting population's
    * per-actor score means — one actor's N runs are one vote

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-07-07
+
+### Changed
+
+- **`EffectivenessMetrics.passRate` is now nullable** (registry-api D11): agent quality is
+  participation-based — snapshot scores across every run the agent appears in (constituent
+  or standalone) — and a whole run's gate result cannot be attributed to one constituent,
+  so agents report `passRate: null`. Null means "no data", never 0. Composites unchanged.
+
 ## [0.40.0] - 2026-07-07
 
 ### Added
