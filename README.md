@@ -934,10 +934,22 @@ Definition effectiveness, health grades, lineage, evolution, and cross-version c
 
 Get effectiveness metrics: pass rate, scores, taxonomy distribution, health score, and composition lift.
 
+Quality numbers are **voter-weighted** (registry-api >= 0.52): one actor, one vote — a single
+account cannot dominate them with run volume. `metrics.provenance` reports who stands behind
+them (`actorCount`/`voterCount`, a `provisional`/`established` confidence label, and the
+`independent` vs `selfReported` split — **`provenance.independent` is the headline figure to
+quote**; `selfReported` is the author rating their own definition). For **agents**, quality is
+participation-based (snapshot scores across every run the agent appears in) and
+`effectiveness.passRate` is `null` by design — a run-level gate result cannot be attributed to
+one constituent. `uniqueUsers` is the all-time distinct-actor count; provenance counts are
+windowed.
+
 ```typescript
 const eff = await client.analytics.getEffectiveness('agent', 'code-validator');
 console.log(eff.metrics.healthScore); // 67
-console.log(eff.metrics.effectiveness?.passRate); // 49.4
+console.log(eff.metrics.provenance?.independent?.runAvgScore); // 90.1 — the headline
+console.log(eff.metrics.provenance?.confidence); // 'provisional' until 3+ qualifying actors
+console.log(eff.metrics.effectiveness?.passRate); // null for agents (score-only quality)
 
 // Specific version
 const v2 = await client.analytics.getEffectiveness('agent', 'code-validator', '2.0.0');
