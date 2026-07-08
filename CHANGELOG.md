@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-07-07
+
+### Added
+
+- **Safety-verdict trustworthiness surface** (registry-api parity; perverse-outcome finding
+  P6 "failed scan reads as clean"). The API already serialized these fields; the SDK type
+  layer was dropping them, leaving consumers typed-blind and rendering a failed scan's
+  sentinel `aggregateRiskLevel: 'none'` as "clean":
+  - `RiskProfile.scanStatus` (`'complete' | 'failed'`) + `scanFailedReason` — when
+    `'failed'`, `aggregateRiskLevel: 'none'` is a sentinel, NOT a clean verdict.
+  - `DeepAnalysisResult.status` (`'analyzed' | 'error'`) + `errorReason` — same discipline
+    for the deep layer.
+  - `isVerdictTrustworthy(profile)` — value export mirroring the registry-api predicate;
+    returns `false` for a failed scan or an absent profile. Gate any verdict rendering on it.
+
+  All fields are optional and absent on legacy rows (treated as `complete` / `analyzed`), so
+  this is additive and non-breaking.
+
 ## [0.41.0] - 2026-07-07
 
 ### Changed

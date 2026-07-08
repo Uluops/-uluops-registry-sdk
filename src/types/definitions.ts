@@ -73,18 +73,82 @@ export interface DeepFinding {
   location?: string;
 }
 
+/**
+ * Deep-analysis outcome status. Mirrors the sync-side ScanStatus discipline so a
+ * failed/unparseable agent run is distinguishable from a genuine clean verdict.
+ *
+ * - 'analyzed' — the bridge agent ran and produced a parseable verdict.
+ * - 'error' — output missing/unparseable/schema-invalid; an empty `findings` and
+ *   `riskLevel: 'none'` do NOT mean the definition is clean.
+ *
+ * Absent on legacy rows — treat as 'analyzed'.
+ */
+export type DeepAnalysisOutcomeStatus = 'analyzed' | 'error';
+
+export type DeepAnalysisErrorReason =
+  | 'no_output'
+  | 'no_json'
+  | 'parse_error'
+  | 'invalid_schema'
+  | 'inconsistent_verdict'
+  | 'timeout';
+
 export interface DeepAnalysisResult {
   version: string;
   analyzedAt: string;
   findings: DeepFinding[];
   riskLevel: RiskLevel;
+  /**
+   * Outcome of the deep analysis run. Absent on legacy rows — treat as
+   * 'analyzed'. When 'error', an empty `findings` / `riskLevel: 'none'` is NOT a
+   * safety judgment; consumers must check status before treating deep as clean.
+   */
+  status?: DeepAnalysisOutcomeStatus;
+  errorReason?: DeepAnalysisErrorReason;
 }
+
+/**
+ * Sync-scan outcome status.
+ *
+ * - 'complete' — scanner ran end-to-end; signals reflect actual evidence.
+ * - 'failed' — scanner aborted (parse error, timeout, internal). The absence of
+ *   signals does NOT imply the definition is safe.
+ *
+ * Absent on legacy rows (pre-A2) — treat as 'complete'.
+ */
+export type ScanStatus = 'complete' | 'failed';
+
+export type ScanFailedReason = 'parse_error' | 'timeout' | 'internal';
 
 export interface RiskProfile {
   sync: SyncScanResult;
   deep: DeepAnalysisResult | null;
   aggregateRiskLevel: RiskLevel;
   lastUpdated: string;
+  /**
+   * Sync scan outcome. Absent on legacy rows — treat as 'complete'. When
+   * 'failed', `aggregateRiskLevel: 'none'` does NOT mean the definition is
+   * clean; it means the scan could not determine. Consumers must gate on this
+   * (see {@link isVerdictTrustworthy}) before rendering a verdict.
+   */
+  scanStatus?: ScanStatus;
+  scanFailedReason?: ScanFailedReason;
+}
+
+/**
+ * Whether a risk profile's verdict can be trusted as a safety judgment.
+ *
+ * Returns false for a failed sync scan (`scanStatus: 'failed'`) and for an
+ * absent/null profile (never scanned). When this is false, `aggregateRiskLevel`
+ * is a sentinel, not a verdict — consumers MUST NOT read 'none' as "clean" and
+ * should surface a "scan incomplete / could not determine" state instead.
+ *
+ * This is the consumer-side mirror of the registry-api predicate of the same
+ * name; centralizing it here stops the CLI and every other SDK consumer from
+ * re-implementing `scanStatus === 'failed'` and drifting.
+ */
+export function isVerdictTrustworthy(profile: RiskProfile | null | undefined): boolean {
+  return profile != null && profile.scanStatus !== 'failed';
 }
 
 // ── Provenance Types ──────────────────────────────────────────

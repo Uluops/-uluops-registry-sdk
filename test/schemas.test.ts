@@ -4,6 +4,25 @@
 
 import { describe, it, expect } from 'vitest';
 import { definitionSchema } from '../src/types/schemas.js';
+import { isVerdictTrustworthy, type RiskProfile } from '../src/types/definitions.js';
+
+/** A risk profile whose sync scan failed — 'none' is a sentinel, not a verdict. */
+function makeFailedRiskProfile(): RiskProfile {
+  return {
+    sync: {
+      version: '1.0.0',
+      scannedAt: '2026-01-01T00:00:00Z',
+      capabilities: { tools: [], preflightCommands: 0 },
+      signals: [],
+      riskLevel: 'none',
+    },
+    deep: null,
+    aggregateRiskLevel: 'none',
+    lastUpdated: '2026-01-01T00:00:00Z',
+    scanStatus: 'failed',
+    scanFailedReason: 'timeout',
+  };
+}
 
 /** Minimal valid definition for schema parsing */
 function makeDefinition(overrides?: Record<string, unknown>) {
@@ -93,5 +112,70 @@ describe('definitionSchema', () => {
       expect(result.data.proRestricted).toBe(true);
       expect(result.data.yaml).toBeNull();
     }
+  });
+
+  it('preserves riskProfile.scanStatus and scanFailedReason through parse (failed scan)', () => {
+    const result = definitionSchema.safeParse(
+      makeDefinition({ riskProfile: makeFailedRiskProfile() }),
+    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.riskProfile?.scanStatus).toBe('failed');
+      expect(result.data.riskProfile?.scanFailedReason).toBe('timeout');
+    }
+  });
+
+  it('accepts a legacy riskProfile with no scanStatus (defaults undefined)', () => {
+    const profile = makeFailedRiskProfile();
+    delete profile.scanStatus;
+    delete profile.scanFailedReason;
+    const result = definitionSchema.safeParse(makeDefinition({ riskProfile: profile }));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.riskProfile?.scanStatus).toBeUndefined();
+    }
+  });
+
+  it('accepts deep.status and errorReason on a failed deep analysis', () => {
+    const profile = makeFailedRiskProfile();
+    profile.scanStatus = 'complete';
+    profile.deep = {
+      version: '1.0.0',
+      analyzedAt: '2026-01-01T00:00:00Z',
+      findings: [],
+      riskLevel: 'none',
+      status: 'error',
+      errorReason: 'no_output',
+    };
+    const result = definitionSchema.safeParse(makeDefinition({ riskProfile: profile }));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.riskProfile?.deep?.status).toBe('error');
+    }
+  });
+});
+
+describe('isVerdictTrustworthy', () => {
+  it('returns false for a failed sync scan', () => {
+    expect(isVerdictTrustworthy(makeFailedRiskProfile())).toBe(false);
+  });
+
+  it('returns false for a null/undefined profile (never scanned)', () => {
+    expect(isVerdictTrustworthy(null)).toBe(false);
+    expect(isVerdictTrustworthy(undefined)).toBe(false);
+  });
+
+  it('returns true for a complete scan', () => {
+    const profile = makeFailedRiskProfile();
+    profile.scanStatus = 'complete';
+    profile.scanFailedReason = undefined;
+    expect(isVerdictTrustworthy(profile)).toBe(true);
+  });
+
+  it('treats a legacy profile with no scanStatus as trustworthy (complete)', () => {
+    const profile = makeFailedRiskProfile();
+    delete profile.scanStatus;
+    delete profile.scanFailedReason;
+    expect(isVerdictTrustworthy(profile)).toBe(true);
   });
 });

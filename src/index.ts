@@ -88,10 +88,18 @@ export type {
   SignalSeverity,
   SafetySignal,
   SyncScanResult,
+  ScanStatus,
+  ScanFailedReason,
   DeepAnalysisResult,
+  DeepAnalysisOutcomeStatus,
+  DeepAnalysisErrorReason,
   DeepFinding,
   DefinitionCapabilities,
 } from './types/definitions.js';
+
+// Safety verdict predicate (value export — the consumer-side mirror of the
+// registry-api trustworthiness check; gate rendering of a risk verdict on this).
+export { isVerdictTrustworthy } from './types/definitions.js';
 
 export type {
   // Version types

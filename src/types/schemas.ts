@@ -112,9 +112,19 @@ export const definitionSchema = z.object({
         location: z.string().optional(),
       })),
       riskLevel: z.enum(['none', 'medium', 'high']),
+      // Deep-analysis outcome — 'error' means the verdict could not be determined
+      // (empty findings / 'none' riskLevel are sentinels, not a clean judgment).
+      status: z.enum(['analyzed', 'error']).optional(),
+      errorReason: z
+        .enum(['no_output', 'no_json', 'parse_error', 'invalid_schema', 'inconsistent_verdict', 'timeout'])
+        .optional(),
     }).nullable(),
     aggregateRiskLevel: z.enum(['none', 'medium', 'high']),
     lastUpdated: z.string(),
+    // Sync scan outcome — 'failed' means aggregateRiskLevel 'none' is a sentinel,
+    // not a "clean" verdict (see isVerdictTrustworthy).
+    scanStatus: z.enum(['complete', 'failed']).optional(),
+    scanFailedReason: z.enum(['parse_error', 'timeout', 'internal']).optional(),
   }).nullish(),
 });
 
