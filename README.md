@@ -458,16 +458,33 @@ await client.definitions.archive('agent', 'my-agent', '1.0.0');
 #### Safety Analysis (`definition.riskProfile`)
 
 Definitions may carry a `riskProfile` populated by the registry's safety scanner
-at publish time. It is `undefined`/`null` when the version has not been scanned
-(or the scan failed — see the `SAFETY_SCAN_FAILED` publish warning). All safety
-types are exported from the package root and from `@uluops/registry-sdk/types`:
+at publish time. It is `undefined`/`null` when the version has not been scanned.
+All safety types are exported from the package root and from
+`@uluops/registry-sdk/types`.
+
+> **Gate on `isVerdictTrustworthy` before trusting the verdict.** A profile whose
+> sync scan *failed to complete* still carries `aggregateRiskLevel: 'none'` — but
+> that `'none'` is a sentinel meaning "could not determine", **not** a clean
+> verdict. Reading `aggregateRiskLevel` directly would render a scan crash as
+> safe. The exported `isVerdictTrustworthy(profile)` predicate returns `false`
+> for a failed scan (`scanStatus: 'failed'`) or an absent profile — treat those
+> as "not yet analyzed", never as clean.
 
 ```typescript
-import type { RiskProfile, RiskLevel, SafetySignal } from '@uluops/registry-sdk';
+import {
+  isVerdictTrustworthy,
+  type RiskProfile,
+  type RiskLevel,
+  type SafetySignal,
+} from '@uluops/registry-sdk';
 
 const def = await client.definitions.get('agent', 'my-agent', '1.0.0');
-if (def.riskProfile && def.riskProfile.aggregateRiskLevel !== 'none') {
-  for (const signal of def.riskProfile.sync.signals) {
+
+if (!isVerdictTrustworthy(def.riskProfile)) {
+  // Never scanned, or the scan failed — the verdict cannot be trusted.
+  console.warn('Safety verdict unavailable — definition not fully analyzed.');
+} else if (def.riskProfile!.aggregateRiskLevel !== 'none') {
+  for (const signal of def.riskProfile!.sync.signals) {
     console.warn(`[${signal.severity}] ${signal.title} — ${signal.detail}`);
   }
 }
@@ -475,9 +492,11 @@ if (def.riskProfile && def.riskProfile.aggregateRiskLevel !== 'none') {
 
 | `riskProfile` field | Type | Description |
 |---------------------|------|-------------|
-| `aggregateRiskLevel` | `RiskLevel` (`'none' \| 'medium' \| 'high'`) | Combined risk across sync + deep analysis |
+| `aggregateRiskLevel` | `RiskLevel` (`'none' \| 'medium' \| 'high'`) | Combined risk across sync + deep analysis. A **sentinel** (`'none'`), not a verdict, when `scanStatus` is `'failed'` — gate with `isVerdictTrustworthy`. |
+| `scanStatus` | `'complete' \| 'failed'` (optional) | Sync scan outcome. Absent on legacy rows → treat as `'complete'`. When `'failed'`, the verdict could not be determined. |
+| `scanFailedReason` | `'parse_error' \| 'timeout' \| 'internal'` (optional) | Present when `scanStatus === 'failed'`. |
 | `sync` | `SyncScanResult` | Synchronous publish-time scan: `capabilities`, `signals[]`, `riskLevel` |
-| `deep` | `DeepAnalysisResult \| null` | Background deep analysis (`findings[]`), `null` until it runs |
+| `deep` | `DeepAnalysisResult \| null` | Background deep analysis (`findings[]`), `null` until it runs. `deep.status: 'error'` means the deep verdict could not be determined (empty `findings` is a sentinel, not clean). |
 | `lastUpdated` | `string` | ISO timestamp of the most recent scan |
 
 Risk levels are `none`, `medium`, or `high` — there is deliberately no `low`
