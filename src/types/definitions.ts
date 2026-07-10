@@ -138,17 +138,28 @@ export interface RiskProfile {
 /**
  * Whether a risk profile's verdict can be trusted as a safety judgment.
  *
- * Returns false for a failed sync scan (`scanStatus: 'failed'`) and for an
- * absent/null profile (never scanned). When this is false, `aggregateRiskLevel`
- * is a sentinel, not a verdict — consumers MUST NOT read 'none' as "clean" and
- * should surface a "scan incomplete / could not determine" state instead.
+ * Returns false when analysis did not complete on some layer — a failed sync
+ * scan (`scanStatus: 'failed'`), an errored deep analysis
+ * (`deep.status: 'error'`), or an absent/null profile (never scanned). When
+ * this is false, `aggregateRiskLevel` is a sentinel, not a verdict — consumers
+ * MUST NOT read 'none' as "clean" and should surface a "scan incomplete /
+ * could not determine" state instead.
+ *
+ * Deep dimension: `deep.status: 'error'` is written only when the deep agent
+ * ran and its output failed extraction. A skipped (private) or not-yet-analyzed
+ * definition has `deep: null`, which stays trustworthy — only the explicit
+ * error state flips trust, so freshly published definitions awaiting the async
+ * worker are not falsely marked untrusted.
  *
  * This is the consumer-side mirror of the registry-api predicate of the same
- * name; centralizing it here stops the CLI and every other SDK consumer from
- * re-implementing `scanStatus === 'failed'` and drifting.
+ * name (deep-aware since the ADR-010 2026-07-10 revision); centralizing it here
+ * stops the CLI and every other SDK consumer from re-implementing the sentinel
+ * checks and drifting.
  */
 export function isVerdictTrustworthy(profile: RiskProfile | null | undefined): boolean {
-  return profile != null && profile.scanStatus !== 'failed';
+  return profile != null
+    && profile.scanStatus !== 'failed'
+    && profile.deep?.status !== 'error';
 }
 
 // ── Provenance Types ──────────────────────────────────────────

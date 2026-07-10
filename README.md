@@ -465,10 +465,14 @@ All safety types are exported from the package root and from
 > **Gate on `isVerdictTrustworthy` before trusting the verdict.** A profile whose
 > sync scan *failed to complete* still carries `aggregateRiskLevel: 'none'` — but
 > that `'none'` is a sentinel meaning "could not determine", **not** a clean
-> verdict. Reading `aggregateRiskLevel` directly would render a scan crash as
-> safe. The exported `isVerdictTrustworthy(profile)` predicate returns `false`
-> for a failed scan (`scanStatus: 'failed'`) or an absent profile — treat those
-> as "not yet analyzed", never as clean.
+> verdict. The same applies when the background *deep analysis errored*
+> (`deep.status: 'error'`): the aggregate stays at the sync level, so a
+> sync-clean definition whose deep audit crashed would read as clean. Reading
+> `aggregateRiskLevel` directly would render either crash as safe. The exported
+> `isVerdictTrustworthy(profile)` predicate returns `false` for a failed sync
+> scan (`scanStatus: 'failed'`), an errored deep analysis (`deep.status:
+> 'error'`), or an absent profile — treat those as "not fully analyzed", never
+> as clean. (`deep: null` — skipped or not yet run — stays trusted.)
 
 ```typescript
 import {
@@ -492,7 +496,7 @@ if (!isVerdictTrustworthy(def.riskProfile)) {
 
 | `riskProfile` field | Type | Description |
 |---------------------|------|-------------|
-| `aggregateRiskLevel` | `RiskLevel` (`'none' \| 'medium' \| 'high'`) | Combined risk across sync + deep analysis. A **sentinel** (`'none'`), not a verdict, when `scanStatus` is `'failed'` — gate with `isVerdictTrustworthy`. |
+| `aggregateRiskLevel` | `RiskLevel` (`'none' \| 'medium' \| 'high'`) | Combined risk across sync + deep analysis. A **sentinel** (`'none'`), not a verdict, when `scanStatus` is `'failed'` or `deep.status` is `'error'` — gate with `isVerdictTrustworthy`. |
 | `scanStatus` | `'complete' \| 'failed'` (optional) | Sync scan outcome. Absent on legacy rows → treat as `'complete'`. When `'failed'`, the verdict could not be determined. |
 | `scanFailedReason` | `'parse_error' \| 'timeout' \| 'internal'` (optional) | Present when `scanStatus === 'failed'`. |
 | `sync` | `SyncScanResult` | Synchronous publish-time scan: `capabilities`, `signals[]`, `riskLevel` |

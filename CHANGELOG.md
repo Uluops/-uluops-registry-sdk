@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-07-10
+
+### Changed
+
+- **`isVerdictTrustworthy` is now deep-aware** (registry-api parity, ADR-010 2026-07-10
+  revision; closes the deep-error laundering path, registry-api issue 06afd6ad). The
+  predicate now also returns `false` when `deep.status === 'error'` — a sync-clean
+  definition whose background deep analysis errored no longer reads as trustworthy-clean.
+  `deep: null` (skipped, pending, or legacy) remains trusted; only the explicit error
+  state flips trust, so freshly published definitions awaiting the async worker are not
+  falsely marked untrusted. Consumers already gating on this predicate inherit the fix
+  with no code change.
+
 ## [0.42.0] - 2026-07-07
 
 ### Added

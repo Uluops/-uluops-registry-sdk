@@ -178,4 +178,55 @@ describe('isVerdictTrustworthy', () => {
     delete profile.scanFailedReason;
     expect(isVerdictTrustworthy(profile)).toBe(true);
   });
+
+  describe('deep dimension (deep-error laundering, registry-api 06afd6ad)', () => {
+    function makeCompleteProfile(): RiskProfile {
+      const profile = makeFailedRiskProfile();
+      profile.scanStatus = 'complete';
+      profile.scanFailedReason = undefined;
+      return profile;
+    }
+
+    it('returns false when deep analysis errored (sync-clean is not enough)', () => {
+      const profile = makeCompleteProfile();
+      profile.deep = {
+        version: '0.1.0',
+        analyzedAt: '2026-01-01T00:00:00Z',
+        findings: [],
+        riskLevel: 'none',
+        status: 'error',
+        errorReason: 'no_json',
+      };
+      expect(isVerdictTrustworthy(profile)).toBe(false);
+    });
+
+    it('returns true for an analyzed deep result (clean or flagged)', () => {
+      const profile = makeCompleteProfile();
+      profile.deep = {
+        version: '0.1.0',
+        analyzedAt: '2026-01-01T00:00:00Z',
+        findings: [],
+        riskLevel: 'none',
+        status: 'analyzed',
+      };
+      expect(isVerdictTrustworthy(profile)).toBe(true);
+    });
+
+    it('returns true for deep: null (skipped, pending, or legacy) — no false flip', () => {
+      const profile = makeCompleteProfile();
+      profile.deep = null;
+      expect(isVerdictTrustworthy(profile)).toBe(true);
+    });
+
+    it('returns true for a deep result with status absent (legacy row)', () => {
+      const profile = makeCompleteProfile();
+      profile.deep = {
+        version: '0.1.0',
+        analyzedAt: '2026-01-01T00:00:00Z',
+        findings: [],
+        riskLevel: 'none',
+      };
+      expect(isVerdictTrustworthy(profile)).toBe(true);
+    });
+  });
 });
