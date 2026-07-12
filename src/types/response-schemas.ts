@@ -221,6 +221,17 @@ export const definitionListItemSchema = z.object({
   forkCount: z.number().int().nonnegative(),
   starCount: z.number().int().nonnegative(),
   authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']).nullable().optional(),
+  // Risk scalars at the list grain (registry-api risk-verdict list projection,
+  // 2026-07-12) — denormalized from the version's risk_profile. Declared here
+  // deliberately: the default .strip() behavior (ADR-002) silently drops any
+  // field the API adds until the schema names it, so this IS the gate that
+  // lets CLI/MCP see list-level risk. P6 rule applies at this grain: an
+  // absent/null triple means pending (never clean), and riskLevel 'none'
+  // beside scanStatus 'failed' is a sentinel — gate on
+  // isListVerdictTrustworthy before rendering a verdict.
+  riskLevel: z.enum(['none', 'medium', 'high']).nullable().optional(),
+  scanStatus: z.enum(['complete', 'failed']).nullable().optional(),
+  deepStatus: z.enum(['analyzed', 'error']).nullable().optional(),
 });
 
 /** GET /definitions */

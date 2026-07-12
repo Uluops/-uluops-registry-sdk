@@ -271,6 +271,37 @@ export interface DefinitionListItem {
   forkCount: number;
   starCount: number;
   authorshipType?: AuthorshipType | null;
+  /**
+   * Aggregate risk level, denormalized from the version's risk_profile at
+   * write time. Absent/null = no profile yet (pending — never clean). Gate on
+   * {@link isListVerdictTrustworthy} before rendering: 'none' beside
+   * `scanStatus: 'failed'` is a sentinel, not a clean verdict (P6).
+   */
+  riskLevel?: RiskLevel | null;
+  /** Sync scan outcome at the list grain; null/absent on legacy rows (treat as complete when riskLevel is present). */
+  scanStatus?: ScanStatus | null;
+  /** Deep analysis outcome at the list grain: 'analyzed'/'error' only — deep pending/skipped is represented by null. */
+  deepStatus?: DeepAnalysisOutcomeStatus | null;
+}
+
+/**
+ * List-grain twin of {@link isVerdictTrustworthy}, operating on the flattened
+ * scalar triple carried by {@link DefinitionListItem} instead of the full
+ * profile. Same P6 discipline: an absent triple is NOT trustworthy (pending,
+ * never clean); a failed sync scan or errored deep analysis makes
+ * `riskLevel: 'none'` a sentinel, not a verdict. As with the profile
+ * predicate, absent statuses beside a present riskLevel are legacy rows and
+ * treated as complete. Mirrors the registry frontend's predicate of the same
+ * name — centralized here so CLI/MCP list consumers don't re-derive it.
+ */
+export function isListVerdictTrustworthy(item: {
+  riskLevel?: RiskLevel | null;
+  scanStatus?: ScanStatus | null;
+  deepStatus?: DeepAnalysisOutcomeStatus | null;
+}): boolean {
+  return item.riskLevel != null
+    && item.scanStatus !== 'failed'
+    && item.deepStatus !== 'error';
 }
 
 /**

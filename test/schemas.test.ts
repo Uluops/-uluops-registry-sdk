@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { definitionSchema } from '../src/types/schemas.js';
-import { isVerdictTrustworthy, type RiskProfile } from '../src/types/definitions.js';
+import { isVerdictTrustworthy, isListVerdictTrustworthy, type RiskProfile } from '../src/types/definitions.js';
 
 /** A risk profile whose sync scan failed — 'none' is a sentinel, not a verdict. */
 function makeFailedRiskProfile(): RiskProfile {
@@ -228,5 +228,44 @@ describe('isVerdictTrustworthy', () => {
       };
       expect(isVerdictTrustworthy(profile)).toBe(true);
     });
+  });
+});
+
+describe('isListVerdictTrustworthy (list-grain twin)', () => {
+  it('does not trust an absent triple (pending, never clean)', () => {
+    expect(isListVerdictTrustworthy({})).toBe(false);
+  });
+
+  it('does not trust a failed sync scan (sentinel none)', () => {
+    expect(isListVerdictTrustworthy({ riskLevel: 'none', scanStatus: 'failed' })).toBe(false);
+  });
+
+  it('does not trust an errored deep analysis', () => {
+    expect(
+      isListVerdictTrustworthy({ riskLevel: 'none', scanStatus: 'complete', deepStatus: 'error' }),
+    ).toBe(false);
+  });
+
+  it('trusts a complete scan with deep analyzed or absent (skipped/pending)', () => {
+    expect(
+      isListVerdictTrustworthy({ riskLevel: 'medium', scanStatus: 'complete', deepStatus: 'analyzed' }),
+    ).toBe(true);
+    expect(isListVerdictTrustworthy({ riskLevel: 'none', scanStatus: 'complete' })).toBe(true);
+  });
+
+  it('treats a legacy row (riskLevel present, statuses absent) as complete', () => {
+    expect(isListVerdictTrustworthy({ riskLevel: 'none' })).toBe(true);
+  });
+
+  it('mirrors the profile predicate on the states both can represent', () => {
+    const failed = makeFailedRiskProfile();
+    expect(isListVerdictTrustworthy({ riskLevel: 'none', scanStatus: 'failed' })).toBe(
+      isVerdictTrustworthy(failed),
+    );
+    failed.scanStatus = 'complete';
+    failed.scanFailedReason = undefined;
+    expect(isListVerdictTrustworthy({ riskLevel: 'none', scanStatus: 'complete' })).toBe(
+      isVerdictTrustworthy(failed),
+    );
   });
 });

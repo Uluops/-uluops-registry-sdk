@@ -1,6 +1,6 @@
 {
   "name": "@uluops/registry-sdk",
-  "version": "0.43.0",
+  "version": "0.44.0",
   "description": "SDK for the UluOps Registry API - manage AI workflow definitions",
   "type": "module",
   "main": "dist/index.js",

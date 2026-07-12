@@ -361,6 +361,27 @@ const agents = await client.definitions.list({
 });
 ```
 
+**List items carry risk scalars** (since 0.44.0): each `DefinitionListItem`
+includes `riskLevel`, `scanStatus`, and `deepStatus` — the safety verdict
+denormalized to the list grain, so agents and tools can rank or warn during
+discovery without a per-definition `get`. The P6 sentinel rule applies here
+too: gate on `isListVerdictTrustworthy(item)` before treating
+`riskLevel: 'none'` as clean — an absent/null triple means *not yet scanned*
+(pending), and `'none'` beside `scanStatus: 'failed'` means *could not
+determine*, never clean.
+
+```typescript
+import { isListVerdictTrustworthy } from '@uluops/registry-sdk';
+
+for (const item of agents.definitions) {
+  if (!isListVerdictTrustworthy(item)) {
+    console.warn(`${item.name}: scan pending/incomplete — verdict unknown`);
+  } else if (item.riskLevel !== 'none') {
+    console.warn(`${item.name}: ${item.riskLevel} risk signals — inspect riskProfile via get()`);
+  }
+}
+```
+
 #### `get(type, name, version?, options?)`
 
 Get a definition by type, name, and optional version.
@@ -506,6 +527,11 @@ if (!isVerdictTrustworthy(def.riskProfile)) {
 Risk levels are `none`, `medium`, or `high` — there is deliberately no `low`
 (a signal always means something). Risk reflects *evidence of misuse*, not
 capability count or provenance.
+
+**At the list grain** (since 0.44.0), the same verdict travels as three flat
+scalars on `DefinitionListItem` — `riskLevel`, `scanStatus`, `deepStatus` —
+gated by `isListVerdictTrustworthy(item)` (the list-grain twin of
+`isVerdictTrustworthy`). The full `riskProfile` remains a detail-fetch field.
 
 ---
 

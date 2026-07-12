@@ -99,7 +99,7 @@ export type {
 
 // Safety verdict predicate (value export — the consumer-side mirror of the
 // registry-api trustworthiness check; gate rendering of a risk verdict on this).
-export { isVerdictTrustworthy } from './types/definitions.js';
+export { isVerdictTrustworthy, isListVerdictTrustworthy } from './types/definitions.js';
 
 export type {
   // Version types

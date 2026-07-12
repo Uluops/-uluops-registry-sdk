@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-07-12
+
+### Added
+
+- **List-grain risk scalars** — `DefinitionListItem` gains `riskLevel`, `scanStatus`, and
+  `deepStatus` (all optional/nullable), the safety verdict denormalized to list responses
+  by the registry API's risk-verdict list projection (2026-07-12). This release IS the
+  `.strip()` gate: without the schema naming these fields, zod silently dropped them and
+  every downstream consumer (CLI, MCP) stayed risk-blind during list/search discovery.
+- **`isListVerdictTrustworthy(item)`** — list-grain twin of `isVerdictTrustworthy`,
+  operating on the flat scalar triple. Same P6 discipline: absent/null triple = pending
+  (never clean); `riskLevel: 'none'` beside `scanStatus: 'failed'` is a sentinel, not a
+  verdict; legacy rows (level present, statuses absent) read as complete. Centralized here
+  so list consumers don't re-derive the sentinel rules.
+- README: list-shape risk scalars + Safety section note on the list grain.
+
 ## [0.43.0] - 2026-07-10
 
 ### Changed

@@ -177,6 +177,39 @@ describe('definitionListItemSchema', () => {
     (item as Record<string, unknown>).type = 'invalid';
     expect(definitionListItemSchema.safeParse(item).success).toBe(false);
   });
+
+  it('PRESERVES the risk scalar triple — the .strip() gate this release exists for', () => {
+    // Without these fields in the schema, zod's default .strip() silently
+    // drops what the API emits and every downstream consumer (CLI, MCP) stays
+    // risk-blind at the list grain. This test pins the gate open.
+    const item = createMockDefinitionListItem({
+      riskLevel: 'high',
+      scanStatus: 'complete',
+      deepStatus: 'analyzed',
+    });
+    const parsed = definitionListItemSchema.parse(item);
+    expect(parsed.riskLevel).toBe('high');
+    expect(parsed.scanStatus).toBe('complete');
+    expect(parsed.deepStatus).toBe('analyzed');
+  });
+
+  it('preserves the failed-scan sentinel pairing (P6: level none + status failed)', () => {
+    const parsed = definitionListItemSchema.parse(
+      createMockDefinitionListItem({ riskLevel: 'none', scanStatus: 'failed' }),
+    );
+    expect(parsed.riskLevel).toBe('none');
+    expect(parsed.scanStatus).toBe('failed');
+  });
+
+  it('accepts items without risk scalars (pre-projection API, legacy rows)', () => {
+    expect(definitionListItemSchema.safeParse(createMockDefinitionListItem()).success).toBe(true);
+  });
+
+  it('rejects out-of-domain risk scalar values', () => {
+    const item = createMockDefinitionListItem();
+    (item as Record<string, unknown>).riskLevel = 'catastrophic';
+    expect(definitionListItemSchema.safeParse(item).success).toBe(false);
+  });
 });
 
 describe('definitionListResponseSchema', () => {
