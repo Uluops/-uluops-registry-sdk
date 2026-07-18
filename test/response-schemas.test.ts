@@ -210,6 +210,28 @@ describe('definitionListItemSchema', () => {
     (item as Record<string, unknown>).riskLevel = 'catastrophic';
     expect(definitionListItemSchema.safeParse(item).success).toBe(false);
   });
+
+  it('PRESERVES analyzerStale — the .strip() gate for verdict currency', () => {
+    // Same reasoning as the risk-scalar gate above: without this field in the
+    // schema, the API's currency marker never reaches CLI/MCP.
+    for (const value of [true, false, null]) {
+      const parsed = definitionListItemSchema.parse(
+        createMockDefinitionListItem({ analyzerStale: value }),
+      );
+      expect(parsed.analyzerStale).toBe(value);
+    }
+  });
+
+  it('accepts items without analyzerStale (pre-currency API)', () => {
+    const parsed = definitionListItemSchema.parse(createMockDefinitionListItem());
+    expect(parsed.analyzerStale).toBeUndefined();
+  });
+
+  it('rejects non-boolean analyzerStale', () => {
+    const item = createMockDefinitionListItem();
+    (item as Record<string, unknown>).analyzerStale = 'stale';
+    expect(definitionListItemSchema.safeParse(item).success).toBe(false);
+  });
 });
 
 describe('definitionListResponseSchema', () => {

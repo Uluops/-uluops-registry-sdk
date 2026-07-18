@@ -268,4 +268,17 @@ describe('isListVerdictTrustworthy (list-grain twin)', () => {
       isVerdictTrustworthy(failed),
     );
   });
+
+  it('ignores analyzerStale — staleness is informational, never an un-trust signal', () => {
+    // Completion-trust and currency are separate dimensions by design (mirrors
+    // the registry API keeping isVerdictTrustworthy currency-free). A stale
+    // verdict is still a real verdict; a current one earns no extra trust.
+    const stale = { riskLevel: 'none' as const, scanStatus: 'complete' as const, analyzerStale: true };
+    const current = { riskLevel: 'none' as const, scanStatus: 'complete' as const, analyzerStale: false };
+    expect(isListVerdictTrustworthy(stale)).toBe(true);
+    expect(isListVerdictTrustworthy(current)).toBe(true);
+    expect(
+      isListVerdictTrustworthy({ riskLevel: 'none', scanStatus: 'failed', analyzerStale: false }),
+    ).toBe(false);
+  });
 });

@@ -282,6 +282,18 @@ export interface DefinitionListItem {
   scanStatus?: ScanStatus | null;
   /** Deep analysis outcome at the list grain: 'analyzed'/'error' only — deep pending/skipped is represented by null. */
   deepStatus?: DeepAnalysisOutcomeStatus | null;
+  /**
+   * Whether the risk verdict predates the registry's current analyzer
+   * (detector set). Server-computed at read time: `null` = never scanned,
+   * `true` = verdict is stale (scanned under a superseded analyzer; the
+   * registry demotes such rows in search ordering), `false` = current.
+   *
+   * INFORMATIONAL ONLY — deliberately NOT consulted by
+   * {@link isListVerdictTrustworthy}: completion-trust and currency are
+   * separate dimensions (a stale verdict is still a real verdict). Render it
+   * as a disclosure ("verdict may be outdated"), never as an un-trust signal.
+   */
+  analyzerStale?: boolean | null;
 }
 
 /**
@@ -293,6 +305,12 @@ export interface DefinitionListItem {
  * predicate, absent statuses beside a present riskLevel are legacy rows and
  * treated as complete. Mirrors the registry frontend's predicate of the same
  * name — centralized here so CLI/MCP list consumers don't re-derive it.
+ *
+ * Deliberately does NOT consult {@link DefinitionListItem.analyzerStale}:
+ * staleness is informational, not an un-trust signal. Note the registry's
+ * server-side SEARCH ordering demotes on a fourth dimension (analyzer
+ * currency) this predicate does not carry — do not use this predicate to
+ * re-order a server-ordered search page.
  */
 export function isListVerdictTrustworthy(item: {
   riskLevel?: RiskLevel | null;

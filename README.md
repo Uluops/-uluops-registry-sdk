@@ -382,6 +382,20 @@ for (const item of agents.definitions) {
 }
 ```
 
+**Verdict currency** (since 0.45.0): list items also carry
+`analyzerStale: boolean | null` — whether the verdict predates the registry's
+current analyzer (detector set), computed server-side at read time. `null` =
+never scanned, `true` = stale (the registry already demotes such rows in
+search ordering), `false` = current. **Informational only**: it is
+deliberately not part of `isListVerdictTrustworthy` — a stale verdict is
+still a real verdict. Surface it as a disclosure:
+
+```typescript
+if (item.analyzerStale) {
+  console.info(`${item.name}: risk verdict predates the current analyzer — may be outdated`);
+}
+```
+
 #### `get(type, name, version?, options?)`
 
 Get a definition by type, name, and optional version.

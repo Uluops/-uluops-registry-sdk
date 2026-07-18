@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-07-18
+
+### Added
+
+- **`analyzerStale` on `DefinitionListItem`** — verdict currency at the list grain
+  (`boolean | null`, additive-optional): whether the risk verdict predates the registry's
+  current analyzer (detector set), computed server-side at read time. `null` = never
+  scanned, `true` = stale (the registry demotes such rows in search ordering), `false` =
+  current. Named in `definitionListItemSchema` for the same reason as the 0.44.0 risk
+  scalars — the default `.strip()` (ADR-002) drops the field until the schema names it,
+  so this release IS the gate that lets CLI/MCP see verdict currency.
+  **Informational only:** `isListVerdictTrustworthy` deliberately does not consult it —
+  completion-trust and currency are separate dimensions (mirrors the registry API keeping
+  `isVerdictTrustworthy` currency-free). Render as a disclosure, never as un-trust.
+
 ## [0.44.0] - 2026-07-12
 
 ### Added

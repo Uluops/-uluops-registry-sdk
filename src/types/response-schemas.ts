@@ -232,6 +232,13 @@ export const definitionListItemSchema = z.object({
   riskLevel: z.enum(['none', 'medium', 'high']).nullable().optional(),
   scanStatus: z.enum(['complete', 'failed']).nullable().optional(),
   deepStatus: z.enum(['analyzed', 'error']).nullable().optional(),
+  // Verdict currency (registry-api 2026-07-18): server-computed against the
+  // registry's current analyzer version at read time. null = never scanned,
+  // true = verdict predates the current detector set (demoted server-side in
+  // search), false = current. Informational only — NOT part of
+  // isListVerdictTrustworthy. Named here for the same .strip() reason as the
+  // triple above: without this line the field is silently dropped.
+  analyzerStale: z.boolean().nullable().optional(),
 });
 
 /** GET /definitions */
