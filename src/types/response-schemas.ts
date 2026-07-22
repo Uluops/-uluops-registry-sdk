@@ -45,7 +45,7 @@ import {
   CHANGE_TYPES,
 } from './enums.js';
 import type { DefinitionType } from './enums.js';
-import { definitionSchema } from './schemas.js';
+import { definitionSchema, provenanceSchema } from './schemas.js';
 
 // ============================================================================
 // Shared Primitives
@@ -258,6 +258,11 @@ export const versionListItemSchema = z.object({
   promptHash: z.string().nullable().optional(),
   createdAt: DateTimeStringSchema,
   createdBy: z.string(),
+  // Per-version authorship (API 2026-07-22): resolved creator username and
+  // the version's provenance record. Must be named here or the default
+  // .strip() behavior silently drops them (ADR-002).
+  createdByName: z.string().nullable().optional(),
+  provenance: provenanceSchema.nullish(),
   changeType: changeTypeResponseSchema.nullable().optional(),
   changeSummary: z.string().nullable().optional(),
 });

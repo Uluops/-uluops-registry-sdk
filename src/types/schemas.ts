@@ -29,6 +29,25 @@ const visibilitySchema = z.enum(VISIBILITIES);
 // Definition schema
 // ============================================================================
 
+/**
+ * Authorship provenance — who contributed to a definition (or a specific
+ * version of one) and in what role. Shared by the definition schema and the
+ * versions-list response (per-version authorship).
+ */
+export const provenanceSchema = z.object({
+  authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']),
+  contributors: z.array(z.object({
+    id: z.string(),
+    role: z.enum(['author', 'optimizer', 'reviewer', 'editor', 'publisher']),
+    type: z.enum(['human', 'agent']),
+    name: z.string().optional(),
+    agentName: z.string().optional(),
+    contributedAt: z.string().optional(),
+  })),
+  dialecticRounds: z.number().int().nonnegative().optional(),
+  optimizationRunId: z.string().optional(),
+});
+
 export const definitionSchema = z.object({
   id: z.string().uuid(),
   type: definitionTypeSchema,
@@ -43,19 +62,7 @@ export const definitionSchema = z.object({
   subdomain: z.string().nullish(),
   agentType: agentTypeSchema.nullish(),
   author: z.string().nullish(),
-  provenance: z.object({
-    authorshipType: z.enum(['human', 'agent', 'collaborative', 'automated']),
-    contributors: z.array(z.object({
-      id: z.string(),
-      role: z.enum(['author', 'optimizer', 'reviewer', 'editor', 'publisher']),
-      type: z.enum(['human', 'agent']),
-      name: z.string().optional(),
-      agentName: z.string().optional(),
-      contributedAt: z.string().optional(),
-    })),
-    dialecticRounds: z.number().int().nonnegative().optional(),
-    optimizationRunId: z.string().optional(),
-  }).nullish(),
+  provenance: provenanceSchema.nullish(),
   tags: z.array(z.string()).nullish(),
   authorId: z.string(),
   orgId: z.string().nullish(),

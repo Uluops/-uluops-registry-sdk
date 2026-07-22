@@ -555,7 +555,10 @@ Manage definition version history.
 
 #### `list(type, name, options?)`
 
-List all versions of a definition.
+List all versions of a definition. Each item carries per-version author identity:
+`createdBy` (user ID), `createdByName` (resolved username, `null` for deleted users),
+and `provenance` (the version's contributor record) — so the version history tells
+the full authorship story even when different org members published different versions.
 
 ```typescript
 const { versions } = await client.versions.list('agent', 'code-validator', {
@@ -563,7 +566,7 @@ const { versions } = await client.versions.list('agent', 'code-validator', {
   offset: 0,
 });
 for (const v of versions) {
-  console.log(`${v.version}: ${v.status}`);
+  console.log(`${v.version} by ${v.createdByName ?? v.createdBy} (${v.changeType ?? 'initial'})`);
 }
 ```
 

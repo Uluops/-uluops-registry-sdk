@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-07-22
+
+### Added
+
+- **Per-version author identity on `versions.list`** — `VersionListItem` gains
+  `createdByName` (`string | null`, creator username resolved server-side; `null` for
+  deleted/unknown users) and `provenance` (the version's contributor record — the version
+  snapshot's, falling back to the definition row's for legacy rows). Requires registry API
+  `2026-07-22`+; both fields are additive-optional so older APIs parse unchanged. As with
+  0.44.0/0.45.0, naming the fields in `versionListItemSchema` IS the gate — the default
+  `.strip()` (ADR-002) drops them otherwise. Motivation: definitions are one row per
+  version, so the definition-level `author` reads as *last publisher*; the version list is
+  where the full authorship mapping lives.
+- **`provenanceSchema` exported** — the authorship-provenance shape (previously inlined in
+  `definitionSchema`) is now a shared named export, reused by both the definition schema
+  and the versions-list schema. No shape change.
+
 ## [0.45.0] - 2026-07-18
 
 ### Added
