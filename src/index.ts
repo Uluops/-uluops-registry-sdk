@@ -147,6 +147,7 @@ export type {
 export type {
   // Model types
   Model,
+  ModelCost,
   ModelAlias,
   AliasResolution,
   Provider,

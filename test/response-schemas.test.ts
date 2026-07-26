@@ -284,6 +284,29 @@ describe('modelSchema', () => {
     delete (model as Record<string, unknown>).limits;
     expect(modelSchema.safeParse(model).success).toBe(true);
   });
+
+  // STRIP GUARD (costusd spec v0.6.0, run #63): this SDK relies on Zod's
+  // default strip (ADR-002) — an undeclared response field silently vanishes
+  // from result.data while TypeScript stays green. These tests pin that the
+  // cost block is DECLARED and therefore SURVIVES the parse; if a refactor
+  // drops `cost` from modelSchema, the pipeline breaks silently everywhere
+  // downstream (ResolvedModel.cost always undefined) and THESE are the guard.
+  it('cost block SURVIVES parse — not stripped (load-bearing for costUsd)', () => {
+    const cost = { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75, sourceUpdatedAt: '2026-03-13' };
+    const result = modelSchema.safeParse({ ...createMockModel(), cost });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.cost).toEqual(cost);
+  });
+
+  it('cost: null (unpriced) survives as null, not stripped to undefined', () => {
+    const result = modelSchema.safeParse({ ...createMockModel(), cost: null });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.cost).toBeNull();
+  });
+
+  it('accepts a model with no cost field (pre-cost registry compatibility)', () => {
+    expect(modelSchema.safeParse(createMockModel()).success).toBe(true);
+  });
 });
 
 describe('dependencyGraphResponseSchema (R12)', () => {

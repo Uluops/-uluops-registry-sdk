@@ -285,6 +285,22 @@ export const modelCapabilitiesSchema = z.object({
   structuredOutputWithTools: z.boolean().optional(),
 });
 
+/**
+ * Model pricing block (USD per MILLION tokens). LOAD-BEARING for costUsd:
+ * this SDK strips undeclared response fields (ADR-002, parseResponse →
+ * safeParse → result.data), so WITHOUT this schema entry the registry can
+ * emit cost and every consumer still reads undefined — TypeScript never
+ * notices (costusd-pricing-population spec v0.6.0, run #63). Nullable:
+ * null = unpriced; the registry never emits {input:0,output:0}.
+ */
+export const modelCostSchema = z.object({
+  input: z.number(),
+  output: z.number(),
+  cacheRead: z.number().optional(),
+  cacheWrite: z.number().optional(),
+  sourceUpdatedAt: z.string().optional(),
+});
+
 /** Model entity — many fields optional for upstream-synced models */
 export const modelSchema = z.object({
   provider: z.string(),
@@ -294,6 +310,7 @@ export const modelSchema = z.object({
   providerModelId: z.string().optional(),
   capabilities: modelCapabilitiesSchema,
   limits: z.object({ context: z.number(), output: z.number() }).optional(),
+  cost: modelCostSchema.nullable().optional(),
   tier: modelTierResponseSchema,
   status: modelStatusResponseSchema,
   regions: z.array(z.string()).nullable().optional(),

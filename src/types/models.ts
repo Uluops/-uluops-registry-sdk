@@ -34,6 +34,24 @@ export interface ModelLimits {
 }
 
 /**
+ * Model pricing block — USD per MILLION tokens (models.dev convention;
+ * live-pinned 2026-07-25: sonnet input:3/output:15).
+ *
+ * `null` = unpriced. The registry emits the block ONLY when both input and
+ * output rates exist; it never fabricates `{input:0,output:0}` (honest-absent,
+ * costusd-pricing-population spec v0.6.0). `sourceUpdatedAt` is the models.dev
+ * per-model last_updated date — model-ENTRY provenance, not a cost-specific
+ * capture date; treat rates without it as provenance-unknown, not current.
+ */
+export interface ModelCost {
+  input: number;
+  output: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+  sourceUpdatedAt?: string;
+}
+
+/**
  * AI model entity
  */
 export interface Model {
@@ -44,6 +62,7 @@ export interface Model {
   providerModelId?: string;
   capabilities: ModelCapabilities;
   limits?: ModelLimits;
+  cost?: ModelCost | null;
   tier: ModelTier;
   status: ModelStatus;
   regions?: string[] | null;
