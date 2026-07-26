@@ -216,6 +216,7 @@ import type {
   DefinitionRef,        // lightweight { type, name, version } reference, embedded in analytics/execution results
   ValidationFieldError,
   Model,
+  ModelCost,            // pricing block, USD per million tokens; null = unpriced
   PublicUser,
 } from '@uluops/registry-sdk';
 
@@ -871,6 +872,21 @@ Get details for a specific model.
 const model = await client.models.get('anthropic', 'claude-3-opus');
 console.log(model.capabilities);
 console.log(model.limits); // { context: 200000, output: 4096 }
+console.log(model.cost);   // { input: 3, output: 15, cacheRead: 0.3, ... } — USD per MILLION tokens
+```
+
+**Pricing (`model.cost`)** — present on models from `list()`, `get()`, and
+`resolveAlias()` (registry API `2026-07-26`+). Rates are USD per **million** tokens
+(models.dev convention). `null` or absent means *unpriced* — the registry only emits
+the block when both input and output rates exist; it never fabricates
+`{input: 0, output: 0}`, so a cost of `0` never means "unknown". `sourceUpdatedAt` is
+the models.dev per-model `last_updated` date (model-entry provenance, not a
+cost-specific capture date) — treat rates without it as provenance-unknown.
+
+```typescript
+if (model.cost) {
+  const usd = (inputTokens * model.cost.input + outputTokens * model.cost.output) / 1e6;
+}
 ```
 
 #### `listProviders()`

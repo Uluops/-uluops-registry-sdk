@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.1] - 2026-07-26
+
+### Added
+
+- **`ModelCost` + `cost` block on `Model`** — model pricing in USD per **million**
+  tokens (models.dev convention): `{ input, output, cacheRead?, cacheWrite?,
+  sourceUpdatedAt? }`, exposed as `cost?: ModelCost | null` on `Model`. `null` means
+  unpriced — the registry emits the block only when both input and output rates exist
+  and never fabricates `{input: 0, output: 0}` (honest-absent polarity). As with
+  0.44.0–0.46.0, naming the block in `modelCostSchema`/`modelSchema` IS the gate — the
+  default `.strip()` (ADR-002) drops the field otherwise, leaving consumers reading
+  `undefined` while TypeScript stays green. One schema edit covers `models.list`,
+  `models.get`, and `models.resolveAlias` via schema reuse. Requires registry API
+  `2026-07-26`+ for the field to be populated; additive-optional, so older APIs parse
+  unchanged.
+- **Provenance caveat:** `sourceUpdatedAt` is the models.dev per-model `last_updated`
+  date — model-*entry* provenance, not a cost-specific capture date. Treat rates
+  without it as provenance-unknown rather than current.
+
+> 0.47.0 was never published to npm (missed the `ModelCost` re-export from the package
+> index); 0.47.1 is the first released version of this surface.
+
 ## [0.46.0] - 2026-07-22
 
 ### Added
