@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-08-05
+
+### Removed
+
+- **`UpdateDefinitionBody.minSubscription`.** The registry no longer accepts this field on an
+  update (NEX-01). `minSubscription` is inert metadata — frozen at `free` for every lineage by
+  migration `043` at the 2026-06-10 pricing pivot, and as of 2026-08-05 nothing writes it,
+  filters on it, or gates on it anywhere.
+
+  Removed rather than left in place because the API **silently strips** it: a caller could set
+  the field, receive a `200`, and observe nothing change. A type that admits a field the server
+  ignores is the same defect one layer up — and the API's strip-mode tolerance exists for
+  deployed clients that cannot be updated, not for a type definition that can.
+
+  `minSubscription` remains on `Definition` and `DefinitionListItem`. Those are read shapes, the
+  field is still stored and still returned, and the response contract is unchanged.
+
+### Changed
+
+- `GET /definitions` no longer accepts `?minSubscription=` and returns **400** for it. The SDK
+  never exposed it as a list filter, so no SDK surface changes — noted because a caller building
+  a query string by hand will now get a rejection instead of silence.
+
 ## [0.47.1] - 2026-07-26
 
 ### Added

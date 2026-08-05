@@ -382,7 +382,16 @@ export interface UpdateDefinitionBody {
   changeType?: ChangeType;
   provenance?: Provenance;
   tier?: Tier;
-  minSubscription?: SubscriptionTier;
+  /**
+   * `minSubscription` was removed here on 2026-08-05 (NEX-01). The registry no
+   * longer accepts it on an update — the field is inert metadata, frozen at
+   * `free` by migration 043 at the 2026-06-10 pricing pivot. It remains on
+   * `Definition` and `DefinitionListItem`, which are read shapes and unchanged.
+   *
+   * It was removed rather than left in place because the API silently strips it:
+   * a caller could set it, get a 200, and see nothing change. A type that admits
+   * a field the server ignores is the same defect one layer up.
+   */
 }
 
 /**
