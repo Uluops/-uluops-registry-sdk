@@ -536,7 +536,7 @@ if (!isVerdictTrustworthy(def.riskProfile)) {
 | `scanStatus` | `'complete' \| 'failed'` (optional) | Sync scan outcome. Absent on legacy rows → treat as `'complete'`. When `'failed'`, the verdict could not be determined. |
 | `scanFailedReason` | `'parse_error' \| 'timeout' \| 'internal'` (optional) | Present when `scanStatus === 'failed'`. |
 | `sync` | `SyncScanResult` | Synchronous publish-time scan: `capabilities`, `signals[]`, `riskLevel` |
-| `deep` | `DeepAnalysisResult \| null` | Background deep analysis (`findings[]`), `null` until it runs. `deep.status: 'error'` means the deep verdict could not be determined (empty `findings` is a sentinel, not clean). |
+| `deep` | `DeepAnalysisResult \| null` | Background deep analysis (`findings[]`), `null` until it runs. `deep.status: 'error'` means the deep verdict could not be determined (empty `findings` is a sentinel, not clean); `deep.errorReason` names why, from a server-owned vocabulary that grows — treat it as display text. `deep.droppedFindings` (since 0.49.0), when present, counts agent findings the persisted vocabulary could not hold. |
 | `lastUpdated` | `string` | ISO timestamp of the most recent scan |
 
 Risk levels are `none`, `medium`, or `high` — there is deliberately no `low`

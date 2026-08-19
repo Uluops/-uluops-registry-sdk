@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-08-18
+
+### Added
+
+- **`DeepAnalysisResult.droppedFindings`** — per-reason counts (`total`, `invalidCategory`,
+  `invalidSeverity`, `malformed`) of agent findings the registry's persisted vocabulary could
+  not hold. Present only when at least one finding was dropped. Until this release the SDK's
+  response schema **silently stripped** the key (Zod default strip-mode), so consumers on
+  ≤0.48.0 read affected profiles as if nothing had been dropped — the second registry-api
+  ADR-013 activation prerequisite.
+
+### Changed
+
+- **`deep.errorReason` no longer validates against a closed enum** — the schema now accepts
+  any string, and `DeepAnalysisErrorReason` gains `'unrepresentable_findings'` plus a trailing
+  `(string & {})` arm. The old closed enum made every SDK read of an affected definition
+  **throw** the day the server emitted a reason the pin didn't know (registry-api ADR-013;
+  `unrepresentable_findings` shipped server-side 2026-08-18 at registry-api `9e34ba9`). The
+  reason vocabulary is owned by the server and grows; this SDK now validates shape, not
+  membership. No signature change for consumers that display the reason; consumers that
+  exhaustively switch on `DeepAnalysisErrorReason` (none known) must add a default arm —
+  which is the correct handling of a server-owned vocabulary anyway. Branch safety decisions
+  on `deep.status`, never on reason identity.
+
 ## [0.48.0] - 2026-08-05
 
 ### Removed

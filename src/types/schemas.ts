@@ -122,8 +122,22 @@ export const definitionSchema = z.object({
       // Deep-analysis outcome — 'error' means the verdict could not be determined
       // (empty findings / 'none' riskLevel are sentinels, not a clean judgment).
       status: z.enum(['analyzed', 'error']).optional(),
-      errorReason: z
-        .enum(['no_output', 'no_json', 'parse_error', 'invalid_schema', 'inconsistent_verdict', 'timeout'])
+      // Server-owned vocabulary that grows (unrepresentable_findings,
+      // 2026-08-18). A closed enum here was the ADR-013 activation blocker:
+      // parseResponse threw on every read of an affected definition the day
+      // the server emitted a reason this pin didn't know. Validate shape,
+      // not membership — the known values live on DeepAnalysisErrorReason.
+      errorReason: z.string().optional(),
+      // Must mirror DeepAnalysisResult.droppedFindings — Zod default-strips
+      // unknown keys, so omitting a field here silently deletes it from
+      // every SDK read (the second ADR-013 activation prerequisite).
+      droppedFindings: z
+        .object({
+          total: z.number().int().nonnegative(),
+          invalidCategory: z.number().int().nonnegative(),
+          invalidSeverity: z.number().int().nonnegative(),
+          malformed: z.number().int().nonnegative(),
+        })
         .optional(),
     }).nullable(),
     aggregateRiskLevel: z.enum(['none', 'medium', 'high']),

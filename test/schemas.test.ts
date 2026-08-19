@@ -153,6 +153,69 @@ describe('definitionSchema', () => {
       expect(result.data.riskProfile?.deep?.status).toBe('error');
     }
   });
+
+  // Drop-aware fields (0.49.0, registry-api ADR-013 activation prerequisites).
+  // Assert the surviving VALUES — Zod strip-mode deletes unknown keys and still
+  // parses, so success-only assertions pass vacuously on the very defect this
+  // release fixes.
+  it('retains deep.droppedFindings with its values intact', () => {
+    const profile = makeFailedRiskProfile();
+    profile.scanStatus = 'complete';
+    profile.deep = {
+      version: '1.0.0',
+      analyzedAt: '2026-01-01T00:00:00Z',
+      findings: [],
+      riskLevel: 'none',
+      status: 'error',
+      errorReason: 'unrepresentable_findings',
+      droppedFindings: { total: 2, invalidCategory: 2, invalidSeverity: 1, malformed: 0 },
+    };
+    const result = definitionSchema.safeParse(makeDefinition({ riskProfile: profile }));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.riskProfile?.deep?.errorReason).toBe('unrepresentable_findings');
+      expect(result.data.riskProfile?.deep?.droppedFindings).toEqual({
+        total: 2,
+        invalidCategory: 2,
+        invalidSeverity: 1,
+        malformed: 0,
+      });
+    }
+  });
+
+  it('tolerates an errorReason published after this SDK version', () => {
+    const profile = makeFailedRiskProfile();
+    profile.scanStatus = 'complete';
+    profile.deep = {
+      version: '1.0.0',
+      analyzedAt: '2026-01-01T00:00:00Z',
+      findings: [],
+      riskLevel: 'none',
+      status: 'error',
+      errorReason: 'some_future_reason',
+    };
+    const result = definitionSchema.safeParse(makeDefinition({ riskProfile: profile }));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.riskProfile?.deep?.errorReason).toBe('some_future_reason');
+    }
+  });
+
+  it('still rejects a malformed droppedFindings shape', () => {
+    const profile = makeFailedRiskProfile();
+    profile.scanStatus = 'complete';
+    profile.deep = {
+      version: '1.0.0',
+      analyzedAt: '2026-01-01T00:00:00Z',
+      findings: [],
+      riskLevel: 'none',
+      status: 'error',
+      errorReason: 'unrepresentable_findings',
+      droppedFindings: { total: 'two', invalidCategory: 0, invalidSeverity: 0, malformed: 0 } as never,
+    };
+    const result = definitionSchema.safeParse(makeDefinition({ riskProfile: profile }));
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('isVerdictTrustworthy', () => {

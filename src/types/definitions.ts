@@ -85,13 +85,28 @@ export interface DeepFinding {
  */
 export type DeepAnalysisOutcomeStatus = 'analyzed' | 'error';
 
+/**
+ * Why a deep analysis run errored. The vocabulary is owned by the server and
+ * grows as the worker learns to distinguish new failure shapes — the values
+ * listed here are the ones known to this SDK version, and the trailing
+ * `(string & {})` arm admits reasons published after it. Treat unknown values
+ * as display text; never branch on reason identity for safety decisions
+ * (branch on {@link DeepAnalysisOutcomeStatus} instead).
+ *
+ * Known values: `no_output`, `no_json`, `parse_error`, `invalid_schema`,
+ * `inconsistent_verdict`, `unrepresentable_findings` (the agent's verdict
+ * rested on findings the persisted vocabulary could not hold — registry-api
+ * ADR-013), `timeout`.
+ */
 export type DeepAnalysisErrorReason =
   | 'no_output'
   | 'no_json'
   | 'parse_error'
   | 'invalid_schema'
   | 'inconsistent_verdict'
-  | 'timeout';
+  | 'unrepresentable_findings'
+  | 'timeout'
+  | (string & {});
 
 export interface DeepAnalysisResult {
   version: string;
@@ -105,6 +120,22 @@ export interface DeepAnalysisResult {
    */
   status?: DeepAnalysisOutcomeStatus;
   errorReason?: DeepAnalysisErrorReason;
+  /**
+   * Findings the agent emitted that the persisted vocabulary could not hold,
+   * counted by drop reason. Present only when at least one finding was
+   * dropped; absent on legacy rows and on fully-representable analyses.
+   * `invalidCategory` counts findings whose category the six-value enum can't
+   * hold; `invalidSeverity` the same for the two-tier severity vocabulary;
+   * `malformed` is shape junk. The axis counters are independent — a finding
+   * invalid on both axes increments both — so their sum may exceed `total`,
+   * which counts each dropped finding exactly once.
+   */
+  droppedFindings?: {
+    total: number;
+    invalidCategory: number;
+    invalidSeverity: number;
+    malformed: number;
+  };
 }
 
 /**
