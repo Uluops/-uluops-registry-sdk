@@ -146,6 +146,12 @@ export const retranslateResultSchema = z.object({
   translatorVersion: z.string(),
   previousTranslatorVersion: z.string().nullable().optional(),
   changes: z.unknown().optional(),
+  /**
+   * RG16 (API ≥0.54.0): whether the retranslation produced different
+   * artifacts. Work is always performed; false = a correct no-op. .optional()
+   * tolerates older APIs that omit the key.
+   */
+  changed: z.boolean().optional(),
 });
 
 /** GET /definitions/{type}/{name}/{version}/forkable */
@@ -265,6 +271,12 @@ export const versionListItemSchema = z.object({
   provenance: provenanceSchema.nullish(),
   changeType: changeTypeResponseSchema.nullable().optional(),
   changeSummary: z.string().nullable().optional(),
+  /**
+   * RG8 (API ≥0.54.0): per-version lifecycle status (draft/published/
+   * deprecated) — the tool always promised it; the rows finally carry it.
+   * Must be named here or .strip() drops it (ADR-002, again).
+   */
+  status: z.string().optional(),
 });
 
 /** GET /definitions/{type}/{name}/versions */
@@ -396,6 +408,15 @@ export const forkResponseSchema = z.object({
 });
 
 /** GET /definitions/{type}/{name}/{version}/lineage (forks) */
+/** One hop of the RG18 ancestry chain — durable snapshot + live source when it exists. */
+export const forkLineageHopSchema = z.object({
+  sourceType: z.string().nullable(),
+  sourceName: z.string().nullable(),
+  sourceVersion: z.string().nullable(),
+  source: forkSummarySchema.nullable(),
+  sourceAvailable: z.boolean(),
+});
+
 export const forkLineageSchema = z.object({
   isFork: z.boolean(),
   fork: forkSchema.nullable(),
@@ -404,6 +425,11 @@ export const forkLineageSchema = z.object({
   // from fork.source*). Always a boolean from the API (never null); .optional() so the
   // SDK tolerates APIs older than 2026-06-16 that omit the key.
   sourceAvailable: z.boolean().optional(),
+  // RG18 (API ≥0.54.0): full ancestry in one call — immediate parent first,
+  // root last. .optional() tolerates older APIs.
+  chain: z.array(forkLineageHopSchema).optional(),
+  depth: z.number().int().nonnegative().optional(),
+  root: forkSummarySchema.nullable().optional(),
 });
 
 /** GET /definitions/{type}/{name}/{version}/forks */

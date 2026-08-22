@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.50.0] - 2026-08-22
+
+MCP tool-sweep batch 2 (tracker project `mcp-tool-surface-sweep`): the API's new
+response fields must be NAMED here or `.strip()` silently drops them in transit —
+the exact silent-strip class this changelog has recorded before (ADR-002). All
+three additions are `.optional()`, tolerating APIs older than 0.54.0.
+
+### Added
+
+- **`retranslateResultSchema.changed`** (RG16, API ≥0.54.0): distinguishes a
+  correct no-op retranslation (work performed, identical artifacts) from work
+  that silently didn't happen.
+- **`versionListItemSchema.status`** (RG8): per-version lifecycle status —
+  `list_versions` promised it since the beginning; the SDK no longer strips it.
+- **`forkLineageSchema.chain` / `depth` / `root`** (RG18): the full fork
+  ancestry chain in one call (immediate parent first, root last; per-hop durable
+  snapshots + live source summaries), via the new `forkLineageHopSchema`.
+
+### Changed
+
+- **`@uluops/sdk-core` 0.15.0 → 0.17.0** — closes the RE-PROBE-02 R16/N1
+  residual this repo's changelog had queued for "next release": `ForbiddenError`
+  now retains the API's structured `code` and `details`, so role/tier denials
+  (`required_role`, `TIER_REQUIRED` with `upgradeUrl`) are branchable instead of
+  message-matched.
+
 ## [0.49.0] - 2026-08-18
 
 ### Added
