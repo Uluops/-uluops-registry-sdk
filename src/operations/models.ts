@@ -88,8 +88,21 @@ export async function get(
  * @param http - Registry HTTP client
  * @returns Provider list with total count
  */
-export async function listProviders(http: RegistryHttpClient): Promise<ProvidersListResponse> {
-  return parseResponse(providersListResponseSchema, await http.get<ProvidersListResponse>('/models/providers', undefined), 'models.listProviders');
+export async function listProviders(
+  http: RegistryHttpClient,
+  options?: { limit?: number; offset?: number },
+): Promise<ProvidersListResponse> {
+  // RG9: the catalog holds ~197 providers — an unpaginated default exceeded a
+  // single MCP response. limit default 50 (max 200) server-side; total is the
+  // whole catalog so callers can page.
+  const params: Record<string, string> = {};
+  if (options?.limit !== undefined) params['limit'] = String(options.limit);
+  if (options?.offset !== undefined) params['offset'] = String(options.offset);
+  return parseResponse(
+    providersListResponseSchema,
+    await http.get<ProvidersListResponse>('/models/providers', Object.keys(params).length ? params : undefined),
+    'models.listProviders',
+  );
 }
 
 /**

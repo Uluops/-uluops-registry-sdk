@@ -195,7 +195,11 @@ export const providerSchema = z.object({
 /** GET /models/providers */
 export const providersListResponseSchema = z.object({
   providers: z.array(providerSchema),
+  /** RG9 (API ≥0.55.0): total is the WHOLE catalog, not the page. */
   total: z.number().int().nonnegative(),
+  // RG9: named or .strip() drops them (ADR-002). Optional — older APIs omit.
+  limit: z.number().int().positive().optional(),
+  offset: z.number().int().nonnegative().optional(),
 });
 
 // ============================================================================

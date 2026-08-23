@@ -280,7 +280,7 @@ export class RegistryClient {
     /** Get a specific model by provider and model ID. */
     get: (provider: string, modelId: string) => Promise<Model>;
     /** List all model providers. */
-    listProviders: () => Promise<ProvidersListResponse>;
+    listProviders: (options?: { limit?: number; offset?: number }) => Promise<ProvidersListResponse>;
     /** List all model aliases. */
     listAliases: () => Promise<AliasesListResponse>;
     /** Resolve a model alias (e.g., 'sonnet') to its target provider and model. */
@@ -547,7 +547,7 @@ export class RegistryClient {
     return {
       list: (query) => modelsOps.list(this.http, query),
       get: (provider, modelId) => modelsOps.get(this.http, provider, modelId),
-      listProviders: () => modelsOps.listProviders(this.http),
+      listProviders: (options?: { limit?: number; offset?: number }) => modelsOps.listProviders(this.http, options),
       listAliases: () => modelsOps.listAliases(this.http),
       resolveAlias: (alias) => modelsOps.resolveAlias(this.http, alias),
     };

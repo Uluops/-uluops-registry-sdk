@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-08-23
+
+### Changed
+
+- **`models.listProviders(options?)` accepts `{limit, offset}`** (tool-sweep RG9,
+  API ≥0.55.0): the provider catalog reached ~197 rows / 55KB and an unpaginated
+  default exceeded a single MCP response. Server default page is 50 (max 200);
+  the response's `total` is the WHOLE catalog so callers can page, and the
+  response schema names the echoed `limit`/`offset` (ADR-002 — unnamed fields
+  are strip-deleted). **Observable change for existing no-arg callers: the
+  default call now returns the first 50 providers, not all of them.**
+
 ## [0.50.0] - 2026-08-22
 
 MCP tool-sweep batch 2 (tracker project `mcp-tool-surface-sweep`): the API's new
