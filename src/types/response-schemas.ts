@@ -408,7 +408,13 @@ export const forkResponseSchema = z.object({
 });
 
 /** GET /definitions/{type}/{name}/{version}/lineage (forks) */
-/** One hop of the RG18 ancestry chain — durable snapshot + live source when it exists. */
+/**
+ * One hop of the RG18 ancestry chain (API ≥0.54.0).
+ * - sourceType/sourceName/sourceVersion: durable fork-record snapshot —
+ *   survives source deletion; null only on pre-snapshot legacy rows.
+ * - source: live summary of that ancestor, null when deleted.
+ * - sourceAvailable: convenience flag — source !== null.
+ */
 export const forkLineageHopSchema = z.object({
   sourceType: z.string().nullable(),
   sourceName: z.string().nullable(),

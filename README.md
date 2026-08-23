@@ -6,7 +6,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@uluops/registry-sdk.svg)](https://www.npmjs.com/package/@uluops/registry-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.3+-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 
 TypeScript SDK for the UluOps Registry API. Manage AI workflow definitions including agents, commands, workflows, and pipelines.
@@ -110,7 +110,7 @@ pnpm add @uluops/registry-sdk
 ```
 
 **Requirements:**
-- Node.js 18.0.0 or higher (server-side)
+- Node.js 20.3.0 or higher (server-side — matches `engines`; required by `@uluops/sdk-core`)
 - Any modern browser with `fetch` support (client-side)
 - TypeScript 5.0+ (for TypeScript users)
 
@@ -560,6 +560,8 @@ List all versions of a definition. Each item carries per-version author identity
 `createdBy` (user ID), `createdByName` (resolved username, `null` for deleted users),
 and `provenance` (the version's contributor record) — so the version history tells
 the full authorship story even when different org members published different versions.
+Items also carry `status` (`draft`/`published`/`deprecated`, registry API ≥0.54.0) —
+so you can finally tell which version is live without a per-version lookup.
 
 ```typescript
 const { versions } = await client.versions.list('agent', 'code-validator', {
@@ -567,7 +569,7 @@ const { versions } = await client.versions.list('agent', 'code-validator', {
   offset: 0,
 });
 for (const v of versions) {
-  console.log(`${v.version} by ${v.createdByName ?? v.createdBy} (${v.changeType ?? 'initial'})`);
+  console.log(`${v.version} [${v.status ?? 'unknown'}] by ${v.createdByName ?? v.createdBy} (${v.changeType ?? 'initial'})`);
 }
 ```
 
@@ -705,7 +707,9 @@ if (check.canFork) {
 
 #### `getAncestry(type, name, version)`
 
-Get the fork lineage for a definition. Returns `{ isFork, fork, source, sourceAvailable }` — if the definition is a fork, `fork` is the fork record and `source` is a slim summary of the **live** source definition.
+Get the fork lineage for a definition. Returns `{ isFork, fork, source, sourceAvailable, chain, depth, root }` — if the definition is a fork, `fork` is the fork record and `source` is a slim summary of the **live** source definition.
+
+On registry API ≥0.54.0 the response also carries the **full ancestry in one call**: `chain` (one entry per ancestor, immediate parent first, root last — each with the durable fork-record snapshot plus the live source summary when that ancestor still exists), `depth` (chain length), and `root` (the fork tree's origin, `null` if deleted). No more one-round-trip-per-level walking.
 
 `source` becomes `null` (and `sourceAvailable` becomes `false`) once the source is deleted. The origin is still readable from the durable snapshot on the fork record — `fork.sourceType` / `fork.sourceName` / `fork.sourceVersion` — captured at fork time and surviving source deletion (registry API ≥ V1 `2026-06-16`).
 
@@ -719,6 +723,12 @@ if (lineage.isFork) {
     console.log('Forked from (origin):', `${lineage.fork?.sourceName}@${lineage.fork?.sourceVersion}`);
   }
   console.log('Forked at:', lineage.fork?.forkedAt);
+
+  // Full ancestry in one call (API >=0.54.0):
+  for (const hop of lineage.chain ?? []) {
+    console.log(`  ancestor: ${hop.sourceName}@${hop.sourceVersion}${hop.sourceAvailable ? '' : ' (deleted)'}`);
+  }
+  console.log('Tree root:', lineage.root?.name ?? '(deleted)', 'depth:', lineage.depth);
 }
 ```
 
@@ -823,12 +833,17 @@ console.log(`Translator: ${version.translatorVersion}`);
 
 #### `retranslate(type, name, version, options?)`
 
-Re-translate a definition with the latest translator.
+Re-translate a definition with the latest translator. The result's `changed`
+flag (registry API ≥0.54.0) distinguishes a correct no-op — work performed,
+artifacts identical — from a retranslation that actually updated `runtimeMd`.
 
 ```typescript
-const def = await client.translation.retranslate('agent', 'my-agent', '1.0.0', {
+const result = await client.translation.retranslate('agent', 'my-agent', '1.0.0', {
   createNewVersion: true,
 });
+if (!result.changed) {
+  console.log('Already current — translator ran and produced identical artifacts.');
+}
 ```
 
 #### `upgradeDefinition(type, name, body)`
@@ -1248,8 +1263,16 @@ try {
     const retryClient = new RegistryClient({ sessionToken: newToken });
     await retryClient.definitions.create('agent', 'my-agent', { yaml });
   } else if (error instanceof ForbiddenError) {
-    // Valid auth but wrong role/tier — can't retry, need elevated permissions
-    console.error('Requires publisher role or pro subscription');
+    // Valid auth but wrong role/tier. Since sdk-core 0.17.0 the API's
+    // structured denial survives into error.code / error.details — branch on
+    // it instead of message-matching:
+    if (error.code === 'TIER_REQUIRED') {
+      const details = error.details as { required?: string; upgradeUrl?: string } | undefined;
+      console.error(`Requires ${details?.required ?? 'a higher'} tier`, details?.upgradeUrl ?? '');
+    } else {
+      const details = error.details as { required_role?: string } | undefined;
+      console.error(`Requires role: ${details?.required_role ?? 'elevated permissions'}`);
+    }
   }
 }
 ```

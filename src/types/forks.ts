@@ -86,6 +86,34 @@ export interface ForkLineage {
   fork: Fork | null;
   source: ForkSummary | null;
   sourceAvailable?: boolean;
+  /**
+   * Full ancestry chain, immediate parent first, root last (API ≥0.54.0,
+   * RG18). Each hop carries the durable fork-record snapshot (survives source
+   * deletion) plus the live source summary when that ancestor still exists.
+   * Absent on older APIs.
+   */
+  chain?: ForkLineageHop[];
+  /** Number of ancestors in `chain` (API ≥0.54.0). */
+  depth?: number;
+  /** The root of the fork tree (last chain entry's live source), null when deleted. */
+  root?: ForkSummary | null;
+}
+
+/**
+ * One hop of the fork ancestry chain (API ≥0.54.0, RG18).
+ *
+ * @remarks
+ * - `sourceType`/`sourceName`/`sourceVersion`: durable snapshot from the fork
+ *   record — survives source deletion; null only on pre-snapshot legacy rows.
+ * - `source`: live summary of that ancestor, null when it was deleted.
+ * - `sourceAvailable`: convenience flag — `source !== null`.
+ */
+export interface ForkLineageHop {
+  sourceType: string | null;
+  sourceName: string | null;
+  sourceVersion: string | null;
+  source: ForkSummary | null;
+  sourceAvailable: boolean;
 }
 
 /**

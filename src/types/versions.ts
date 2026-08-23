@@ -35,6 +35,15 @@ export interface VersionListItem {
   promptHash?: string | null;
   createdAt: string;
   createdBy: string;
+  /** Resolved creator username (API 2026-07-22); null when deleted/unknown. */
+  createdByName?: string | null;
+  /** Per-version authorship record (API 2026-07-22). */
+  provenance?: Provenance | null;
+  /**
+   * Per-version lifecycle status: draft/published/deprecated (API ≥0.54.0,
+   * RG8). Absent on older APIs.
+   */
+  status?: string;
   changeType?: ChangeType | null;
   changeSummary?: string | null;
 }

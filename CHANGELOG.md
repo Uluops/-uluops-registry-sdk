@@ -25,6 +25,23 @@ three additions are `.optional()`, tolerating APIs older than 0.54.0.
   ancestry chain in one call (immediate parent first, root last; per-hop durable
   snapshots + live source summaries), via the new `forkLineageHopSchema`.
 
+### Fixed
+
+- **`ForkLineage` and `VersionListItem` interfaces caught up with their schemas**
+  (consumer-validate run #41, dx-validator auto-fail): the hand-maintained
+  interfaces had drifted from the Zod schemas that validate the wire —
+  `VersionListItem` was missing `createdByName`/`provenance` since API
+  2026-07-22 (the README's own example failed `tsc` as written) and neither
+  interface gained this release's fields, leaving `status` and
+  `chain`/`depth`/`root` unreachable without casts. Both extended
+  (+ new `ForkLineageHop` type); a key-set-equality drift-guard test
+  (`test/types/schema-interface-drift.test.ts`) now fails compilation if a
+  schema and its public twin ever diverge again — structural widening cannot
+  slip past key equality, which is how this drift survived `tsc` twice.
+- **README Node requirement corrected**: badge and Requirements said 18+;
+  `engines` requires ≥20.3.0 (sdk-core). README examples updated for all
+  three new fields and the sdk-core 0.17 branchable `ForbiddenError.details`.
+
 ### Changed
 
 - **`@uluops/sdk-core` 0.15.0 → 0.17.0** — closes the RE-PROBE-02 R16/N1
