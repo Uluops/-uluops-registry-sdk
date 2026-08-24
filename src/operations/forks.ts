@@ -61,7 +61,7 @@ export async function create(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Semver version to check
+ * @param version - Semver version to check (omit for latest published)
  * @param options - Options (e.g., target name to check for conflicts)
  * @returns Forkable status with reasons if not forkable
  */
@@ -69,7 +69,7 @@ export async function isForkable(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
-  version: string,
+  version?: string,
   options?: CheckForkableOptions
 ): Promise<ForkableCheck> {
   const path = `${buildDefinitionPath(type, name, version)}/forkable`;
@@ -82,14 +82,14 @@ export async function isForkable(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Semver version
+ * @param version - Semver version (omit for latest published)
  * @returns Fork lineage with ancestor chain
  */
 export async function getAncestry(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
-  version: string
+  version?: string
 ): Promise<ForkLineage> {
   const path = `${buildDefinitionPath(type, name, version)}/lineage`;
   return parseResponse(forkLineageSchema, await http.get<ForkLineage>(path, undefined), 'forks.getAncestry');
@@ -101,14 +101,14 @@ export async function getAncestry(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Semver version
+ * @param version - Semver version (omit for latest published)
  * @returns List of forked definitions with total count
  */
 export async function list(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
-  version: string
+  version?: string
 ): Promise<ForkListResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/forks`;
   return parseResponse(forkListResponseSchema, await http.get<ForkListResponse>(path, undefined), 'forks.list');

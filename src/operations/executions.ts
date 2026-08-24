@@ -41,7 +41,7 @@ export async function record(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Semver version
+ * @param version - Semver version (omit for latest published)
  * @param window - Time window in minutes (1-43200, default 60)
  * @returns Execution statistics (count, averages, distribution)
  */
@@ -49,7 +49,7 @@ export async function getStats(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
-  version: string,
+  version?: string,
   window?: number
 ): Promise<ExecutionStats> {
   const path = `${buildDefinitionPath(type, name, version)}/executions`;

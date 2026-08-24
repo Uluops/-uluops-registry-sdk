@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.52.0] - 2026-08-24
+
+### Changed — MCP tool-sweep non-breaking batch (RG10)
+
+- **`version` is optional on six read operations** — `dependencies.get`,
+  `dependencies.getDependents`, `forks.isForkable`, `forks.list`,
+  `forks.getAncestry`, and `executions.getStats` now accept
+  `version?: string`; omitting it resolves the latest published version
+  server-side (each backing service already had a latest-resolution path —
+  the requirement lived only in these signatures and the MCP schemas).
+  Signature widening only: existing callers are unaffected. Mutating
+  operations (`archive`, `remove`, `retranslate`) deliberately keep
+  `version` required — archive/delete are terminal actions where "latest"
+  is a TOCTOU-unsafe target, and retranslate's API route enforces the
+  version itself.
+
 ## [Unreleased]
 
 ## [0.51.0] - 2026-08-23
