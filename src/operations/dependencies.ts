@@ -39,7 +39,7 @@ const MAX_SAFE_GRAPH_DEPTH = 50;
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Semver version
+ * @param version - Semver version (omit for latest published)
  * @param options - Options (e.g., depth limit)
  * @returns Envelope with root definition, recursive graph, flat list, and counts
  * @throws RangeError if the server-reported `maxDepth` exceeds MAX_SAFE_GRAPH_DEPTH
@@ -49,7 +49,7 @@ export async function get(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
-  version: string,
+  version?: string,
   options?: GetDependenciesOptions
 ): Promise<DependencyGraphResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/dependencies`;
@@ -79,14 +79,14 @@ export async function get(
  * @param http - Registry HTTP client
  * @param type - Definition type (agent, command, workflow, pipeline)
  * @param name - Definition name
- * @param version - Semver version
+ * @param version - Semver version (omit for latest published)
  * @returns Envelope with root definition, dependents array, and total count
  */
 export async function getDependents(
   http: RegistryHttpClient,
   type: DefinitionType,
   name: string,
-  version: string
+  version?: string
 ): Promise<DependentsResponse> {
   const path = `${buildDefinitionPath(type, name, version)}/dependents`;
   return parseResponse(
