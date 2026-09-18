@@ -848,7 +848,14 @@ if (!result.changed) {
 
 #### `upgradeDefinition(type, name, body)`
 
-Upgrade a legacy definition to the current format.
+Upgrade a legacy definition without storage/translation metadata to a new major
+version. The result contains `type`, `name`, `version`, `previousVersion`,
+`translatorVersion` and `upgraded: true`; newer APIs also return `promptHash` and
+`schemaVersion`. It does not contain a nested definition or a changes map.
+Current-format agent drafts and already translated definitions refuse with HTTP 409
+and `details.applicationState: "not_applied"`; use publish/retranslate as appropriate.
+If `ResponseValidationError` occurs after the upgrade write, its details report
+`applicationState: "unknown"`. Read the definition and list versions before retrying.
 
 ```typescript
 const result = await client.translation.upgradeDefinition('agent', 'legacy-agent', {

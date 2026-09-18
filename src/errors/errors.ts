@@ -70,12 +70,12 @@ export class ResponseValidationError extends SdkApiError {
   /** The underlying Zod validation error, with per-field `.issues`. */
   readonly zodError: ZodError;
 
-  constructor(zodError: ZodError, context?: string) {
+  constructor(zodError: ZodError, context?: string, mutation?: { applicationState: 'unknown'; recoveryAction: string }) {
     super(
       0,
       `Registry API response failed schema validation${context ? `: ${context}` : ''}`,
       'RESPONSE_VALIDATION',
-      { issues: zodError.issues },
+      { issues: zodError.issues, ...mutation },
     );
     this.name = 'ResponseValidationError';
     this.zodError = zodError;

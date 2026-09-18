@@ -14,6 +14,7 @@ import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateYamlSize } from '../config/validators.js';
 import { translatorVersionSchema, upgradeResultSchema, retranslateResultSchema } from '../types/response-schemas.js';
 import { parseResponse } from '../http/parse-response.js';
+import { ResponseValidationError } from '../errors/errors.js';
 
 /** Narrow retranslate response — see retranslateResultSchema for docs. */
 export type RetranslateResult = z.infer<typeof retranslateResultSchema>;
@@ -66,5 +67,16 @@ export async function upgradeDefinition(
 ): Promise<UpgradeResult> {
   validateYamlSize(body.yaml);
   const path = `${buildDefinitionPath(type, name)}/upgrade`;
-  return parseResponse(upgradeResultSchema, await http.post<UpgradeResult>(path, body), 'translation.upgradeDefinition');
+  const response = await http.post<unknown>(path, body);
+  try {
+    return parseResponse(upgradeResultSchema, response, 'translation.upgradeDefinition');
+  } catch (error) {
+    if (error instanceof ResponseValidationError) {
+      throw new ResponseValidationError(error.zodError, 'translation.upgradeDefinition', {
+        applicationState: 'unknown',
+        recoveryAction: 'Read the definition and list its versions to verify whether the upgrade committed before retrying.',
+      });
+    }
+    throw error;
+  }
 }

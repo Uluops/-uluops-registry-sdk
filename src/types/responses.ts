@@ -119,9 +119,15 @@ export interface UpgradeDefinitionBody {
  * Upgrade result response
  */
 export interface UpgradeResult {
-  definition: import('./definitions.js').Definition;
+  type: import('./enums.js').DefinitionType;
+  name: string;
   version: string;
-  changes: Record<string, unknown>;
+  previousVersion: string;
+  translatorVersion: string;
+  upgraded: true;
+  /** Artifact metadata is absent on older API versions. */
+  promptHash?: string;
+  schemaVersion?: string;
 }
 
 /**

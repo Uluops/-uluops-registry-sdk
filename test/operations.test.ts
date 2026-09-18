@@ -789,9 +789,9 @@ describe('operations', () => {
           .post('/definitions/agent/legacy-agent/upgrade', { yaml: 'old format' })
           .reply(200, {
             data: {
-              definition: createMockDefinition({ name: 'legacy-agent', translatorVersion: '2.0.0' }),
+              type: 'agent', name: 'legacy-agent', previousVersion: '1.0.0',
               version: '2.0.0',
-              changes: { translatorVersion: '1.0.0 -> 2.0.0' },
+              translatorVersion: '2.0.0', upgraded: true,
             },
           });
 
@@ -799,6 +799,20 @@ describe('operations', () => {
           yaml: 'old format',
         });
         expect(result.version).toBe('2.0.0');
+        expect(result.previousVersion).toBe('1.0.0');
+        expect(result.upgraded).toBe(true);
+      });
+
+      it('marks a post-write response mismatch as unknown without replaying the request', async () => {
+        const scope = nock(MOCK_BASE_URL)
+          .post('/definitions/agent/legacy-agent/upgrade', { yaml: 'old format' })
+          .once().reply(201, { data: { type: 'agent', name: 'legacy-agent', version: '2.0.0' } });
+        const error = await translationOps.upgradeDefinition(http, 'agent', 'legacy-agent', { yaml: 'old format' }).catch((err: unknown) => err);
+        expect(error).toBeInstanceOf(ResponseValidationError);
+        expect((error as ResponseValidationError).details).toMatchObject({
+          applicationState: 'unknown', recoveryAction: expect.stringContaining('before retrying'),
+        });
+        expect(scope.isDone()).toBe(true);
       });
     });
   });

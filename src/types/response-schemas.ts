@@ -571,9 +571,14 @@ export const dependencyGraphResponseSchema = z.object({
 
 /** POST /definitions/{type}/{name}/upgrade */
 export const upgradeResultSchema = z.object({
-  definition: definitionSchema,
+  type: definitionTypeResponseSchema,
+  name: z.string().min(1),
   version: z.string(),
-  changes: z.record(z.string(), z.unknown()),
+  previousVersion: z.string(),
+  translatorVersion: z.string(),
+  upgraded: z.literal(true),
+  promptHash: z.string().optional(),
+  schemaVersion: z.string().optional(),
 });
 
 /** POST /users/batch */
