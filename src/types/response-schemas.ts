@@ -623,8 +623,13 @@ const effectivenessMetricsSchema = z.object({
   runAvgScore: z.number(),
   scoreStdDev: z.number().nullable(),
   issueYield: z.number(),
-  falsePositiveRate: z.number(),
-  resolutionRate: z.number(),
+  // All three dispositions are NULL when no issue is mature (@uluops/analytics 0.11.0 —
+  // "found nothing" no longer scores 100/100). Until 0.53.0 the two below were z.number(),
+  // and registry-api coerced null→0 on the wire solely to satisfy this schema.
+  falsePositiveRate: z.number().nullable(),
+  resolutionRate: z.number().nullable(),
+  /** wontfix share of mature issues — reported, never scored. Optional: absent from registry-api < 4652861. */
+  declinedRate: z.number().nullable().optional(),
   regressionRate: z.number().nullable(),
   avgResolutionTimeHours: z.number().nullable(),
   failureDomainDistribution: failureDomainDistributionSchema,
@@ -641,7 +646,14 @@ const constituentAgentMetricsSchema = z.object({
 
 /** Lift statistics */
 const liftStatisticsSchema = z.object({
+  // Which quantity the interval is for. Only 'equal_weight_per_agent' is emitted today
+  // (analytics 0.12.0 D1-A). Deliberately z.string(), not z.enum: a second estimand would
+  // otherwise be a ZodError in every pinned consumer — the exact break `trend: volatile`
+  // caused (tracker a6adcb00). Optional: absent from registry-api < 4652861.
+  estimand: z.string().optional(),
   standardError: z.number(),
+  /** Welch–Satterthwaite df over k+1 components. Optional: absent from registry-api < 4652861. */
+  degreesOfFreedom: z.number().optional(),
   ci95: z.tuple([z.number(), z.number()]),
   significant: z.boolean(),
   sampleSizes: z.object({
@@ -835,7 +847,10 @@ const overallTrendSchema = z.object({
 export const evolutionResultSchema = z.object({
   definition: definitionRefSchema,
   versions: z.array(evolutionPointSchema),
-  trend: z.enum(['improving', 'declining', 'stable', 'insufficient_data']),
+  // 'volatile' = the slope CI spans both dead-zone edges (analytics 0.11.0 D5-C). It was
+  // legal on `overallTrend.trajectory` and missing here, so registry-api mapped it to
+  // 'stable' on the wire (its 1179752) until this schema learned it.
+  trend: z.enum(['improving', 'declining', 'stable', 'volatile', 'insufficient_data']),
   trendConfidence: z.enum(['low', 'medium', 'high']).nullable(),
   overallTrend: overallTrendSchema,
   provenance: qualityProvenanceSchema.optional(),

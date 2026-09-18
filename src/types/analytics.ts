@@ -104,10 +104,16 @@ export interface EffectivenessMetrics {
   scoreStdDev: number | null;
   /** Average number of actionable issues found per run */
   issueYield: number;
-  /** Proportion of issues later marked as false positives (0–1) */
-  falsePositiveRate: number;
-  /** Proportion of surfaced issues that were subsequently resolved (0–1) */
-  resolutionRate: number;
+  /** false-positive share of mature issues (0–100); null when no issue is mature (registry-sdk >= 0.53) */
+  falsePositiveRate: number | null;
+  /** completed share of mature issues (0–100); null when no issue is mature (registry-sdk >= 0.53) */
+  resolutionRate: number | null;
+  /**
+   * wontfix share of mature issues (0–100) — a judgment not to act, in neither the
+   * resolution nor the false-positive numerator. Reported, never scored. Absent from
+   * registry-api < 4652861; null when no issue is mature.
+   */
+  declinedRate?: number | null;
   /** Rate at which resolved issues reappear; null if insufficient data */
   regressionRate: number | null;
   /** Mean hours from issue creation to resolution; null if no resolutions */
@@ -130,8 +136,17 @@ export interface ConstituentAgentMetrics {
 }
 
 export interface LiftStatistics {
+  /**
+   * Which quantity `ci95` is the interval for. Today always `'equal_weight_per_agent'`
+   * (the same estimand `compositionLift` reports — analytics 0.12.0 D1-A). Typed `string`
+   * on purpose so a future estimand is a new value, not a parse failure. Absent from
+   * registry-api < 4652861.
+   */
+  estimand?: string;
   /** Standard error of the lift measurement */
   standardError: number;
+  /** Welch–Satterthwaite degrees of freedom over the pipeline + k agent components. Absent from registry-api < 4652861. */
+  degreesOfFreedom?: number;
   /** 95% confidence interval — index 0 is lower bound, index 1 is upper bound */
   ci95: [number, number];
   /** Whether the lift is statistically significant */
@@ -321,7 +336,8 @@ export interface OverallTrend {
 export interface EvolutionResult {
   definition: { type: string; name: string };
   versions: EvolutionPoint[];
-  trend: 'improving' | 'declining' | 'stable' | 'insufficient_data';
+  /** `volatile`: the slope confidence interval spans both dead-zone edges — no direction is supported. */
+  trend: 'improving' | 'declining' | 'stable' | 'volatile' | 'insufficient_data';
   trendConfidence: 'low' | 'medium' | 'high' | null;
   overallTrend: OverallTrend;
   /**

@@ -253,6 +253,25 @@ describe('analytics', () => {
       expect(result.trendConfidence).toBe('medium');
       expect(result.versions).toHaveLength(2);
     });
+
+    it('reads a volatile trend instead of throwing (0.53.0 — was a ZodError in <= 0.52.0)', async () => {
+      nock(MOCK_BASE_URL)
+        .get('/analytics/definitions/agent/code-validator/evolution')
+        .reply(200, {
+          data: {
+            definition: { type: 'agent', name: 'code-validator', version: '1.0.0' },
+            versions: [],
+            trend: 'volatile',
+            trendConfidence: 'low',
+            overallTrend: { trajectory: 'volatile', passRateChange: null, runAvgScoreChange: null, epistemicDensityChange: null },
+            stale: false,
+          },
+        });
+
+      const result = await analyticsOps.getEvolution(http, 'agent', 'code-validator');
+      expect(result.trend).toBe('volatile');
+      expect(result.overallTrend.trajectory).toBe('volatile');
+    });
   });
 
   // ── getTranslation ────────────────────────────────────────────
