@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.53.1] - 2026-09-18
+
+- Correct upgrade response fields and expose uncertain post-write validation outcomes (F08); includes the 0.53.0 analytics wire-contract changes.
+
 ## [0.53.0] - 2026-09-18
 
 ### Fixed — the evolution/effectiveness schemas catch up with registry-api 4652861 (@uluops/analytics 0.12.0; tracker `a6adcb00`)
