@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.53.0] - 2026-09-18
+
+### Fixed — the evolution/effectiveness schemas catch up with registry-api 4652861 (@uluops/analytics 0.12.0; tracker `a6adcb00`)
+
+- **`EvolutionResult.trend` accepts `volatile`.** analytics 0.11.0 (D5-C) classifies the trend
+  from the slope confidence interval and emits `volatile` when the interval spans both
+  dead-zone edges — a value that was already legal on `overallTrend.trajectory` but not on
+  `trend`. Through 0.52.0 that response was a **ZodError in every consumer of
+  `analytics.getEvolution`** (registry MCP `get_evolution`, CLI). registry-api contains it today
+  by mapping `volatile` → `stable` on the wire with a `trendNote` (its `1179752`); that mapping
+  comes out once consumers are on this release (tracker `b1be69f3`), so **a definition that
+  read `stable` may start reading `volatile`** — its trajectory already said so.
+- **`EffectivenessMetrics.falsePositiveRate` / `resolutionRate` are `number | null`.** analytics
+  0.11.0 returns `null` when no issue is mature ("found nothing" no longer scores 100/100
+  precision); registry-api coerced both to `0` on the wire only because this schema refused
+  null. Type-level break for consumers that did arithmetic on them — `passRate` and
+  `regressionRate` already carried the same contract. The doc comments also said `0–1`; the
+  wire has always been `0–100`.
+
+### Added
+
+- **`EffectivenessMetrics.declinedRate?: number | null`** — the `wontfix` share of mature
+  issues, a judgment not to act, in neither the resolution nor the false-positive numerator
+  (analytics 0.11.0 D2-A). Strip-mode dropped it silently through 0.52.0.
+- **`LiftStatistics.estimand?: string` and `degreesOfFreedom?: number`** — the interval is now
+  for the equal-weighted lift `compositionLift` reports (analytics 0.12.0 D1-A), and says so.
+  `estimand` is deliberately `string`, not an enum: only `'equal_weight_per_agent'` is emitted
+  today, and a second value must be a new value in consumers, not a parse failure — the class
+  of break the `trend` fix above is for.
+- All three new fields are optional so a registry-api older than `4652861` still parses.
+
 ## [0.52.0] - 2026-08-24
 
 ### Changed — MCP tool-sweep non-breaking batch (RG10)

@@ -624,6 +624,71 @@ describe('definitionEffectivenessSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  // registry-api 4652861 / @uluops/analytics 0.12.0 wire shape (tracker a6adcb00).
+  // Every assertion below reads the SURVIVING VALUE — a `.success` check alone passes
+  // while strip-mode silently drops the field.
+  const effectiveness0120 = {
+    passRate: null, runAvgScore: 80, scoreStdDev: null, issueYield: 1.5,
+    falsePositiveRate: null, resolutionRate: null, declinedRate: null, regressionRate: null,
+    avgResolutionTimeHours: null,
+    failureDomainDistribution: { STR: 0, SEM: 0, PRA: 0, EPI: 0 },
+    epistemicDensity: 0,
+  };
+  const lift0120 = {
+    compositionLift: 4.2, pipelineAvgScore: 84, independentMeanScore: 79.8,
+    constituentAgents: [],
+    statistics: {
+      estimand: 'equal_weight_per_agent', standardError: 1.9, degreesOfFreedom: 7.31,
+      ci95: [0.1, 8.3], significant: true, sampleSizes: { pipeline: 6, independent: 14 },
+    },
+    caveats: [],
+  };
+  const wrap = (effectiveness: unknown, compositionLift: unknown) => ({
+    definition: { type: 'pipeline', name: 'ship', version: '1.0.0' },
+    period: { start: '2026-01-01', end: '2026-02-01' },
+    metrics: {
+      executionCount: 6, uniqueProjects: 2, uniqueUsers: 1,
+      effectiveness, healthScore: 70, factorCompleteness: 60, healthFactors: [], compositionLift,
+    },
+    stale: false,
+  });
+
+  it('accepts null falsePositiveRate/resolutionRate and lets declinedRate through (0.53.0)', () => {
+    const result = definitionEffectivenessSchema.safeParse(wrap(effectiveness0120, null));
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    const e = result.data.metrics.effectiveness!;
+    expect(e.falsePositiveRate).toBeNull();
+    expect(e.resolutionRate).toBeNull();
+    expect('declinedRate' in e).toBe(true);
+    expect(e.declinedRate).toBeNull();
+    const numeric = definitionEffectivenessSchema.safeParse(
+      wrap({ ...effectiveness0120, falsePositiveRate: 12.5, resolutionRate: 60, declinedRate: 27.5 }, null),
+    );
+    expect(numeric.success && numeric.data.metrics.effectiveness?.declinedRate).toBe(27.5);
+  });
+
+  it('still accepts effectiveness without declinedRate (registry-api < 4652861)', () => {
+    const { declinedRate: _omitted, ...older } = effectiveness0120;
+    const result = definitionEffectivenessSchema.safeParse(wrap({ ...older, falsePositiveRate: 0, resolutionRate: 0 }, null));
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.metrics.effectiveness?.declinedRate).toBeUndefined();
+  });
+
+  it('lets lift estimand and degreesOfFreedom through (0.53.0)', () => {
+    const result = definitionEffectivenessSchema.safeParse(wrap(null, lift0120));
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    const stats = result.data.metrics.compositionLift!.statistics!;
+    expect(stats.estimand).toBe('equal_weight_per_agent');
+    expect(stats.degreesOfFreedom).toBe(7.31);
+    // A future estimand is a value, not a parse failure — the a6adcb00 class.
+    const future = definitionEffectivenessSchema.safeParse(
+      wrap(null, { ...lift0120, statistics: { ...lift0120.statistics, estimand: 'volume_weighted' } }),
+    );
+    expect(future.success && future.data.metrics.compositionLift?.statistics?.estimand).toBe('volume_weighted');
+  });
 });
 
 describe('definitionHealthSchema', () => {
@@ -668,6 +733,16 @@ describe('evolutionResultSchema', () => {
       stale: false,
     });
     expect(result.success).toBe(true);
+  });
+
+  it('accepts trend volatile (analytics 0.11.0 D5-C; tracker a6adcb00)', () => {
+    const result = evolutionResultSchema.safeParse({
+      definition: { type: 'agent', name: 'test', version: '1.0.0' },
+      versions: [], trend: 'volatile', trendConfidence: 'low',
+      overallTrend: { trajectory: 'volatile', passRateChange: null, runAvgScoreChange: null, epistemicDensityChange: null },
+      stale: false,
+    });
+    expect(result.success && result.data.trend).toBe('volatile');
   });
 
   it('rejects invalid trend enum', () => {

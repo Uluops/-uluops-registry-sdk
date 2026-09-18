@@ -1047,6 +1047,9 @@ console.log(eff.metrics.healthScore); // 67
 console.log(eff.metrics.provenance?.independent?.runAvgScore); // 90.1 — the headline
 console.log(eff.metrics.provenance?.confidence); // 'provisional' until 3+ qualifying actors
 console.log(eff.metrics.effectiveness?.passRate); // null for agents (score-only quality)
+console.log(eff.metrics.effectiveness?.resolutionRate); // 0–100, or null when no issue is mature yet
+console.log(eff.metrics.effectiveness?.declinedRate); // wontfix share — reported, never scored
+console.log(eff.metrics.compositionLift?.statistics?.estimand); // 'equal_weight_per_agent' — what ci95 is for
 
 // Specific version
 const v2 = await client.analytics.getEffectiveness('agent', 'code-validator', '2.0.0');
@@ -1089,9 +1092,12 @@ Get version-over-version metrics timeline with trend detection.
 
 ```typescript
 const evo = await client.analytics.getEvolution('agent', 'code-validator');
-console.log(evo.trend); // 'improving'
+console.log(evo.trend); // 'improving' | 'declining' | 'stable' | 'volatile' | 'insufficient_data'
 console.log(evo.trendConfidence); // 'high'
 ```
+
+`trend` is read off the slope's 95% confidence interval, not the point estimate: `volatile`
+means the interval spans both dead-zone edges, so no direction is supported.
 
 #### `getTranslation(type, name)`
 
