@@ -5,11 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.53.1] - 2026-09-18
+## [0.54.0] - 2026-09-19
+
+### Changed
+
+- Pin `@uluops/sdk-core` 0.18.0 to retain structured 404/409 error codes and details, including upgrade refusals.
+- Include the upgrade and analytics contract corrections from the unpublished 0.53.x candidates below. Consumers must handle nullable effectiveness rates; unknown values are not zero.
+
+## [0.53.1] - 2026-09-18 (unpublished candidate)
 
 - Correct upgrade response fields and expose uncertain post-write validation outcomes (F08); includes the 0.53.0 analytics wire-contract changes.
 
-## [0.53.0] - 2026-09-18
+## [0.53.0] - 2026-09-18 (unpublished candidate)
 
 ### Fixed — the evolution/effectiveness schemas catch up with registry-api 4652861 (@uluops/analytics 0.12.0; tracker `a6adcb00`)
 
@@ -56,7 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is a TOCTOU-unsafe target, and retranslate's API route enforces the
   version itself.
 
-## [Unreleased]
 
 ## [0.51.0] - 2026-08-23
 

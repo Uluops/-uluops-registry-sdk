@@ -852,7 +852,7 @@ Upgrade a legacy definition without storage/translation metadata to a new major
 version. The result contains `type`, `name`, `version`, `previousVersion`,
 `translatorVersion` and `upgraded: true`; newer APIs also return `promptHash` and
 `schemaVersion`. It does not contain a nested definition or a changes map.
-Current-format agent drafts and already translated definitions refuse with HTTP 409
+With the upgraded Registry API, current-format agent drafts and already translated definitions refuse with HTTP 409
 and `details.applicationState: "not_applied"`; use publish/retranslate as appropriate.
 If `ResponseValidationError` occurs after the upgrade write, its details report
 `applicationState: "unknown"`. Read the definition and list versions before retrying.
@@ -1227,6 +1227,9 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `NetworkError` | - | DNS failure, connection refused, network unreachable (auto-retried) |
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
 | `ResponseValidationError` | 0 | API response did not match the SDK's expected Zod schema (contract drift). Extends `RegistryApiError`; original `ZodError` preserved on `.zodError`. Non-retryable. |
+
+This release pins `@uluops/sdk-core` 0.18.0. HTTP 404 and 409 errors retain the
+server's structured `code` and `details`, including upgrade refusal metadata.
 
 All API errors extend `RegistryApiError` and include:
 - `statusCode` — HTTP status code (0 for network/timeout/response-validation)
