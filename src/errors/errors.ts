@@ -81,3 +81,11 @@ export class ResponseValidationError extends SdkApiError {
     this.zodError = zodError;
   }
 }
+
+/** The requested quality contract cannot be served without changing its meaning. */
+export class UnsupportedQualityContractError extends SdkApiError {
+  constructor() {
+    super(0, 'Server does not support the requested nullable-v1 quality contract', 'UNSUPPORTED_CONTRACT');
+    this.name = 'UnsupportedQualityContractError';
+  }
+}

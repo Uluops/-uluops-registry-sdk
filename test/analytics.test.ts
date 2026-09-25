@@ -500,3 +500,40 @@ describe('analytics', () => {
     });
   });
 });
+
+
+describe('nullable-v1 quality contract', () => {
+  const entry = { version: '1.0.0', passRate: null, runAvgScore: 80, runCount: 3,
+    healthScore: null, translatorVersion: null, failureDomainDistribution: null,
+    epistemicDensity: null, metricBasis: 'run-weighted', denominator: 0, unit: 'fraction' };
+  const response = { definition: { type: 'agent', name: 'explorer' }, versions: [entry], stale: false };
+  it('negotiates before selecting and preserves null and metric metadata', async () => {
+    const http = new RegistryHttpClient({ apiKey: TEST_API_KEY });
+    nock(MOCK_BASE_URL).get('/analytics/capabilities').reply(200, { data: { qualityContracts: ['nullable-v1'] } });
+    nock(MOCK_BASE_URL).get('/analytics/definitions/agent/explorer/effectiveness/compare')
+      .query({ versions: '1.0.0,2.0.0', qualityContract: 'nullable-v1' })
+      .reply(200, { data: { ...response, qualityContract: 'nullable-v1' } });
+    const result = await analyticsOps.compare(http, 'agent', 'explorer', ['1.0.0', '2.0.0'], { qualityContract: 'nullable-v1' });
+    expect(result.versions[0]).toEqual(entry);
+  });
+  it('refuses unsupported capability without calling comparison', async () => {
+    const http = new RegistryHttpClient({ apiKey: TEST_API_KEY });
+    nock(MOCK_BASE_URL).get('/analytics/capabilities').reply(200, { data: { qualityContracts: [] } });
+    await expect(analyticsOps.compare(http, 'agent', 'explorer', ['1.0.0', '2.0.0'], { qualityContract: 'nullable-v1' }))
+      .rejects.toMatchObject({ code: 'UNSUPPORTED_CONTRACT' });
+  });
+  it('refuses an old server capability404 without falling back', async () => {
+    const http = new RegistryHttpClient({ apiKey: TEST_API_KEY });
+    nock(MOCK_BASE_URL).get('/analytics/capabilities').reply(404, { error: 'Not found' });
+    await expect(analyticsOps.compare(http, 'agent', 'explorer', ['1.0.0', '2.0.0'], { qualityContract: 'nullable-v1' }))
+      .rejects.toMatchObject({ code: 'UNSUPPORTED_CONTRACT' });
+  });
+  it('rejects a producer that advertised support but ignored selection', async () => {
+    const http = new RegistryHttpClient({ apiKey: TEST_API_KEY });
+    nock(MOCK_BASE_URL).get('/analytics/capabilities').reply(200, { data: { qualityContracts: ['nullable-v1'] } });
+    nock(MOCK_BASE_URL).get('/analytics/definitions/agent/explorer/effectiveness/compare')
+      .query(true).reply(200, { data: response });
+    await expect(analyticsOps.compare(http, 'agent', 'explorer', ['1.0.0', '2.0.0'], { qualityContract: 'nullable-v1' }))
+      .rejects.toMatchObject({ code: 'UNSUPPORTED_CONTRACT' });
+  });
+});

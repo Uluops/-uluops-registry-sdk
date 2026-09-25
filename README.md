@@ -1543,3 +1543,9 @@ import type { Model, ModelAlias, Provider } from '@uluops/registry-sdk/types';
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details.
+
+## Quality metric contracts (F04)
+
+Comparison and diff-impact accept an optional final `{ qualityContract: 'nullable-v1' }` argument. The SDK checks `/analytics/capabilities` before forwarding the selector and refuses unsupported servers with `UNSUPPORTED_CONTRACT`; it never falls back silently. Returned `qualityContract` must echo selection. Existing calls without options retain their wire behavior.
+
+Nullable pass rates/deltas preserve missing gate evidence. Optional `metricBasis`, `denominator`, and `unit` describe run-weighted gate fractions (0–1), separate from score averages. For agents the gate rate is null; the denominator is zero. Tolerant response types also accept legacy numeric responses. Install this SDK before enabling the API opt-in; leave selection off when rolling back producers.

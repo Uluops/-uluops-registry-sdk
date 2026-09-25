@@ -8,7 +8,7 @@
 import type { RegistryHttpClient } from '../http/http-client.js';
 import type { DefinitionType } from '../types/enums.js';
 import { validateDefinitionType, validateDefinitionName, validateVersion } from '../config/validators.js';
-import { ValidationError } from '../errors/errors.js';
+import { ValidationError, UnsupportedQualityContractError, RegistryApiError } from '../errors/errors.js';
 import type {
   DefinitionEffectiveness,
   DefinitionHealth,
@@ -17,6 +17,7 @@ import type {
   EvolutionResult,
   TranslationAnalyticsResult,
   CompareResult,
+  QualityOptions,
   DiffImpactResult,
 } from '../types/analytics.js';
 import {
@@ -253,6 +254,20 @@ export async function getTranslation(
   ), 'analytics.getTranslation');
 }
 
+async function requireQualityContract(http: RegistryHttpClient, options?: QualityOptions): Promise<void> {
+  if (!options?.qualityContract) return;
+  let capabilities: { qualityContracts?: unknown };
+  try {
+    capabilities = await http.get<{ qualityContracts?: unknown }>('/analytics/capabilities');
+  } catch (error) {
+    if (error instanceof RegistryApiError && error.statusCode === 404) throw new UnsupportedQualityContractError();
+    throw error;
+  }
+  if (!Array.isArray(capabilities?.qualityContracts) || !capabilities.qualityContracts.includes(options.qualityContract)) {
+    throw new UnsupportedQualityContractError();
+  }
+}
+
 // ── Compare ───────────────────────────────────────────────────────
 
 /**
@@ -270,15 +285,19 @@ export async function compare(
   type: DefinitionType,
   name: string,
   versions: string[],
+  options?: QualityOptions,
 ): Promise<CompareResult> {
   if (versions.length < 2 || versions.length > 5) {
     throw new ValidationError(`compare() requires 2-5 versions (received ${String(versions.length)})`, { field: 'versions', value: versions.length });
   }
   for (const v of versions) validateVersion(v);
-  return parseResponse(compareResultSchema, await http.get<CompareResult>(
+  await requireQualityContract(http, options);
+  const result = parseResponse(compareResultSchema, await http.get<CompareResult>(
     `${analyticsPath(type, name)}/effectiveness/compare`,
-    { versions: versions.join(',') },
+    { versions: versions.join(','), ...(options?.qualityContract && { qualityContract: options.qualityContract }) },
   ), 'analytics.compare');
+  if (options?.qualityContract && result.qualityContract !== options.qualityContract) throw new UnsupportedQualityContractError();
+  return result;
 }
 
 // ── Diff Impact ───────────────────────────────────────────────────
@@ -300,11 +319,15 @@ export async function getDiffImpact(
   name: string,
   fromVersion: string,
   toVersion: string,
+  options?: QualityOptions,
 ): Promise<DiffImpactResult> {
   validateVersion(fromVersion);
   validateVersion(toVersion);
-  return parseResponse(diffImpactResultSchema, await http.get<DiffImpactResult>(
+  await requireQualityContract(http, options);
+  const result = parseResponse(diffImpactResultSchema, await http.get<DiffImpactResult>(
     `${analyticsPath(type, name)}/diff/${fromVersion}/${toVersion}/impact`,
-    undefined,
+    options?.qualityContract ? { qualityContract: options.qualityContract } : undefined,
   ), 'analytics.getDiffImpact');
+  if (options?.qualityContract && result.qualityContract !== options.qualityContract) throw new UnsupportedQualityContractError();
+  return result;
 }

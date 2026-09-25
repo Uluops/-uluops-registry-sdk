@@ -319,7 +319,7 @@ export interface EvolutionPoint {
   /** Human-readable summary of structural changes from previous version. Null for first version. */
   changeSummary: string | null;
   metrics: {
-    passRate: number;
+    passRate: number | null;
     runAvgScore: number | null;
     runCount: number;
     healthScore: number | null;
@@ -381,9 +381,17 @@ export interface TranslationAnalyticsResult {
 
 // ── Compare ───────────────────────────────────────────────────────
 
-export interface VersionComparisonEntry {
+export interface QualityOptions { qualityContract?: 'nullable-v1' }
+export interface QualityMetadata {
+  metricBasis?: 'run-weighted';
+  /** Number of attributed runs with a non-null gate; always zero for agents. */
+  denominator?: number;
+  unit?: 'fraction';
+}
+
+export interface VersionComparisonEntry extends QualityMetadata {
   version: string;
-  passRate: number;
+  passRate: number | null;
   runAvgScore: number | null;
   runCount: number;
   healthScore: number | null;
@@ -393,6 +401,7 @@ export interface VersionComparisonEntry {
 }
 
 export interface CompareResult {
+  qualityContract?: 'nullable-v1';
   definition: { type: string; name: string };
   versions: VersionComparisonEntry[];
   /** Name-scoped actor provenance — values on this surface stay runs-weighted by design. Present from registry-api >= 0.52. */
@@ -416,6 +425,7 @@ export interface TaxonomyShift {
 }
 
 export interface DiffImpactResult {
+  qualityContract?: 'nullable-v1';
   definition: { type: string; name: string };
   diff: {
     hasChanges: boolean;
@@ -425,8 +435,8 @@ export interface DiffImpactResult {
     fromLineCount: number;
     toLineCount: number;
   };
-  from: { version: string; passRate: number; runAvgScore: number | null; runCount: number };
-  to: { version: string; passRate: number; runAvgScore: number | null; runCount: number };
+  from: { version: string; passRate: number | null; runAvgScore: number | null; runCount: number } & QualityMetadata;
+  to: { version: string; passRate: number | null; runAvgScore: number | null; runCount: number } & QualityMetadata;
   deltas: {
     passRateDelta: number | null;
     runAvgScoreDelta: number | null;

@@ -189,6 +189,8 @@ export type {
   TranslatorGroupMetrics,
   ProjectedImprovement,
   CompareResult,
+  QualityOptions,
+  QualityMetadata,
   VersionComparisonEntry,
   DiffImpactResult,
   CategorizedChange,

@@ -80,6 +80,7 @@ import type {
   EvolutionResult,
   TranslationAnalyticsResult,
   CompareResult,
+  QualityOptions,
   DiffImpactResult,
 } from './types/analytics.js';
 import type {
@@ -326,9 +327,9 @@ export class RegistryClient {
     /** Get versions grouped by translator version with aggregate metrics. */
     getTranslation: (type: DefinitionType, name: string) => Promise<TranslationAnalyticsResult>;
     /** Compare effectiveness across 2-5 versions side-by-side. */
-    compare: (type: DefinitionType, name: string, versions: string[]) => Promise<CompareResult>;
+    compare: (type: DefinitionType, name: string, versions: string[], options?: QualityOptions) => Promise<CompareResult>;
     /** Get structural diff combined with metric deltas between two versions. */
-    getDiffImpact: (type: DefinitionType, name: string, fromVersion: string, toVersion: string) => Promise<DiffImpactResult>;
+    getDiffImpact: (type: DefinitionType, name: string, fromVersion: string, toVersion: string, options?: QualityOptions) => Promise<DiffImpactResult>;
   };
 
   /**
@@ -575,8 +576,8 @@ export class RegistryClient {
       getLineage: (type, name, options) => analyticsOps.getLineage(this.http, type, name, options),
       getEvolution: (type, name) => analyticsOps.getEvolution(this.http, type, name),
       getTranslation: (type, name) => analyticsOps.getTranslation(this.http, type, name),
-      compare: (type, name, versions) => analyticsOps.compare(this.http, type, name, versions),
-      getDiffImpact: (type, name, fromVersion, toVersion) => analyticsOps.getDiffImpact(this.http, type, name, fromVersion, toVersion),
+      compare: (type, name, versions, options) => analyticsOps.compare(this.http, type, name, versions, options),
+      getDiffImpact: (type, name, fromVersion, toVersion, options) => analyticsOps.getDiffImpact(this.http, type, name, fromVersion, toVersion, options),
     };
   }
 

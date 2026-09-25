@@ -31,4 +31,5 @@ export {
   isRedirectError,
   isTimeoutError,
   ResponseValidationError,
+  UnsupportedQualityContractError,
 } from './errors.js';

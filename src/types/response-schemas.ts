@@ -828,7 +828,7 @@ const evolutionPointSchema = z.object({
   translatorVersion: z.string().nullable(),
   changeSummary: z.string().nullable(),
   metrics: z.object({
-    passRate: z.number(),
+    passRate: z.number().nullable(),
     runAvgScore: z.number().nullable(),
     runCount: z.number().int().nonnegative(),
     healthScore: z.number().nullable(),
@@ -888,9 +888,16 @@ export const translationAnalyticsResultSchema = z.object({
 });
 
 /** Version comparison entry */
+const qualityMetadataShape = {
+  metricBasis: z.literal('run-weighted').optional(),
+  denominator: z.number().int().nonnegative().optional(),
+  unit: z.literal('fraction').optional(),
+};
+
 const versionComparisonEntrySchema = z.object({
+  ...qualityMetadataShape,
   version: z.string(),
-  passRate: z.number(),
+  passRate: z.number().nullable(),
   runAvgScore: z.number().nullable(),
   runCount: z.number().int().nonnegative(),
   healthScore: z.number().nullable(),
@@ -901,6 +908,7 @@ const versionComparisonEntrySchema = z.object({
 
 /** GET /analytics/definitions/{type}/{name}/effectiveness/compare */
 export const compareResultSchema = z.object({
+  qualityContract: z.literal('nullable-v1').optional(),
   definition: definitionRefSchema,
   versions: z.array(versionComparisonEntrySchema),
   provenance: qualityProvenanceSchema.optional(),
@@ -924,6 +932,7 @@ const taxonomyShiftSchema = z.object({
 
 /** GET /analytics/definitions/{type}/{name}/diff/{from}/{to}/impact */
 export const diffImpactResultSchema = z.object({
+  qualityContract: z.literal('nullable-v1').optional(),
   definition: definitionRefSchema,
   diff: z.object({
     hasChanges: z.boolean(),
@@ -934,14 +943,16 @@ export const diffImpactResultSchema = z.object({
     toLineCount: z.number().int().nonnegative(),
   }),
   from: z.object({
+    ...qualityMetadataShape,
     version: z.string(),
-    passRate: z.number(),
+    passRate: z.number().nullable(),
     runAvgScore: z.number().nullable(),
     runCount: z.number().int().nonnegative(),
   }),
   to: z.object({
+    ...qualityMetadataShape,
     version: z.string(),
-    passRate: z.number(),
+    passRate: z.number().nullable(),
     runAvgScore: z.number().nullable(),
     runCount: z.number().int().nonnegative(),
   }),
