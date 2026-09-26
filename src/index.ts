@@ -108,6 +108,9 @@ export type {
   VersionDiffSummary,
   VersionFieldDiff,
   VersionUnifiedDiff,
+  VersionCombinedDiff,
+  VersionDiffOptions,
+  VersionDiffResult,
 } from './types/versions.js';
 
 export type { VersionsListResponse } from './operations/versions.js';

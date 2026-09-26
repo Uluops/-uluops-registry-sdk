@@ -1549,3 +1549,22 @@ MIT License - see [LICENSE](./LICENSE) for details.
 Comparison and diff-impact accept an optional final `{ qualityContract: 'nullable-v1' }` argument. The SDK checks `/analytics/capabilities` before forwarding the selector and refuses unsupported servers with `UNSUPPORTED_CONTRACT`; it never falls back silently. Returned `qualityContract` must echo selection. Existing calls without options retain their wire behavior.
 
 Nullable pass rates/deltas preserve missing gate evidence. Optional `metricBasis`, `denominator`, and `unit` describe run-weighted gate fractions (0–1), separate from score averages. For agents the gate rate is null; the denominator is zero. Tolerant response types also accept legacy numeric responses. Install this SDK before enabling the API opt-in; leave selection off when rolling back producers.
+
+### Combined unified version diffs
+
+Select `diffContract: 'combined-v1'` with `format: 'unified'` to get an applicable
+patch. Add `full: true` to also receive exact `sourceYaml` and `targetYaml` bytes.
+The response discriminates on `diffContract`, `format`, and `full`. An unchanged
+pair returns `unified: ''`. The SDK checks authenticated `/capabilities` on each
+operation and refuses unsupported contracts; authentication errors remain intact.
+
+```typescript
+const result = await client.versions.diff('agent', 'example', '1.0.0', '2.0.0', {
+  diffContract: 'combined-v1', format: 'unified', full: true,
+});
+// result.unified, result.sourceYaml, result.targetYaml
+```
+
+Omitting the selector preserves legacy behavior: `full: true` returns
+`fromYaml`/`toYaml` and takes precedence over `format`. That default remains until
+a future major release with at least 90 days notice.

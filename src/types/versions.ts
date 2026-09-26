@@ -136,3 +136,17 @@ export interface VersionUnifiedDiff {
   fromLineCount: number;
   toLineCount: number;
 }
+
+/** Opt-in patch contract. Raw source bytes accompany the patch only with full=true. */
+export type VersionCombinedDiff = VersionUnifiedDiff & { diffContract: 'combined-v1'; format: 'unified' } & (
+  | { full: false }
+  | { full: true; sourceYaml: string; targetYaml: string }
+);
+
+export interface VersionDiffOptions {
+  full?: boolean;
+  format?: 'sections' | 'fields' | 'unified';
+  diffContract?: 'combined-v1';
+}
+
+export type VersionDiffResult = VersionDiff | VersionDiffSummary | VersionFieldDiff | VersionUnifiedDiff | VersionCombinedDiff;

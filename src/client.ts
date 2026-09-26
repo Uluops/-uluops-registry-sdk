@@ -50,7 +50,7 @@ import type {
   DeprecateDefinitionBody,
   PublishResult,
 } from './types/definitions.js';
-import type { VersionDiff, VersionDiffSummary, VersionFieldDiff, VersionUnifiedDiff } from './types/versions.js';
+import type { VersionDiff, VersionDiffSummary, VersionFieldDiff, VersionUnifiedDiff, VersionCombinedDiff, VersionDiffOptions, VersionDiffResult } from './types/versions.js';
 import type { VersionsListResponse } from './operations/versions.js';
 import type {
   DependencyGraphResponse,
@@ -195,10 +195,13 @@ export class RegistryClient {
     list: (type: DefinitionType, name: string, options?: { limit?: number; offset?: number }) => Promise<VersionsListResponse>;
     /** Compare two versions. Returns summary by default; pass full=true for raw YAML or format for fields/unified. */
     diff: {
-      (type: DefinitionType, name: string, from: string, to: string, options: { full: true }): Promise<VersionDiff>;
-      (type: DefinitionType, name: string, from: string, to: string, options: { format: 'fields' }): Promise<VersionFieldDiff>;
-      (type: DefinitionType, name: string, from: string, to: string, options: { format: 'unified' }): Promise<VersionUnifiedDiff>;
-      (type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }): Promise<VersionDiffSummary>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { diffContract: 'combined-v1'; format: 'unified'; full: true }): Promise<Extract<VersionCombinedDiff, { full: true }>>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { diffContract: 'combined-v1'; format: 'unified'; full?: false }): Promise<Extract<VersionCombinedDiff, { full: false }>>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { full: true; format?: VersionDiffOptions['format']; diffContract?: never }): Promise<VersionDiff>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { format: 'fields'; full?: false; diffContract?: never }): Promise<VersionFieldDiff>;
+      (type: DefinitionType, name: string, from: string, to: string, options: { format: 'unified'; full?: false; diffContract?: never }): Promise<VersionUnifiedDiff>;
+      (type: DefinitionType, name: string, from: string, to: string, options?: { format?: 'sections'; full?: false; diffContract?: never }): Promise<VersionDiffSummary>;
+      (type: DefinitionType, name: string, from: string, to: string, options?: VersionDiffOptions): Promise<VersionDiffResult>;
     };
   };
 
@@ -494,7 +497,7 @@ export class RegistryClient {
       // SAFETY: versionsOps.diff has matching overloads — the implementation signature
       // returns the union, but callers see the narrowed overload signatures from the
       // RegistryClient['versions']['diff'] type.
-      diff: ((type: DefinitionType, name: string, from: string, to: string, options?: { full?: boolean; format?: 'sections' | 'fields' | 'unified' }) =>
+      diff: ((type: DefinitionType, name: string, from: string, to: string, options?: VersionDiffOptions) =>
         versionsOps.diff(this.http, type, name, from, to, options)) as RegistryClient['versions']['diff'],
     };
   }

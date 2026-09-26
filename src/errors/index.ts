@@ -32,4 +32,5 @@ export {
   isTimeoutError,
   ResponseValidationError,
   UnsupportedQualityContractError,
+  UnsupportedDiffContractError,
 } from './errors.js';

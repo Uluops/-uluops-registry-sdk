@@ -1081,3 +1081,14 @@ export const languagesListResponseSchema = z.object({
   total: z.number().int(),
 });
 
+
+/** combined-v1 requires unified format and discriminates raw content by full. */
+export const versionCombinedDiffSchema = z.discriminatedUnion('full', [
+  versionUnifiedDiffSchema.extend({
+    diffContract: z.literal('combined-v1'), format: z.literal('unified'), full: z.literal(false),
+  }),
+  versionUnifiedDiffSchema.extend({
+    diffContract: z.literal('combined-v1'), format: z.literal('unified'), full: z.literal(true),
+    sourceYaml: z.string(), targetYaml: z.string(),
+  }),
+]);

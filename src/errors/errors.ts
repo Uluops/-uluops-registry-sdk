@@ -89,3 +89,11 @@ export class UnsupportedQualityContractError extends SdkApiError {
     this.name = 'UnsupportedQualityContractError';
   }
 }
+
+/** Selected diff contract is unsupported; no legacy fallback is performed. */
+export class UnsupportedDiffContractError extends SdkApiError {
+  constructor() {
+    super(0, 'The Registry API does not support diffContract=combined-v1.', 'UNSUPPORTED_DIFF_CONTRACT');
+    this.name = 'UnsupportedDiffContractError';
+  }
+}
