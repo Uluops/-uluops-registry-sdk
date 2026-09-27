@@ -76,6 +76,8 @@ export interface RenderResult {
   metadata?: Record<string, unknown>;
   /** Which target was rendered (only present when target param was specified) */
   target?: string;
+  /** Effective UluOps prompt profile selected by the server. */
+  renderProfile?: RenderProfile;
   /** Adapter warnings about lossy mappings (only present for target rendering) */
   warnings?: TargetWarning[];
 }

@@ -1009,6 +1009,12 @@ Get the fully rendered/resolved definition. Pass `"latest"` as the version to re
 const rendered = await client.render.get('agent', 'code-validator', 'latest');
 console.log(rendered.markdown);
 
+// Select the portable profile explicitly; direct API/SDK calls that omit it
+// retain the Registry's stored-profile behavior.
+const core = await client.render.get('agent', 'code-validator', 'latest', {
+  renderProfile: 'core',
+});
+
 // Get specific version
 const specific = await client.render.get('agent', 'code-validator', '1.5.0');
 

@@ -97,6 +97,7 @@ describe('renderResultSchema', () => {
       promptHash: 'sha256:abc',
       variables: ['target'],
       target: 'opencode',
+      renderProfile: 'core',
       warnings: [{ field: 'model', reason: 'Anthropic-specific', level: 'info' }],
     });
     expect(result.success).toBe(true);

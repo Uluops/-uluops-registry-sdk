@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.0] - 2026-09-27
+
+### Added
+
+- `RenderResult.renderProfile` reports the profile selected by the Registry API when available; it remains optional for older servers.
+
 ## [0.55.0] - 2026-09-26
 
 ### Added

@@ -972,10 +972,11 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/render')
           .query({ renderProfile: 'core' })
-          .reply(200, { data: { markdown: '# Core' } });
+          .reply(200, { data: { markdown: '# Core', renderProfile: 'core' } });
 
         const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0', { renderProfile: 'core' });
         expect(result.markdown).toBe('# Core');
+        expect(result.renderProfile).toBe('core');
       });
     });
 
