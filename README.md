@@ -577,6 +577,10 @@ for (const v of versions) {
 
 Compare two versions showing changes. The response shape depends on the `format` option:
 
+Select `diffContract: 'combined-v1'` with `format: 'unified'` for an applicable patch;
+add `full: true` for exact `sourceYaml`/`targetYaml` alongside it. See
+[combined unified version diffs](#combined-unified-version-diffs) for an example.
+
 ```typescript
 // Section-level summary (default)
 const summary = await client.versions.diff('agent', 'code-validator', '1.0.0', '2.0.0');

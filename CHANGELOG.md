@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [0.55.0] - 2026-09-26
 
 ### Added
@@ -14,8 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Version-diff overloads now return the full result union for dynamic options and correctly prioritize legacy `full=true` when a format is also supplied.
-
-## [Unreleased]
 
 ## [0.54.1] - 2026-09-24
 
