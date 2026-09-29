@@ -932,13 +932,14 @@ describe('operations', () => {
         nock(MOCK_BASE_URL)
           .get('/definitions/agent/my-agent@1.0.0/render')
           .query({ target: 'opencode', model: 'gpt-5.3' })
-          .reply(200, { data: { markdown: '# My Agent', target: 'opencode' } });
+          .reply(200, { data: { markdown: '# My Agent', target: 'opencode', selectedModel: 'openai/gpt-5.3' } });
 
         const result = await renderOps.get(http, 'agent', 'my-agent', '1.0.0', {
           target: 'opencode',
           model: 'gpt-5.3',
         });
         expect(result.markdown).toBe('# My Agent');
+        expect(result.selectedModel).toBe('openai/gpt-5.3');
       });
 
       it('should accept "latest" as version (omits version from path)', async () => {
