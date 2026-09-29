@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Optional nullable `RenderResult.selectedModel` preserves the API's actual artifact-envelope model, including aliases; null means no model envelope, omission retains compatibility with older servers. Requested model overrides are not presented as actual selection.
+
 ## [0.56.0] - 2026-09-27
 
 ### Added

@@ -97,10 +97,24 @@ describe('renderResultSchema', () => {
       promptHash: 'sha256:abc',
       variables: ['target'],
       target: 'opencode',
+      selectedModel: 'openai/gpt-5',
       renderProfile: 'core',
       warnings: [{ field: 'model', reason: 'Anthropic-specific', level: 'info' }],
     });
     expect(result.success).toBe(true);
+  });
+
+  it.each(['gpt-5.3', 'sonnet', null])('preserves selectedModel %s', (selectedModel) => {
+    const response = { markdown: '# Test', selectedModel, warnings: [{ field: 'model', reason: 'fallback', level: 'info' }] };
+    expect(renderResultSchema.parse(response)).toEqual(response);
+  });
+
+  it('preserves absence for older servers rather than inventing a model', () => {
+    expect(renderResultSchema.parse({ markdown: '# Legacy' })).not.toHaveProperty('selectedModel');
+  });
+
+  it('rejects invalid selected-model metadata', () => {
+    expect(renderResultSchema.safeParse({ markdown: '# Test', selectedModel: 42 }).success).toBe(false);
   });
 
   it('rejects missing markdown', () => {

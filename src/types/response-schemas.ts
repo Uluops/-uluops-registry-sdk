@@ -102,6 +102,7 @@ export const renderResultSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
   target: z.string().optional(),
   renderProfile: z.enum(['core', 'uluops-full']).optional(),
+  selectedModel: z.string().nullable().optional(),
   warnings: z.array(targetWarningSchema).optional(),
 });
 

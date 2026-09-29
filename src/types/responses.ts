@@ -78,6 +78,9 @@ export interface RenderResult {
   target?: string;
   /** Effective UluOps prompt profile selected by the server. */
   renderProfile?: RenderProfile;
+  /** Model value emitted in the artifact envelope; null means no model envelope.
+   * Omitted when an older server does not report selection. This is not provider resolution. */
+  selectedModel?: string | null;
   /** Adapter warnings about lossy mappings (only present for target rendering) */
   warnings?: TargetWarning[];
 }

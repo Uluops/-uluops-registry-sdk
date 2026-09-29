@@ -1030,6 +1030,12 @@ const adapted = await client.render.get('agent', 'code-validator', 'latest', {
 });
 ```
 
+`selectedModel`, when reported by the API, is the actual model value in the rendered
+artifact envelope (including aliases). It is `null` when the artifact has no model
+envelope and absent when an older API does not report selection. It does not assert
+provider resolution or that the requested override was honored. `target`,
+`renderProfile`, `promptHash` and adapter `warnings` retain their existing semantics.
+
 #### `preview(type, body)`
 
 Preview render without saving.
