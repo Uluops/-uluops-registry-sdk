@@ -23,9 +23,25 @@ import {
   isConflictError,
   isUnprocessableError,
   isRateLimitError,
+  isInvalidTransitionError,
+  isDeleteBlockedError,
 } from '../src/errors/errors.js';
 
 describe('error classes', () => {
+  it('narrows lifecycle refusals without guessing missing details', () => {
+    const transition = createErrorFromStatus(400, 'Cannot archive', 'INVALID_TRANSITION', {
+      allowedTransitions: ['deprecated'], applicationState: 'not_applied',
+    });
+    expect(isInvalidTransitionError(transition)).toBe(true);
+    expect(isInvalidTransitionError(createErrorFromStatus(400, 'Cannot archive', 'INVALID_TRANSITION'))).toBe(false);
+
+    const blocked = createErrorFromStatus(409, 'Cannot delete', 'DELETE_BLOCKED', {
+      reason: 'definition_has_blockers', blockingResources: { present: true },
+      applicationState: 'not_applied', recoveryAction: 'Deprecate it first.',
+    });
+    expect(isDeleteBlockedError(blocked)).toBe(true);
+    expect(isDeleteBlockedError(createErrorFromStatus(409, 'Cannot delete', 'DELETE_BLOCKED'))).toBe(false);
+  });
   describe('RegistryApiError', () => {
     it('should create with required fields', () => {
       const error = new RegistryApiError(500, 'Server error');

@@ -132,6 +132,8 @@ export function loadConfig(options: {
  * // Auto-discover with overrides
  * const client = createClientFromEnvironment({ debug: true });
  * ```
+ * @param config - Optional explicit overrides; omitted credentials are resolved from Node environment and stored files.
+ * @returns A client configured with resolved credentials, URLs and organization scope.
  */
 export function createClientFromEnvironment(config: RegistryClientConfig = {}): RegistryClient {
   const sdkConfig = loadConfig({

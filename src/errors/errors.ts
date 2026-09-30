@@ -97,3 +97,36 @@ export class UnsupportedDiffContractError extends SdkApiError {
     this.name = 'UnsupportedDiffContractError';
   }
 }
+
+/** A refused definition lifecycle transition. No mutation was applied. */
+export interface InvalidTransitionDetails {
+  allowedTransitions: string[];
+  applicationState: 'not_applied';
+}
+
+/** Narrow an API error to an unapplied status transition and its allowed next statuses. */
+export function isInvalidTransitionError(err: unknown): err is SdkApiError & { details: InvalidTransitionDetails } {
+  if (!(err instanceof SdkApiError) || err.code !== 'INVALID_TRANSITION') return false;
+  const details = err.details as Partial<InvalidTransitionDetails> | undefined;
+  return Array.isArray(details?.allowedTransitions)
+    && details.allowedTransitions.every((value) => typeof value === 'string')
+    && details.applicationState === 'not_applied';
+}
+
+/** A definition still has references; the server discloses presence only, not identities or counts. */
+export interface DeleteBlockedDetails {
+  reason: 'definition_has_blockers';
+  blockingResources: { present: true };
+  applicationState: 'not_applied';
+  recoveryAction: string;
+}
+
+/** Narrow a blocked delete without exposing referenced definitions or their owners. */
+export function isDeleteBlockedError(err: unknown): err is SdkApiError & { details: DeleteBlockedDetails } {
+  if (!(err instanceof SdkApiError) || err.code !== 'DELETE_BLOCKED') return false;
+  const details = err.details as Partial<DeleteBlockedDetails> | undefined;
+  return details?.reason === 'definition_has_blockers'
+    && details.blockingResources?.present === true
+    && details.applicationState === 'not_applied'
+    && typeof details.recoveryAction === 'string';
+}

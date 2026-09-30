@@ -186,6 +186,8 @@ export interface RiskProfile {
  * name (deep-aware since the ADR-010 2026-07-10 revision); centralizing it here
  * stops the CLI and every other SDK consumer from re-implementing the sentinel
  * checks and drifting.
+ * @param profile - Risk profile returned by the API, or nullish when no scan exists.
+ * @returns `true` only when a profile exists and no completed analysis layer reports a failure.
  */
 export function isVerdictTrustworthy(profile: RiskProfile | null | undefined): boolean {
   return profile != null

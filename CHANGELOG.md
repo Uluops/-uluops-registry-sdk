@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.2] - 2026-09-30 (unpublished candidate)
+
+### Added
+
+- F16: expose `isInvalidTransitionError` and `isDeleteBlockedError` guards with typed lifecycle recovery details. The guards retain the API's not-applied state and disclose only blocker presence for a refused delete.
+
+### Changed
+
+- Pin `@uluops/sdk-core` 0.18.1 so HTTP 400, 422 and 429 errors retain server cause codes and safe details, and request IDs survive when sent in the response body.
+
 ## [0.56.1] - 2026-09-29
 
 ### Added

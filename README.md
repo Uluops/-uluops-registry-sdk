@@ -13,7 +13,7 @@ TypeScript SDK for the UluOps Registry API. Manage AI workflow definitions inclu
 
 ## Quick Start
 
-> **Note:** Examples use TypeScript syntax. Run with [tsx](https://github.com/privatenumber/tsx) (`npx tsx script.ts`) or compile with `tsc` first. A running Registry API server is required — see [Environment Variables](#environment-variables) to configure the base URL.
+> **Note:** Examples use TypeScript syntax. Run with [tsx](https://github.com/privatenumber/tsx) (`npx tsx script.ts`) or compile with `tsc` first. Node examples using `process.env` need `@types/node` when compiled with `tsc` (`npm install -D @types/node`). A running Registry API server is required — see [Environment Variables](#environment-variables) to configure the base URL.
 
 ### Node.js (Recommended)
 
@@ -42,14 +42,14 @@ const newDef = await client.definitions.create('agent', 'my-agent', {
 
 ### Browser / Explicit Config
 
-The `RegistryClient` constructor is browser-safe and does not read environment variables. Pass credentials directly:
+The `RegistryClient` constructor is browser-safe and does not read environment variables. Pass a short-lived session token supplied at runtime by your backend; do not bundle a long-lived API key into browser code:
 
 ```typescript
 import { RegistryClient } from '@uluops/registry-sdk';
 
-const client = new RegistryClient({
-  apiKey: process.env.ULUOPS_API_KEY, // or pass from your backend
-});
+function createBrowserClient(sessionToken: string): RegistryClient {
+  return new RegistryClient({ sessionToken });
+}
 ```
 
 > **Security:** Never hardcode API keys in source code. Use environment variables, secret managers, or server-side proxies to inject credentials at runtime.
@@ -1244,8 +1244,9 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
 | `ResponseValidationError` | 0 | API response did not match the SDK's expected Zod schema (contract drift). Extends `RegistryApiError`; original `ZodError` preserved on `.zodError`. Non-retryable. |
 
-This release pins `@uluops/sdk-core` 0.18.0. HTTP 404 and 409 errors retain the
+Version 0.56.2 pins `@uluops/sdk-core` 0.18.1. HTTP 400, 404, 409 and 422 errors retain the
 server's structured `code` and `details`, including upgrade refusal metadata.
+`isInvalidTransitionError(error)` exposes `details.allowedTransitions`; `isDeleteBlockedError(error)` exposes blocker presence and a recovery action without revealing hidden references. A response-schema failure after a write may mean the write committed: read the current state before retrying.
 
 All API errors extend `RegistryApiError` and include:
 - `statusCode` — HTTP status code (0 for network/timeout/response-validation)
@@ -1275,6 +1276,32 @@ try {
     console.log(`API error [${error.code}]: ${error.message}`);
   } else {
     throw error; // Unexpected non-API error
+  }
+}
+```
+
+### Lifecycle Recovery
+
+Import the typed guards when a definition cannot move to the requested status or be deleted:
+
+```typescript
+import { RegistryClient } from '@uluops/registry-sdk';
+import { isInvalidTransitionError, isDeleteBlockedError } from '@uluops/registry-sdk/errors';
+
+async function recoverLifecycle(client: RegistryClient): Promise<void> {
+  try {
+    await client.definitions.archive('agent', 'my-agent', '1.0.0');
+  } catch (error) {
+    if (!isInvalidTransitionError(error)) throw error;
+    console.log('Allowed next statuses:', error.details.allowedTransitions);
+  }
+
+  try {
+    await client.definitions.delete('agent', 'my-agent', '1.0.0');
+  } catch (error) {
+    if (!isDeleteBlockedError(error)) throw error;
+    console.log(error.details.recoveryAction);
+    console.log(error.details.blockingResources.present); // true; no hidden identities or counts
   }
 }
 ```

@@ -33,4 +33,8 @@ export {
   ResponseValidationError,
   UnsupportedQualityContractError,
   UnsupportedDiffContractError,
+  isInvalidTransitionError,
+  isDeleteBlockedError,
 } from './errors.js';
+
+export type { InvalidTransitionDetails, DeleteBlockedDetails } from './errors.js';
