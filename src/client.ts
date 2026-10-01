@@ -120,7 +120,11 @@ export interface RegistryClientConfig {
   password?: string;
   /** Session token from ops-uluops-api */
   sessionToken?: string;
-  /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
+  /**
+   * Org slug — sent as `X-Org-Slug` on WRITES only, where it qualifies which
+   * org's row a name means. Reads never carry it (the registry would scope
+   * them to this org; spec I-3). Until 0.57.0 it was sent on every request.
+   */
   orgSlug?: string;
   /** Base URL for the registry API */
   baseUrl?: string;

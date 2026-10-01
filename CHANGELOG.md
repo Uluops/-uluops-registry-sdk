@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.57.0] - 2026-10-01
+
+### Changed
+
+- **`X-Org-Slug` is sent on writes only (definition visibility spec v0.5.1 I-3, phase 1b-iv).**
+  `orgSlug` / `ULUOPS_ORG_SLUG` used to be a default header on every request. It is now added to
+  non-GET requests only, where it qualifies which org's definition a name means; reads carry no org
+  header. **Why:** the registry treats a verified org header as a HARD scope on reads (lists, `GET`,
+  versions, diff), so a client configured with an org — the registry MCP sets `ULUOPS_ORG_SLUG` —
+  could not read any other org's public definitions by bare name. **What a consumer notices:**
+  reads under an `orgSlug` now return the marketplace view (your own org's private definitions are
+  still included, by membership). A read that relied on the header to narrow results to one org —
+  e.g. a list meant as "my org only", or a read of your org's copy of a name another org published
+  first — now gets the marketplace answer (the claimant's row). Filter lists by `namespace`; for a
+  read pinned to one org, pass a per-call `headers['X-Org-Slug']`, which is still sent as given.
+  The SDK's methods cannot take `@org/name` until qualified addressing (spec I-4, Phase 3).
+  Minor bump because a read's result set changes for configured clients without any signature
+  change.
+
 ## [0.56.2] - 2026-09-30 (unpublished candidate)
 
 ### Added

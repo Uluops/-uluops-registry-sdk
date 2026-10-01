@@ -271,7 +271,7 @@ const client = new RegistryClient({
   // Connection settings
   timeout: 30000,              // Request timeout in ms (default: 30000)
   retries: 3,                  // Retry count for transient errors (default: 3)
-  orgSlug: 'my-org',           // Organization slug for multi-tenancy
+  orgSlug: 'my-org',           // Org for WRITES (sent as X-Org-Slug on non-GET requests only — see below)
   debug: false,                // Enable debug logging
 
   // Callbacks
@@ -1166,8 +1166,21 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 | `ULUOPS_SESSION_TOKEN` | JWT session token | - |
 | `ULUOPS_EMAIL` | Email for session-based auth | - |
 | `ULUOPS_PASSWORD` | Password for session-based auth | - |
-| `ULUOPS_ORG_SLUG` | Organization slug for multi-tenancy | - |
+| `ULUOPS_ORG_SLUG` | Org for writes (`X-Org-Slug` on non-GET requests only) | - |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
+
+**`orgSlug` scopes writes, not reads (since 0.57.0).** The client sends `X-Org-Slug` on every
+non-GET request — create, update, publish, deprecate, archive, delete, star, fork — where it tells
+the registry which org's definition a name means. It never sends it on a read: the registry treats a
+verified org header as a hard scope on reads, so a client configured with an org could otherwise not
+read another org's public definitions by name. Your own org's private definitions still appear in
+lists and reads, because the registry checks your membership, not the header. A bare name on a
+read means the org that first published it; when your org holds a different copy of that name, read
+it through the exported `RegistryHttpClient` with a per-call header (`http.request('GET', path,
+undefined, { headers: { 'X-Org-Slug': 'my-org' } })`). Qualified `@org/name` arguments to the
+`RegistryClient` methods arrive with qualified addressing (spec I-4, Phase 3); the name validator
+rejects `@` today. Through 0.56.x the header
+went on every request.
 
 Create a `.env` file in your project:
 

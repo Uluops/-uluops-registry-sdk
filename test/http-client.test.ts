@@ -90,19 +90,41 @@ describe('RegistryHttpClient', () => {
       expect(result.authenticated).toBe(true);
     });
 
-    it('should include X-Org-Slug header when orgSlug is configured', async () => {
-      const orgClient = new RegistryHttpClient({
-        apiKey: TEST_API_KEY,
-        orgSlug: 'my-org',
+    // I-3 (definition visibility spec v0.5.1, phase 1b-iv): the registry
+    // HARD-scopes a read to a verified org header, so the header goes on writes
+    // only. Until 0.57.0 every request carried it [negative control: the read
+    // case fails on the 0.56.x client; writes and per-call overrides behave as
+    // before and pin that they still do].
+    const captureOrgHeader = (method: 'get' | 'post' | 'put' | 'patch' | 'delete'): (() => string | string[] | undefined) => {
+      let seen: string | string[] | undefined = 'not-called';
+      nock(MOCK_BASE_URL)[method]('/test').reply(function () {
+        seen = this.req.headers['x-org-slug'];
+        return [200, JSON.stringify({ data: { ok: true } }), { 'content-type': 'application/json' }];
       });
+      return () => seen;
+    };
+    const orgClient = (): RegistryHttpClient => new RegistryHttpClient({ apiKey: TEST_API_KEY, orgSlug: 'my-org', retries: 1 });
 
-      nock(MOCK_BASE_URL)
-        .get('/test')
-        .matchHeader('X-Org-Slug', 'my-org')
-        .reply(200, { data: { ok: true } });
+    it('does NOT send X-Org-Slug on a read, even when orgSlug is configured', async () => {
+      const seen = captureOrgHeader('get');
+      await orgClient().get<{ ok: boolean }>('/test');
+      expect(seen()).toBeUndefined();
+    });
 
-      const result = await orgClient.get<{ ok: boolean }>('/test');
-      expect(result.ok).toBe(true);
+    it.each(['post', 'put', 'patch', 'delete'] as const)('sends X-Org-Slug on a write (%s)', async (method) => {
+      const seen = captureOrgHeader(method);
+      const c = orgClient();
+      await (method === 'delete' ? c.delete<unknown>('/test') : c[method]<unknown>('/test', {}));
+      expect(seen()).toBe('my-org');
+    });
+
+    it('a per-call X-Org-Slug header wins, on a read or a write', async () => {
+      const read = captureOrgHeader('get');
+      await orgClient().request<unknown>('GET', '/test', undefined, { headers: { 'X-Org-Slug': 'other-org' } });
+      expect(read()).toBe('other-org');
+      const write = captureOrgHeader('post');
+      await orgClient().request<unknown>('POST', '/test', {}, { headers: { 'X-Org-Slug': 'other-org' } });
+      expect(write()).toBe('other-org');
     });
 
     it('should not include X-Org-Slug header when orgSlug is omitted', async () => {

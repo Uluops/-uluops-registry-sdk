@@ -8,6 +8,8 @@
 import {
   HttpClient,
   type HttpClientConfig as CoreHttpClientConfig,
+  type RequestOptions,
+  type WithResponseContext,
 } from '@uluops/sdk-core/http';
 import type { RateLimitInfo } from '@uluops/sdk-core';
 import type { SecurityEventHandler } from '@uluops/sdk-core/http';
@@ -90,9 +92,9 @@ export class RegistryHttpClient extends HttpClient {
       timeout: config.timeout,
       retries: config.retries,
       debug: config.debug,
+      // X-Org-Slug is NOT a default header (see `request` below).
       defaultHeaders: {
         'Accept': 'application/json',
-        ...(config.orgSlug ? { 'X-Org-Slug': config.orgSlug } : {}),
       },
       apiKey: config.apiKey,
       email: config.email,
@@ -105,5 +107,39 @@ export class RegistryHttpClient extends HttpClient {
       onSecurityEvent: config.onSecurityEvent,
     };
     super(coreConfig);
+    this.orgSlug = config.orgSlug;
+  }
+
+  /** The configured org, sent as `X-Org-Slug` on WRITES only (see `request`). */
+  private readonly orgSlug: string | undefined;
+
+  /**
+   * `X-Org-Slug` goes on writes (every non-GET request) and never on reads
+   * (definition visibility spec v0.5.1 I-3, phase 1b-iv). The registry treats a
+   * verified org header as a HARD scope on reads: a GET carrying it sees only
+   * that org's rows. Until 0.57.0 this client sent it on every request, so a
+   * client configured with an org (the registry MCP sets `ULUOPS_ORG_SLUG`)
+   * could not read another org's public definitions by name. On a write the
+   * header QUALIFIES the address — it says which org's row is meant — which is
+   * what it is for. A read that needs one org's row names it (`@org/name`).
+   * A per-call `headers['X-Org-Slug']` still wins, for either method.
+   */
+  override request<T>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', endpoint: string, data: object | undefined, options: RequestOptions & {
+    withResponseContext: true;
+  }): Promise<WithResponseContext<T>>;
+  override request<T>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', endpoint: string, data?: object, options?: RequestOptions & {
+    withResponseContext?: false;
+  }): Promise<T>;
+  override request<T>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', endpoint: string, data: object | undefined, options: RequestOptions): Promise<T | WithResponseContext<T>>;
+  override request<T>(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    endpoint: string,
+    data?: object,
+    options?: RequestOptions,
+  ): Promise<T | WithResponseContext<T>> {
+    const scoped = this.orgSlug !== undefined && method !== 'GET'
+      ? { ...options, headers: { 'X-Org-Slug': this.orgSlug, ...options?.headers } }
+      : options;
+    return super.request<T>(method, endpoint, data, scoped as RequestOptions);
   }
 }
