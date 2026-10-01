@@ -221,6 +221,8 @@ export const definitionListItemSchema = z.object({
   agentType: agentTypeResponseSchema.nullable().optional(),
   authorId: z.string(),
   orgId: z.string().nullable().optional(),
+  /** `@org/name` — which org's row this is. Lists mix orgs since 0.57.0 (no org header on reads), so this is how rows of one name are told apart. Was stripped by this schema until 0.57.0. */
+  namespace: z.string().nullable().optional(),
   tier: tierResponseSchema,
   minSubscription: subscriptionTierResponseSchema.nullable().optional(),
   proRestricted: z.boolean().optional(),

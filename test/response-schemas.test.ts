@@ -258,6 +258,17 @@ describe('definitionListResponseSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  // Lists mix orgs since 0.57.0 (no org header on reads); namespace is how two
+  // orgs' rows of one name are told apart. The schema stripped it until then
+  // (found by the 1b-iv live test: the MCP's compact list had no namespace).
+  it('keeps each item\'s namespace', () => {
+    const result = definitionListResponseSchema.parse({
+      definitions: [{ ...createMockDefinitionListItem(), namespace: '@acme/x' }],
+      total: 1, limit: 20, offset: 0,
+    });
+    expect(result.definitions[0]?.namespace).toBe('@acme/x');
+  });
+
   it('rejects missing total', () => {
     expect(definitionListResponseSchema.safeParse({
       definitions: [], limit: 20, offset: 0,

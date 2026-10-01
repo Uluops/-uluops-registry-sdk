@@ -290,6 +290,8 @@ export interface DefinitionListItem {
   agentType?: AgentType | null;
   authorId: string;
   orgId?: string | null;
+  /** `@org/name` — which org's row this is (lists mix orgs; see the orgSlug notes). */
+  namespace?: string | null;
   tier: Tier;
   /** Minimum subscription tier required to access content */
   minSubscription?: SubscriptionTier | null;

@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   means the org that first published the name, a write means your org's copy. This is the spec's
   I-3 until qualified addressing (I-4) — check `namespace` on what a read returns before writing
   back what you read.
+- **`definitions.list` items keep `namespace`** (`@org/name`). The response schema stripped it, so
+  rows of one name from different orgs — which lists now mix — could not be told apart, and the
+  "filter by `namespace`" advice above had nothing to filter on. Added to `DefinitionListItem` too.
 - Passing a qualified name (`@org/name`) now raises a `ValidationError` that names the limitation
   and the per-call-header workaround, instead of the generic character-set message.
 - `orgSlug: ''` (e.g. an empty `ULUOPS_ORG_SLUG`) sends no header, as before.
