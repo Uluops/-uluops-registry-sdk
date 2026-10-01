@@ -49,6 +49,10 @@ describe('validators', () => {
   });
 
   describe('validateDefinitionName', () => {
+    it('a qualified @org/name explains the limitation and the workaround (spec I-4 pending)', () => {
+      expect(() => validateDefinitionName('@ulu-labs/code-validator')).toThrow(/not supported by the SDK yet.*X-Org-Slug/s);
+    });
+
     it('should accept valid names', () => {
       expect(() => validateDefinitionName('a')).not.toThrow();
       expect(() => validateDefinitionName('test')).not.toThrow();

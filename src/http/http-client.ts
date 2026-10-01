@@ -55,7 +55,12 @@ export interface HttpClientConfig {
   password?: string;
   /** Pre-existing JWT session token — bypasses login, does not trigger onTokenRefresh */
   sessionToken?: string;
-  /** Org slug for multi-tenancy — sets X-Org-Slug header on all requests */
+  /**
+   * Org slug — sent as `X-Org-Slug` on DEFINITION WRITES only (see
+   * `RegistryHttpClient.request`), where it says which org's definition a name
+   * means. Reads and other actions carry no org header. Until 0.57.0 it was
+   * sent on every request.
+   */
   orgSlug?: string;
   /** Callback invoked when a session token is refreshed — use to persist the new token */
   onTokenRefresh?: (token: string) => void;
@@ -71,6 +76,19 @@ export interface HttpClientConfig {
    * Structured, routable telemetry (see `SecurityEvent`). Forwarded to sdk-core.
    */
   onSecurityEvent?: SecurityEventHandler;
+}
+
+/**
+ * A definition write: `/definitions/:type/:name[@version]` itself (create,
+ * update, delete) or one of its lifecycle actions. `:name` is URI-encoded by
+ * buildDefinitionPath, so it contains no `/`. Star, executions, forkable,
+ * lineage, forks, dependencies and every non-definition route do not match.
+ */
+const DEFINITION_WRITE = /^\/definitions\/[^/?#]+\/[^/?#]+(?:\/(?:publish|deprecate|archive|retranslate|upgrade|fork))?(?:[?#].*)?$/;
+
+/** Whether `endpoint` is a definition write (see DEFINITION_WRITE). Exported for tests. */
+export function isDefinitionWrite(endpoint: string): boolean {
+  return DEFINITION_WRITE.test(endpoint);
 }
 
 /**
@@ -110,19 +128,25 @@ export class RegistryHttpClient extends HttpClient {
     this.orgSlug = config.orgSlug;
   }
 
-  /** The configured org, sent as `X-Org-Slug` on WRITES only (see `request`). */
+  /** The configured org, sent as `X-Org-Slug` on definition writes only (see `request`). */
   private readonly orgSlug: string | undefined;
 
   /**
-   * `X-Org-Slug` goes on writes (every non-GET request) and never on reads
-   * (definition visibility spec v0.5.1 I-3, phase 1b-iv). The registry treats a
-   * verified org header as a HARD scope on reads: a GET carrying it sees only
-   * that org's rows. Until 0.57.0 this client sent it on every request, so a
-   * client configured with an org (the registry MCP sets `ULUOPS_ORG_SLUG`)
-   * could not read another org's public definitions by name. On a write the
-   * header QUALIFIES the address — it says which org's row is meant — which is
-   * what it is for. A read that needs one org's row names it (`@org/name`).
-   * A per-call `headers['X-Org-Slug']` still wins, for either method.
+   * `X-Org-Slug` goes on DEFINITION WRITES only (definition visibility spec
+   * v0.5.1 I-3, phase 1b-iv): create, update, delete, publish, deprecate,
+   * archive, retranslate, upgrade, and fork (where it names the target org).
+   * There it QUALIFIES the address — it says which org's definition a name
+   * means. Everything else carries no org header:
+   *   - reads: the registry treats a verified org header as a HARD scope on
+   *     reads, so a client configured with an org (the registry MCP sets
+   *     `ULUOPS_ORG_SLUG`) could not read another org's public definitions by
+   *     name while the header went on every request (through 0.56.x);
+   *   - star / unstar, recording an execution, validate, render preview, the
+   *     users batch: POSTs and DELETEs, but not definition writes (spec P-8:
+   *     starring is not a definition write) — a star must land on the row a
+   *     read of the same name returns, and a method-based rule split them
+   *     (review run #219).
+   * A per-call `headers['X-Org-Slug']` still wins, on any request.
    */
   override request<T>(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', endpoint: string, data: object | undefined, options: RequestOptions & {
     withResponseContext: true;
@@ -137,7 +161,7 @@ export class RegistryHttpClient extends HttpClient {
     data?: object,
     options?: RequestOptions,
   ): Promise<T | WithResponseContext<T>> {
-    const scoped = this.orgSlug !== undefined && method !== 'GET'
+    const scoped = this.orgSlug && method !== 'GET' && isDefinitionWrite(endpoint)
       ? { ...options, headers: { 'X-Org-Slug': this.orgSlug, ...options?.headers } }
       : options;
     return super.request<T>(method, endpoint, data, scoped as RequestOptions);

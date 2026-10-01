@@ -36,6 +36,18 @@ export function validateDefinitionName(name: string): void {
     });
   }
 
+  if (name.startsWith('@') || name.includes('/')) {
+    // A qualified address (`@org/name`). Not accepted here until qualified
+    // addressing (definition visibility spec I-4, Phase 3) — say so, and say
+    // what works today, instead of the generic character-set error.
+    throw new ValidationError(
+      `Qualified names like "${name}" are not supported by the SDK yet (planned: spec I-4). ` +
+        'Pass the bare name; to pin one org\'s copy on a read, call the exported RegistryHttpClient ' +
+        "with a per-call header: request('GET', path, undefined, { headers: { 'X-Org-Slug': '<org>' } }).",
+      { field: 'name', qualified: true },
+    );
+  }
+
   const pattern = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
   if (!pattern.test(name)) {
     throw new ValidationError(

@@ -91,39 +91,69 @@ describe('RegistryHttpClient', () => {
     });
 
     // I-3 (definition visibility spec v0.5.1, phase 1b-iv): the registry
-    // HARD-scopes a read to a verified org header, so the header goes on writes
-    // only. Until 0.57.0 every request carried it [negative control: the read
-    // case fails on the 0.56.x client; writes and per-call overrides behave as
-    // before and pin that they still do].
-    const captureOrgHeader = (method: 'get' | 'post' | 'put' | 'patch' | 'delete'): (() => string | string[] | undefined) => {
+    // HARD-scopes a read (and a star) to a verified org header, so the header
+    // goes on DEFINITION WRITES only. Until 0.57.0 every request carried it
+    // [negative control: the read and non-definition-write cases fail on the
+    // 0.56.x client; definition writes and per-call overrides behave as before].
+    const captureOrgHeader = (method: 'get' | 'post' | 'put' | 'patch' | 'delete', path: string): (() => string | string[] | undefined) => {
       let seen: string | string[] | undefined = 'not-called';
-      nock(MOCK_BASE_URL)[method]('/test').reply(function () {
+      nock(MOCK_BASE_URL)[method](path).reply(function () {
         seen = this.req.headers['x-org-slug'];
         return [200, JSON.stringify({ data: { ok: true } }), { 'content-type': 'application/json' }];
       });
       return () => seen;
     };
     const orgClient = (): RegistryHttpClient => new RegistryHttpClient({ apiKey: TEST_API_KEY, orgSlug: 'my-org', retries: 1 });
+    const send = (c: RegistryHttpClient, method: 'get' | 'post' | 'put' | 'patch' | 'delete', path: string): Promise<unknown> =>
+      method === 'get' || method === 'delete' ? c[method]<unknown>(path) : c[method]<unknown>(path, {});
 
     it('does NOT send X-Org-Slug on a read, even when orgSlug is configured', async () => {
-      const seen = captureOrgHeader('get');
-      await orgClient().get<{ ok: boolean }>('/test');
+      const seen = captureOrgHeader('get', '/definitions/agent/x');
+      await orgClient().get<{ ok: boolean }>('/definitions/agent/x');
       expect(seen()).toBeUndefined();
     });
 
-    it.each(['post', 'put', 'patch', 'delete'] as const)('sends X-Org-Slug on a write (%s)', async (method) => {
-      const seen = captureOrgHeader(method);
-      const c = orgClient();
-      await (method === 'delete' ? c.delete<unknown>('/test') : c[method]<unknown>('/test', {}));
+    it.each([
+      ['post', '/definitions/agent/x'],
+      ['put', '/definitions/agent/x%40v'],
+      ['delete', '/definitions/agent/x@1.0.0'],
+      ['post', '/definitions/agent/x@1.0.0/publish'],
+      ['post', '/definitions/agent/x@1.0.0/deprecate'],
+      ['post', '/definitions/agent/x@1.0.0/archive'],
+      ['post', '/definitions/agent/x@1.0.0/retranslate'],
+      ['post', '/definitions/agent/x/upgrade'],
+      ['post', '/definitions/agent/x@1.0.0/fork'],
+    ] as const)('sends X-Org-Slug on a definition write (%s %s)', async (method, path) => {
+      const seen = captureOrgHeader(method, path);
+      await send(orgClient(), method, path);
       expect(seen()).toBe('my-org');
     });
 
+    it.each([
+      ['post', '/definitions/agent/x/star'],
+      ['delete', '/definitions/agent/x/star'],
+      ['post', '/definitions/agent/x@1.0.0/executions'],
+      ['post', '/validate/agent'],
+      ['post', '/render/agent/preview'],
+      ['post', '/users/batch'],
+    ] as const)('does NOT send X-Org-Slug on a non-definition write (%s %s) — star is not a definition write (P-8)', async (method, path) => {
+      const seen = captureOrgHeader(method, path);
+      await send(orgClient(), method, path);
+      expect(seen()).toBeUndefined();
+    });
+
+    it('an empty orgSlug sends no header', async () => {
+      const seen = captureOrgHeader('post', '/definitions/agent/x');
+      await new RegistryHttpClient({ apiKey: TEST_API_KEY, orgSlug: '', retries: 1 }).post<unknown>('/definitions/agent/x', {});
+      expect(seen()).toBeUndefined();
+    });
+
     it('a per-call X-Org-Slug header wins, on a read or a write', async () => {
-      const read = captureOrgHeader('get');
-      await orgClient().request<unknown>('GET', '/test', undefined, { headers: { 'X-Org-Slug': 'other-org' } });
+      const read = captureOrgHeader('get', '/definitions/agent/x');
+      await orgClient().request<unknown>('GET', '/definitions/agent/x', undefined, { headers: { 'X-Org-Slug': 'other-org' } });
       expect(read()).toBe('other-org');
-      const write = captureOrgHeader('post');
-      await orgClient().request<unknown>('POST', '/test', {}, { headers: { 'X-Org-Slug': 'other-org' } });
+      const write = captureOrgHeader('post', '/definitions/agent/x');
+      await orgClient().request<unknown>('POST', '/definitions/agent/x', {}, { headers: { 'X-Org-Slug': 'other-org' } });
       expect(write()).toBe('other-org');
     });
 

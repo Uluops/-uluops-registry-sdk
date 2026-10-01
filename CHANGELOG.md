@@ -11,10 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **`X-Org-Slug` is sent on writes only (definition visibility spec v0.5.1 I-3, phase 1b-iv).**
-  `orgSlug` / `ULUOPS_ORG_SLUG` used to be a default header on every request. It is now added to
-  non-GET requests only, where it qualifies which org's definition a name means; reads carry no org
-  header. **Why:** the registry treats a verified org header as a HARD scope on reads (lists, `GET`,
+- **`X-Org-Slug` is sent on definition writes only (definition visibility spec v0.5.1 I-3, phase
+  1b-iv).** `orgSlug` / `ULUOPS_ORG_SLUG` used to be a default header on every request. It is now
+  added only to definition writes — create, update, delete, publish, deprecate, archive,
+  retranslate, upgrade, and fork (the target org) — where it qualifies which org's definition a name
+  means. Reads, star/unstar, recording an execution, validate, render preview and the users batch
+  carry no org header (starring is not a definition write, spec P-8; a star lands on the row a read
+  of the same name returns). **Why:** the registry treats a verified org header as a HARD scope on reads (lists, `GET`,
   versions, diff), so a client configured with an org — the registry MCP sets `ULUOPS_ORG_SLUG` —
   could not read any other org's public definitions by bare name. **What a consumer notices:**
   reads under an `orgSlug` now return the marketplace view (your own org's private definitions are
@@ -25,8 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The SDK's methods cannot take `@org/name` until qualified addressing (spec I-4, Phase 3).
   Minor bump because a read's result set changes for configured clients without any signature
   change.
+  **Reads and writes of one bare name can now mean different rows** for a configured client: a read
+  means the org that first published the name, a write means your org's copy. This is the spec's
+  I-3 until qualified addressing (I-4) — check `namespace` on what a read returns before writing
+  back what you read.
+- Passing a qualified name (`@org/name`) now raises a `ValidationError` that names the limitation
+  and the per-call-header workaround, instead of the generic character-set message.
+- `orgSlug: ''` (e.g. an empty `ULUOPS_ORG_SLUG`) sends no header, as before.
+- The README Quick Start no longer pins `code-validator@1.0.0`, a version that was never published
+  (it 404'd on first run; found by the 1b-iv DX review).
 
-## [0.56.2] - 2026-09-30 (unpublished candidate)
+## [0.56.2] - 2026-09-30
 
 ### Added
 

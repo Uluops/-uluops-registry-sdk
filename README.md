@@ -31,8 +31,8 @@ const client = createClientFromEnvironment();
 // List agent definitions
 const { definitions: agents } = await client.definitions.list({ type: 'agent' });
 
-// Get a specific definition
-const def = await client.definitions.get('agent', 'code-validator', '1.0.0');
+// Get a specific definition (latest published version; pass a version to pin one)
+const def = await client.definitions.get('agent', 'code-validator');
 
 // Create a new definition
 const newDef = await client.definitions.create('agent', 'my-agent', {
@@ -399,7 +399,10 @@ if (item.analyzerStale) {
 
 #### `get(type, name, version?, options?)`
 
-Get a definition by type, name, and optional version.
+Get a definition by type, name, and optional version. `name` is a bare name: it means the org that
+first published it, even with `orgSlug` configured — see
+[`orgSlug` scopes definition writes](#orgslug-scopes-definition-writes) for reading your own org's
+copy of a name another org published first.
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -412,10 +415,10 @@ Get a definition by type, name, and optional version.
 const def = await client.definitions.get('agent', 'code-validator');
 
 // Get specific version
-const def = await client.definitions.get('agent', 'code-validator', '1.0.0');
+const def = await client.definitions.get('agent', 'code-validator', '1.11.1');
 
 // Include YAML and rendered markdown
-const full = await client.definitions.get('agent', 'code-validator', '1.0.0', {
+const full = await client.definitions.get('agent', 'code-validator', '1.11.1', {
   includeYaml: true,
   includeRuntime: true,
 });
@@ -1169,18 +1172,23 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 | `ULUOPS_ORG_SLUG` | Org for writes (`X-Org-Slug` on non-GET requests only) | - |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
-**`orgSlug` scopes writes, not reads (since 0.57.0).** The client sends `X-Org-Slug` on every
-non-GET request — create, update, publish, deprecate, archive, delete, star, fork — where it tells
-the registry which org's definition a name means. It never sends it on a read: the registry treats a
-verified org header as a hard scope on reads, so a client configured with an org could otherwise not
-read another org's public definitions by name. Your own org's private definitions still appear in
-lists and reads, because the registry checks your membership, not the header. A bare name on a
-read means the org that first published it; when your org holds a different copy of that name, read
-it through the exported `RegistryHttpClient` with a per-call header (`http.request('GET', path,
-undefined, { headers: { 'X-Org-Slug': 'my-org' } })`). Qualified `@org/name` arguments to the
-`RegistryClient` methods arrive with qualified addressing (spec I-4, Phase 3); the name validator
-rejects `@` today. Through 0.56.x the header
-went on every request.
+<a id="orgslug-scopes-definition-writes"></a>
+**`orgSlug` scopes definition writes, not reads (since 0.57.0).** The client sends `X-Org-Slug`
+on definition writes only — create, update, delete, publish, deprecate, archive, retranslate,
+upgrade, and fork (where it names the org the fork goes into) — to tell the registry which org's
+definition a name means. It never sends it on a read, nor on star/unstar, recording an execution,
+validate, render preview or the users batch: the registry treats a verified org header as a hard
+scope on reads (and stars), so a client configured with an org could otherwise not read — or star —
+another org's public definitions by name. Your own org's private definitions still appear in lists
+and reads, because the registry checks your membership, not the header.
+
+**A bare name means different rows for reads and writes when another org published it first.** A
+read (and a star) of `x` means the org that first published `x`; a write of `x` means your
+configured org's `x`. Until those coincide, read your org's copy through the exported
+`RegistryHttpClient` with a per-call header (`http.request('GET', path, undefined, { headers:
+{ 'X-Org-Slug': 'my-org' } })`). Qualified `@org/name` arguments to the `RegistryClient` methods
+arrive with qualified addressing (spec I-4, Phase 3); passing one today raises a `ValidationError`
+that says so. Through 0.56.x the header went on every request.
 
 Create a `.env` file in your project:
 
