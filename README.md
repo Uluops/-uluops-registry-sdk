@@ -899,10 +899,17 @@ Get details for a specific model.
 
 ```typescript
 const model = await client.models.get('anthropic', 'claude-3-opus');
+const routed = await client.models.get('openrouter', 'anthropic/claude-sonnet-4'); // id contains '/'
 console.log(model.capabilities);
 console.log(model.limits); // { context: 200000, output: 4096 }
 console.log(model.cost);   // { input: 3, output: 15, cacheRead: 0.3, ... } — USD per MILLION tokens
 ```
+
+**Ids containing `/`** (every OpenRouter slug) are fetched with the registry's query-string lookup
+(`GET /models/lookup?provider=&modelId=`, registry API `2026-10-03`+). The path form cannot carry
+them: the registry's edge decodes `%2F` before routing. Ids without `/` use the path form as before.
+On a 404, `error.details.reason` says which kind: `'model'`, `'alias'` or `'route'` (the request
+matched no endpoint, for example against an older registry without the lookup route).
 
 **Pricing (`model.cost`)** — present on models from `list()`, `get()`, and
 `resolveAlias()` (registry API `2026-07-26`+). Rates are USD per **million** tokens
@@ -942,6 +949,9 @@ Resolve an alias to a concrete model.
 const resolution = await client.models.resolveAlias('opus');
 console.log(`${resolution.alias} → ${resolution.target}`);
 ```
+
+An alias containing `/` (e.g. `~anthropic/claude-fable-latest`) uses the query-string form,
+`GET /models/resolve?alias=`.
 
 ---
 

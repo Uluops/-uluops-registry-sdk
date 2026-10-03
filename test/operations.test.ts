@@ -851,6 +851,39 @@ describe('operations', () => {
         const result = await modelOps.get(http, 'anthropic', 'claude-3-opus');
         expect(result.provider).toBe('anthropic');
       });
+
+      // OpenRouter plan S11: an id containing '/' cannot travel in the path — the edge decodes %2F
+      // before routing. Such ids use GET /models/lookup with the id in the query string.
+      it('uses the query-string lookup for a model id containing "/"', async () => {
+        const scope = nock(MOCK_BASE_URL)
+          .get('/models/lookup')
+          .query({ provider: 'openrouter', modelId: 'anthropic/claude-sonnet-4' })
+          .reply(200, { data: createMockModel({ provider: 'openrouter', modelId: 'anthropic/claude-sonnet-4' }) });
+
+        const result = await modelOps.get(http, 'openrouter', 'anthropic/claude-sonnet-4');
+        expect(result.modelId).toBe('anthropic/claude-sonnet-4');
+        expect(scope.isDone()).toBe(true);
+      });
+
+      it('keeps the path form for an id without "/" (no change for existing callers)', async () => {
+        const scope = nock(MOCK_BASE_URL)
+          .get('/models/openai/gpt-5-mini')
+          .reply(200, { data: createMockModel({ provider: 'openai', modelId: 'gpt-5-mini' }) });
+
+        await modelOps.get(http, 'openai', 'gpt-5-mini');
+        expect(scope.isDone()).toBe(true);
+      });
+
+      it("surfaces details.reason on a 404 so callers can tell a route miss from a model miss", async () => {
+        nock(MOCK_BASE_URL)
+          .get('/models/lookup')
+          .query(true)
+          .reply(404, { error: { code: 'NOT_FOUND', message: 'The requested endpoint does not exist', details: { reason: 'route' } } });
+
+        const err = await modelOps.get(http, 'openrouter', 'x/y').catch((e: unknown) => e);
+        expect((err as { statusCode?: number }).statusCode).toBe(404);
+        expect((err as { details?: { reason?: string } }).details?.reason).toBe('route');
+      });
     });
 
     describe('listProviders', () => {
@@ -901,6 +934,17 @@ describe('operations', () => {
 
         const result = await modelOps.resolveAlias(http, 'opus');
         expect(result.alias).toBe('opus');
+      });
+
+      it('uses the query-string form for an alias containing "/"', async () => {
+        const scope = nock(MOCK_BASE_URL)
+          .get('/models/resolve')
+          .query({ alias: '~anthropic/claude-fable-latest' })
+          .reply(200, { data: { alias: '~anthropic/claude-fable-latest', target: 'openrouter/anthropic/claude-fable-5-1' } });
+
+        const result = await modelOps.resolveAlias(http, '~anthropic/claude-fable-latest');
+        expect(result.alias).toBe('~anthropic/claude-fable-latest');
+        expect(scope.isDone()).toBe(true);
       });
     });
 

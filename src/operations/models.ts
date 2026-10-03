@@ -79,7 +79,14 @@ export async function get(
   if (!modelId || typeof modelId !== 'string') {
     throw new ValidationError('Model ID is required', { field: 'modelId' });
   }
-  return parseResponse(modelSchema, await http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined), 'models.get');
+  // An id containing '/' (every OpenRouter slug, e.g. 'anthropic/claude-sonnet-4') cannot travel in
+  // the path: the registry's edge decodes %2F before routing, so the request arrives as three segments
+  // and answers a route 404 (`details.reason: 'route'`). Such ids use the query-string lookup. Ids
+  // without '/' keep the path form, so existing callers and older registry deployments see no change.
+  const response = modelId.includes('/')
+    ? await http.get<Model>('/models/lookup', { provider, modelId })
+    : await http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined);
+  return parseResponse(modelSchema, response, 'models.get');
 }
 
 /**
@@ -130,5 +137,10 @@ export async function resolveAlias(
   if (!alias || typeof alias !== 'string') {
     throw new ValidationError('Alias is required', { field: 'alias' });
   }
-  return parseResponse(aliasResolutionSchema, await http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined), 'models.resolveAlias');
+  // Same edge constraint as `get`: an alias containing '/' (e.g. '~anthropic/claude-fable-latest')
+  // uses the query-string form.
+  const response = alias.includes('/')
+    ? await http.get<AliasResolution>('/models/resolve', { alias })
+    : await http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined);
+  return parseResponse(aliasResolutionSchema, response, 'models.resolveAlias');
 }

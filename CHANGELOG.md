@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.58.0] - 2026-10-03
+
+### Added
+
+- **`models.get()` and `models.resolveAlias()` reach ids and aliases containing `/` (OpenRouter
+  plan S11, slice 1a).** Such ids, which is every OpenRouter slug (`openrouter` +
+  `anthropic/claude-sonnet-4`), are fetched with the registry's query-string forms,
+  `GET /models/lookup?provider=&modelId=` and `GET /models/resolve?alias=` (registry API deployed
+  2026-10-03, `6cf20ba`). Before this, the SDK sent `/models/openrouter/anthropic%2Fclaude-sonnet-4`;
+  the registry's edge decodes `%2F` before routing, so the request missed every route and answered
+  the generic 404, and none of the 522 synced `openrouter` rows could be fetched by id.
+- Ids and aliases **without** `/` keep the path form, so existing callers see the same requests,
+  and the SDK keeps working against a registry deployed before the lookup route existed.
+
+### Notes
+
+- A 404's `details` now carries `reason: 'model' | 'alias' | 'route'` from registry API
+  `6cf20ba`+. The SDK already passed `details` through on `NotFoundError`; nothing changed here, and
+  a test now pins it. `@uluops/core` uses `reason === 'route'` to tell a transport miss from an
+  unregistered model.
+
 ## [0.57.0] - 2026-10-01
 
 ### Changed
