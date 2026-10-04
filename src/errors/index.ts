@@ -33,6 +33,7 @@ export {
   ResponseValidationError,
   UnsupportedQualityContractError,
   UnsupportedDiffContractError,
+  UnsupportedDefinitionSearchContractError,
   isInvalidTransitionError,
   isDeleteBlockedError,
 } from './errors.js';

@@ -130,3 +130,11 @@ export function isDeleteBlockedError(err: unknown): err is SdkApiError & { detai
     && details.applicationState === 'not_applied'
     && typeof details.recoveryAction === 'string';
 }
+
+/** Selected definition search contract is unsupported; no legacy fallback is performed. */
+export class UnsupportedDefinitionSearchContractError extends SdkApiError {
+  constructor() {
+    super(0, 'The Registry API does not support the name-v1 definition search contract.', 'UNSUPPORTED_DEFINITION_SEARCH_CONTRACT');
+    this.name = 'UnsupportedDefinitionSearchContractError';
+  }
+}

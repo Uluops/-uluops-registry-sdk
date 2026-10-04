@@ -210,6 +210,7 @@ export const providersListResponseSchema = z.object({
 
 /** Lightweight definition for list responses */
 export const definitionListItemSchema = z.object({
+  relevance: z.number().optional(),
   id: z.string().uuid(),
   type: definitionTypeResponseSchema,
   name: z.string(),

@@ -336,6 +336,25 @@ Manage AI workflow definitions (agents, commands, workflows, pipelines).
 
 List definitions with optional filters.
 
+Use `{ name: 'code-validator' }` for exact identifier matching, or
+`{ name: 'code-', match: 'prefix' }` for a literal prefix. Punctuation, quotes,
+`%`, `_`, and backslashes are preserved as data. `name` cannot be combined with
+`search` or `match: 'text'`. Explicit text search uses
+`{ search: 'validation', match: 'text' }`; explicit text queries require 1–100 printable ASCII characters before trimming and cannot be blank.
+
+Keyword terms of at least three characters after sanitization use FULLTEXT over
+`name`, `display_name`, and `description`. Short original searches fall back to
+`name`/`display_name`; longer searches whose sanitized terms are shorter than
+three characters fall back across those fields plus `description`. Tags remain
+an independent OR-any filter. A row may include numeric `relevance` for actual
+FULLTEXT matches; legacy and identifier results need not include a score.
+
+Every operation with `name` or explicit `match` fetches `/capabilities` and requires
+`contracts.definitionSearch` to advertise `name-v1`. Unsupported, missing or
+malformed support throws `UnsupportedDefinitionSearchContractError` from
+`@uluops/registry-sdk/errors` before the list request, with no fallback. Capability
+authentication and transport errors remain intact. Legacy search does not negotiate.
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `type` | `DefinitionType` | Filter by type ('agent', 'command', 'workflow', 'pipeline') |
@@ -343,8 +362,10 @@ List definitions with optional filters.
 | `domain` | `Domain` | Filter by domain |
 | `authorId` | `string` | Filter by author user ID |
 | `visibility` | `Visibility` | Filter by visibility |
-| `search` | `string` | Text search across name and description |
-| `tag` | `string \| string[]` | Filter by tag(s) |
+| `search` | `string` | Keyword text search (legacy behavior when `match` is omitted) |
+| `name` | `string` | Literal identifier, trimmed and lowercased, 1–100 printable ASCII characters before trimming; implies exact matching |
+| `match` | `'exact' \| 'prefix' \| 'text'` | Explicit search mode; exact/prefix require `name`, text requires nonblank `search` |
+| `tag` | `string \| string[]` | Independent OR-any tag filter; tags are not keyword searched |
 | `isFork` | `boolean` | `true` = only forks, `false` = only originals |
 | `authorshipType` | `AuthorshipType` | Filter by authorship ('human', 'agent', 'collaborative', 'automated') |
 | `agentType` | `AgentType` | Filter by agent type |

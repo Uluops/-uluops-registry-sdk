@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Literal exact-name and prefix search through `definitions.list({ name, match })`, with trimmed lowercase identifier normalization and local combination validation.
+- Per-operation `name-v1` capability negotiation for explicit search modes, and `UnsupportedDefinitionSearchContractError` when the server cannot support them.
+- Optional numeric `relevance` on list rows for FULLTEXT matches; existing responses remain valid.
+
 ## [0.58.0] - 2026-10-03
 
 ### Added

@@ -279,6 +279,8 @@ export interface Definition {
  * Lightweight definition for list responses
  */
 export interface DefinitionListItem {
+  /** Numeric FULLTEXT relevance, present only for actual text matches. */
+  relevance?: number;
   id: string;
   type: DefinitionType;
   name: string;
@@ -368,7 +370,11 @@ export interface ListDefinitionsQuery {
   tier?: Tier;
   visibility?: Visibility;
   authorId?: string;
+  /** Legacy keyword search; tags are a separate OR-any filter. */
   search?: string;
+  /** Literal identifier, trimmed and lowercased; implies exact matching. */
+  name?: string;
+  match?: 'exact' | 'prefix' | 'text';
   tag?: string | string[];
   /** Filter by fork status: true = only forks, false = only originals */
   isFork?: boolean;

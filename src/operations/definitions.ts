@@ -17,6 +17,7 @@ import type { DefinitionType } from '../types/enums.js';
 import { buildDefinitionPath, validateDefinitionType, validateYamlSize, validatePagination } from '../config/validators.js';
 import { definitionSchema } from '../types/schemas.js';
 import { definitionListResponseSchema, publishResponseSchema } from '../types/response-schemas.js';
+import { RegistryApiError, UnsupportedDefinitionSearchContractError, ValidationError } from '../errors/errors.js';
 import { parseResponse } from '../http/parse-response.js';
 
 /**
@@ -47,7 +48,38 @@ export async function list(
     }
     validatePagination(query.limit, query.offset);
   }
-  return parseResponse(definitionListResponseSchema, await http.get<DefinitionListResponse>('/definitions', query), 'definitions.list');
+  let normalizedQuery = query;
+  if (query && (query.name !== undefined || query.match !== undefined)) {
+    const { name, match, search } = query;
+    if (match !== undefined && !['exact', 'prefix', 'text'].includes(match)) {
+      throw new ValidationError('match must be exact, prefix, or text', { field: 'match' });
+    }
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !/^[\x20-\x7e]+$/.test(name) || name.length > 100 || name.trim().length === 0) {
+        throw new ValidationError('name must contain 1-100 printable ASCII characters and be nonblank', { field: 'name' });
+      }
+      if (match === 'text' || search !== undefined) {
+        throw new ValidationError('name cannot be combined with search or match=text', { field: 'name' });
+      }
+      normalizedQuery = { ...query, name: name.trim().toLowerCase() };
+    } else if (match === 'exact' || match === 'prefix') {
+      throw new ValidationError('exact and prefix matching require name', { field: 'name' });
+    } else if (match === 'text' && (typeof search !== 'string' || !/^[\x20-\x7e]+$/.test(search) || search.length > 100 || search.trim().length === 0)) {
+      throw new ValidationError('match=text requires 1-100 printable ASCII characters and nonblank search', { field: 'search' });
+    }
+    let capabilities: { contracts?: { definitionSearch?: unknown } };
+    try {
+      capabilities = await http.get('/capabilities');
+    } catch (error) {
+      if (error instanceof RegistryApiError && error.statusCode === 404) throw new UnsupportedDefinitionSearchContractError();
+      throw error;
+    }
+    const supported = capabilities?.contracts?.definitionSearch;
+    if (!Array.isArray(supported) || !supported.every((value) => typeof value === 'string') || !supported.includes('name-v1')) {
+      throw new UnsupportedDefinitionSearchContractError();
+    }
+  }
+  return parseResponse(definitionListResponseSchema, await http.get<DefinitionListResponse>('/definitions', normalizedQuery), 'definitions.list');
 }
 
 /**
