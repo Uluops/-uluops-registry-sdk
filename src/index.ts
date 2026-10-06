@@ -163,6 +163,8 @@ export type {
   // User types
   PublicUser,
   BatchUserResponse,
+  BatchUserEnvelope,
+  BatchUserOptions,
 } from './types/users.js';
 
 export type {

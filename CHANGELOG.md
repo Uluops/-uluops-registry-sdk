@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `users.batch(ids, {format: 'envelope'})` preserves and validates producer metadata, returning `{data,foundIds,missingIds}` with lowercase UUIDs deduplicated in request order. Default map lookup remains available; unsupported or inconsistent response metadata fails response validation.
 - Literal exact-name and prefix search through `definitions.list({ name, match })`, with trimmed lowercase identifier normalization and local combination validation.
 - Per-operation `name-v1` capability negotiation for explicit search modes, and `UnsupportedDefinitionSearchContractError` when the server cannot support them.
 - Optional numeric `relevance` on list rows for FULLTEXT matches; existing responses remain valid.

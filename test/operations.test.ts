@@ -38,6 +38,53 @@ describe('operations', () => {
         expect(result).toEqual({});
       });
 
+      const firstId = 'aaaaaaaa-0000-4000-a000-000000000001';
+      const missingId = 'bbbbbbbb-0000-4000-a000-000000000002';
+      const secondId = 'cccccccc-0000-4000-a000-000000000003';
+
+      it('returns empty envelope without HTTP', async () => {
+        expect(await userOps.batch(http, [], { format: 'envelope' })).toEqual({ data: {}, foundIds: [], missingIds: [] });
+      });
+
+      it('preserves map defaults even when producer metadata is absent', async () => {
+        nock(MOCK_BASE_URL).post('/users/batch', { ids: [missingId, firstId, missingId] })
+          .reply(200, { data: { [firstId]: { id: firstId } } });
+        expect(await userOps.batch(http, [missingId, firstId, missingId])).toEqual({ [firstId]: { id: firstId } });
+      });
+
+      it('normalizes and deduplicates envelope requests and orders both arrays by request', async () => {
+        nock(MOCK_BASE_URL).post('/users/batch', { ids: [missingId, secondId, firstId] })
+          .reply(200, { data: { [firstId]: { id: firstId }, [secondId]: { id: secondId } }, found: 2, notFound: [missingId, missingId] });
+        expect(await userOps.batch(http, [missingId.toUpperCase(), secondId, firstId.toUpperCase(), missingId], { format: 'envelope' }))
+          .toEqual({ data: { [firstId]: { id: firstId }, [secondId]: { id: secondId } }, foundIds: [secondId, firstId], missingIds: [missingId] });
+      });
+
+      it.each([
+        { data: {} },
+        { data: {}, found: 0, notFound: [firstId] },
+        { data: { [firstId]: { id: firstId } }, found: 0, notFound: [missingId] },
+        { data: { [firstId]: { id: firstId } }, found: 1, notFound: [firstId, missingId] },
+        { data: { [secondId]: { id: secondId } }, found: 1, notFound: [missingId] },
+        { data: { [firstId]: { id: secondId } }, found: 1, notFound: [missingId] },
+        { data: { [firstId]: { id: firstId } }, found: 1, notFound: [missingId.toUpperCase()] },
+      ])('rejects missing or inconsistent envelope metadata %j', async (body) => {
+        nock(MOCK_BASE_URL).post('/users/batch', { ids: [firstId, missingId] }).reply(200, body);
+        await expect(userOps.batch(http, [firstId, missingId], { format: 'envelope' }))
+          .rejects.toMatchObject({ name: 'ResponseValidationError', message: expect.stringContaining('users.batch') });
+      });
+
+      it('treats null profiles as missing', async () => {
+        nock(MOCK_BASE_URL).post('/users/batch', { ids: [firstId, missingId] })
+          .reply(200, { data: { [firstId]: null }, found: 0, notFound: [missingId, firstId] });
+        expect(await userOps.batch(http, [firstId, missingId], { format: 'envelope' }))
+          .toEqual({ data: { [firstId]: null }, foundIds: [], missingIds: [firstId, missingId] });
+      });
+
+      it('keeps original input limit before deduplication for envelopes', async () => {
+        await expect(userOps.batch(http, Array(101).fill(firstId), { format: 'envelope' })).rejects.toThrow('maximum 100');
+        await expect(userOps.batch(http, ['invalid'], { format: 'envelope' })).rejects.toThrow('Invalid UUID');
+      });
+
       it('should accept exactly 100 IDs', async () => {
         const ids = Array.from({ length: 100 }, (_, i) =>
           `${String(i).padStart(8, '0')}-0000-4000-a000-000000000000`

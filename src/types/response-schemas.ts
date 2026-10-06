@@ -589,6 +589,13 @@ export const upgradeResultSchema = z.object({
 /** POST /users/batch */
 export const batchUserResponseSchema = z.record(z.string(), publicUserSchema.nullable());
 
+/** Existing producer metadata is required for the opted-in contract. */
+export const batchUserEnvelopeSchema = z.object({
+  data: batchUserResponseSchema,
+  found: z.number().int().nonnegative(),
+  notFound: z.array(z.string()),
+});
+
 // ============================================================================
 // Phase 3: Analytics Response Schemas
 // ============================================================================

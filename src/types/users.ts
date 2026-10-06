@@ -21,3 +21,14 @@ export interface PublicUser {
 export interface BatchUserResponse {
   [userId: string]: PublicUser | null | undefined;
 }
+
+/** Opt-in batch result. ID arrays use lowercase UUIDs in deduplicated request order. */
+export interface BatchUserEnvelope {
+  data: BatchUserResponse;
+  foundIds: string[];
+  missingIds: string[];
+}
+
+export interface BatchUserOptions {
+  format?: 'map' | 'envelope';
+}

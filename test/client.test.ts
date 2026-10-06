@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import nock from 'nock';
 import { RegistryClient } from '../src/client.js';
 import {
+  MOCK_BASE_URL,
   mockEndpoint,
   mockError,
   TEST_API_KEY,
@@ -123,6 +124,15 @@ describe('RegistryClient', () => {
 
       const result = await client.users.get('00000000-0000-4000-a000-000000000001');
       expect(result.username).toBe('testuser');
+    });
+
+    it('exposes envelope opt-in through the public client', async () => {
+      const id = 'aaaaaaaa-0000-4000-a000-000000000001';
+      nock(MOCK_BASE_URL).post('/users/batch', { ids: [id] })
+        .reply(200, { data: { [id]: { id } }, found: 1, notFound: [] });
+      const result = await client.users.batch([id.toUpperCase(), id], { format: 'envelope' });
+      expect(result.foundIds).toEqual([id]);
+      expect(result.missingIds).toEqual([]);
     });
 
     it('should batch lookup users', async () => {

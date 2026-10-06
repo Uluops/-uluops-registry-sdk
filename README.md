@@ -1663,3 +1663,15 @@ const result = await client.versions.diff('agent', 'example', '1.0.0', '2.0.0', 
 Omitting the selector preserves legacy behavior: `full: true` returns
 `fromYaml`/`toYaml` and takes precedence over `format`. That default remains until
 a future major release with at least 90 days notice.
+
+### Batch user lookup metadata
+
+`client.users.batch(ids)` returns the existing user map. Opt into omissions with
+`client.users.batch(ids, { format: 'envelope' })`, which returns
+`{ data, foundIds, missingIds }`. This format normalizes UUID inputs to lowercase,
+deduplicates them in request order, and returns both ID arrays in that order with
+canonical lowercase spelling. Unknown, deleted, and null profiles are missing.
+The original 100-input limit applies before deduplication. Empty input returns an
+empty result without HTTP. The existing API must return valid `found`/`notFound`
+metadata; missing or inconsistent metadata raises `ResponseValidationError`
+with `users.batch` context, without a fallback or retry under legacy semantics.

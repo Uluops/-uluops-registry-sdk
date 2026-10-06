@@ -69,7 +69,7 @@ import type {
   ListModelsQuery,
   AliasResolution,
 } from './types/models.js';
-import type { PublicUser, BatchUserResponse } from './types/users.js';
+import type { PublicUser, BatchUserResponse, BatchUserEnvelope, BatchUserOptions } from './types/users.js';
 import type { LanguageWithSchema } from './types/languages.js';
 import type { LanguagesListResponse } from './operations/languages.js';
 import type {
@@ -304,7 +304,11 @@ export class RegistryClient {
     /** Get public user information by UUID. */
     get: (id: string) => Promise<PublicUser>;
     /** Batch lookup public user information (max 100 IDs). */
-    batch: (ids: string[]) => Promise<BatchUserResponse>;
+    batch: {
+      (ids: string[], options: { format: 'envelope' }): Promise<BatchUserEnvelope>;
+      (ids: string[], options?: { format?: 'map' }): Promise<BatchUserResponse>;
+      (ids: string[], options: BatchUserOptions): Promise<BatchUserResponse | BatchUserEnvelope>;
+    };
   };
 
   /**
@@ -564,9 +568,16 @@ export class RegistryClient {
   }
 
   private bindUsers(): RegistryClient['users'] {
+    const http = this.http;
+    function batch(ids: string[], options: { format: 'envelope' }): Promise<BatchUserEnvelope>;
+    function batch(ids: string[], options?: { format?: 'map' }): Promise<BatchUserResponse>;
+    function batch(ids: string[], options: BatchUserOptions): Promise<BatchUserResponse | BatchUserEnvelope>;
+    function batch(ids: string[], options?: BatchUserOptions): Promise<BatchUserResponse | BatchUserEnvelope> {
+      return usersOps.batch(http, ids, options ?? {});
+    }
     return {
       get: (id) => usersOps.get(this.http, id),
-      batch: (ids) => usersOps.batch(this.http, ids),
+      batch,
     };
   }
 

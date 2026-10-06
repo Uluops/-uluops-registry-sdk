@@ -190,9 +190,8 @@ export async function publish(
 ): Promise<PublishResult> {
   const path = `${buildDefinitionPath(type, name, version)}/publish`;
   // Use request() with rawEnvelope so we receive the full `{ data, warnings? }`
-  // envelope. The publish endpoint is the only one that emits a top-level field
-  // alongside `data`; everywhere else the SDK's default envelope-unwrapping is
-  // the right behavior.
+  // envelope. Publish warnings and opted-in batch-user metadata need preservation;
+  // other operation results use the default envelope-unwrapping path.
   type Envelope = { data: Definition; warnings?: Array<{ code: string; message: string; details?: Record<string, unknown> }> };
   const envelope = parseResponse(publishResponseSchema, await http.request<Envelope>('POST', path, undefined, { retryMutations: true,
     rawEnvelope: true, }), 'definitions.publish');

@@ -3,10 +3,10 @@
  */
 
 import type { RegistryHttpClient } from '../http/http-client.js';
-import type { PublicUser, BatchUserResponse } from '../types/users.js';
+import type { PublicUser, BatchUserResponse, BatchUserEnvelope, BatchUserOptions } from '../types/users.js';
 import { validateUuid } from '../config/validators.js';
 import { ValidationError } from '../errors/errors.js';
-import { publicUserSchema, batchUserResponseSchema } from '../types/response-schemas.js';
+import { publicUserSchema, batchUserResponseSchema, batchUserEnvelopeSchema } from '../types/response-schemas.js';
 import { parseResponse } from '../http/parse-response.js';
 
 /**
@@ -26,15 +26,21 @@ export async function get(http: RegistryHttpClient, id: string): Promise<PublicU
  *
  * @param http - Registry HTTP client
  * @param ids - Array of user UUIDs (max 100)
- * @returns Map of user ID to public user profile
+ * @param options - Opt into an envelope with found/missing IDs. Envelope requests
+ * normalize UUIDs to lowercase and deduplicate in request order.
+ * @returns Map by default, or validated envelope; old producers without metadata fail response validation.
  * @throws {ValidationError} If more than 100 IDs are supplied, or if any ID is not a valid UUID
  */
+export function batch(http: RegistryHttpClient, ids: string[], options: { format: 'envelope' }): Promise<BatchUserEnvelope>;
+export function batch(http: RegistryHttpClient, ids: string[], options?: { format?: 'map' }): Promise<BatchUserResponse>;
+export function batch(http: RegistryHttpClient, ids: string[], options: BatchUserOptions): Promise<BatchUserResponse | BatchUserEnvelope>;
 export async function batch(
   http: RegistryHttpClient,
-  ids: string[]
-): Promise<BatchUserResponse> {
+  ids: string[],
+  options?: BatchUserOptions
+): Promise<BatchUserResponse | BatchUserEnvelope> {
   if (ids.length === 0) {
-    return {};
+    return options?.format === 'envelope' ? { data: {}, foundIds: [], missingIds: [] } : {};
   }
 
   if (ids.length > 100) {
@@ -46,5 +52,33 @@ export async function batch(
     validateUuid(id, 'userId');
   }
 
-  return parseResponse(batchUserResponseSchema, await http.post<BatchUserResponse>('/users/batch', { ids }), 'users.batch');
+  if (options?.format !== 'envelope') {
+    return parseResponse(batchUserResponseSchema, await http.post<BatchUserResponse>('/users/batch', { ids }), 'users.batch');
+  }
+
+  // UUID identity is case insensitive; the repository returns canonical keys.
+  const requestedIds = [...new Set(ids.map((id) => id.toLowerCase()))];
+  const requested = new Set(requestedIds);
+  const schema = batchUserEnvelopeSchema.superRefine((envelope, ctx) => {
+    for (const [id, user] of Object.entries(envelope.data)) {
+      if (!requested.has(id) || (user !== null && user.id !== id)) {
+        ctx.addIssue({ code: 'custom', path: ['data', id], message: 'User map key/profile must match a requested canonical UUID' });
+      }
+    }
+    const foundIds = requestedIds.filter((id) => envelope.data[id] != null);
+    const missingIds = requestedIds.filter((id) => envelope.data[id] == null);
+    const notFound = new Set(envelope.notFound);
+    if (envelope.found !== foundIds.length) {
+      ctx.addIssue({ code: 'custom', path: ['found'], message: 'Found count must match non-null requested profiles' });
+    }
+    if (notFound.size !== missingIds.length || missingIds.some((id) => !notFound.has(id))) {
+      ctx.addIssue({ code: 'custom', path: ['notFound'], message: 'Missing IDs must agree with the requested user map' });
+    }
+  });
+  const envelope = parseResponse(schema, await http.request('POST', '/users/batch', { ids: requestedIds }, { rawEnvelope: true }), 'users.batch');
+  return {
+    data: envelope.data,
+    foundIds: requestedIds.filter((id) => envelope.data[id] != null),
+    missingIds: requestedIds.filter((id) => envelope.data[id] == null),
+  };
 }
