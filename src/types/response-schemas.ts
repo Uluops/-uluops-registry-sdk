@@ -296,11 +296,21 @@ export const versionsListResponseSchema = z.object({
   offset: z.number().int().nonnegative(),
 });
 
-/** Model capabilities — all fields optional for upstream-synced models */
+/**
+ * Model capabilities — all fields optional for upstream-synced models.
+ *
+ * `reasoning` is the name the registry serves. Until 0.61.0 only `extendedThinking` was declared
+ * here, so the default strip (ADR-002) dropped `reasoning` and every consumer read
+ * `extendedThinking: undefined` (thinking-capability-restore spec §2.2). Both are declared now and
+ * the operations fill each from the other AFTER parsing (`normalizeCapabilities`). This schema
+ * deliberately stays a plain `ZodObject` — a `.transform` would turn a public export into a
+ * `ZodPipe` and remove `.shape`/`.extend`/`.pick` for every consumer (spec OD-11).
+ */
 export const modelCapabilitiesSchema = z.object({
   vision: z.boolean().optional(),
   tools: z.boolean().optional(),
   streaming: z.boolean().optional(),
+  reasoning: z.boolean().optional(),
   extendedThinking: z.boolean().optional(),
   structuredOutput: z.boolean().optional(),
   structuredOutputWithTools: z.boolean().optional(),

@@ -21,6 +21,28 @@ import {
 import { parseResponse } from '../http/parse-response.js';
 
 /**
+ * Fill `reasoning` and its deprecated alias `extendedThinking` from each other.
+ *
+ * The registry serves `reasoning`; consumers written before 0.61.0 read `extendedThinking`. Applied
+ * after parsing on every model this SDK returns (get, list items, alias resolution), and exported so
+ * callers parsing with the public `modelSchema` themselves can do the same. An explicit value is
+ * never overwritten, and a capability absent under both names stays absent (unknown, not false).
+ */
+export function normalizeCapabilities<T extends { reasoning?: boolean; extendedThinking?: boolean }>(caps: T): T {
+  const reasoning = caps.reasoning ?? caps.extendedThinking;
+  const extendedThinking = caps.extendedThinking ?? caps.reasoning;
+  return {
+    ...caps,
+    ...(reasoning !== undefined ? { reasoning } : {}),
+    ...(extendedThinking !== undefined ? { extendedThinking } : {}),
+  };
+}
+
+function normalizeModel<M extends { capabilities: { reasoning?: boolean; extendedThinking?: boolean } }>(model: M): M {
+  return { ...model, capabilities: normalizeCapabilities(model.capabilities) };
+}
+
+/**
  * Models list response
  */
 export interface ModelsListResponse {
@@ -56,7 +78,8 @@ export async function list(
   http: RegistryHttpClient,
   query?: ListModelsQuery
 ): Promise<ModelsListResponse> {
-  return parseResponse(modelsListResponseSchema, await http.get<ModelsListResponse>('/models', query), 'models.list');
+  const parsed = parseResponse(modelsListResponseSchema, await http.get<ModelsListResponse>('/models', query), 'models.list');
+  return { ...parsed, models: parsed.models.map(normalizeModel) };
 }
 
 /**
@@ -86,7 +109,7 @@ export async function get(
   const response = modelId.includes('/')
     ? await http.get<Model>('/models/lookup', { provider, modelId })
     : await http.get<Model>(`/models/${encodeURIComponent(provider)}/${encodeURIComponent(modelId)}`, undefined);
-  return parseResponse(modelSchema, response, 'models.get');
+  return normalizeModel(parseResponse(modelSchema, response, 'models.get'));
 }
 
 /**
@@ -142,5 +165,6 @@ export async function resolveAlias(
   const response = alias.includes('/')
     ? await http.get<AliasResolution>('/models/resolve', { alias })
     : await http.get<AliasResolution>(`/models/resolve/${encodeURIComponent(alias)}`, undefined);
-  return parseResponse(aliasResolutionSchema, response, 'models.resolveAlias');
+  const parsed = parseResponse(aliasResolutionSchema, response, 'models.resolveAlias');
+  return parsed.model ? { ...parsed, model: normalizeModel(parsed.model) } : parsed;
 }

@@ -5,10 +5,12 @@ import {
   forkLineageHopSchema,
   versionListItemSchema,
   retranslateResultSchema,
+  modelCapabilitiesSchema,
 } from '../../src/types/response-schemas.js';
 import type { ForkLineage, ForkLineageHop } from '../../src/types/forks.js';
 import type { VersionListItem } from '../../src/types/versions.js';
 import type { RetranslateResult } from '../../src/operations/translation.js';
+import type { ModelCapabilities } from '../../src/types/models.js';
 
 /**
  * Drift guard (consumer-validate run #41, dx-validator auto-fail): the Zod
@@ -35,6 +37,13 @@ describe('response schema ↔ public type drift guard', () => {
 
   it('VersionListItem keys match versionListItemSchema', () => {
     expectTypeOf<keyof z.infer<typeof versionListItemSchema>>().toEqualTypeOf<keyof VersionListItem>();
+  });
+
+  it('ModelCapabilities keys match modelCapabilitiesSchema', () => {
+    // The capability the registry serves (`reasoning`) was missing from both until 0.61.0, so
+    // this guard could not see it — it catches schema/interface drift, not wire drift. The
+    // wire-shape half is test/models-reasoning.test.ts (captured live payloads).
+    expectTypeOf<keyof z.infer<typeof modelCapabilitiesSchema>>().toEqualTypeOf<keyof ModelCapabilities>();
   });
 
   it('control: a z.infer-derived type is drift-proof by construction', () => {

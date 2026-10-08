@@ -124,6 +124,7 @@ export type {
   ProvidersListResponse,
   AliasesListResponse,
 } from './operations/models.js';
+export { normalizeCapabilities } from './operations/models.js';
 
 export type {
   // Dependency types (R12 — live-tests T2 §3.5; replaces the

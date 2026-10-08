@@ -229,7 +229,7 @@ export function createMockModel(overrides: Record<string, unknown> = {}): z.infe
     displayName: 'Claude 3 Opus',
     description: 'Most capable model',
     providerModelId: 'claude-3-opus-20240229',
-    capabilities: { vision: true, tools: true, streaming: true, extendedThinking: false, structuredOutput: false },
+    capabilities: { vision: true, tools: true, streaming: true, reasoning: false, structuredOutput: false },
     tier: 'premium',
     status: 'available',
     createdAt: isoDate(60),

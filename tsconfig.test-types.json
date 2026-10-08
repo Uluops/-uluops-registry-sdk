@@ -1,0 +1,7 @@
+{
+  "//": "Type-level tests (expectTypeOf) are no-ops at vitest runtime and tsconfig.json excludes test/, so the schema-interface drift guard was never checked by anything until this file (2026-10-08, found while adding ModelCapabilities to it). `npm run typecheck:types` runs it; prepublishOnly chains it.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": ".", "declaration": false, "declarationMap": false, "sourceMap": false },
+  "include": ["src/**/*", "test/types/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

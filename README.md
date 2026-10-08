@@ -926,6 +926,14 @@ console.log(model.limits); // { context: 200000, output: 4096 }
 console.log(model.cost);   // { input: 3, output: 15, cacheRead: 0.3, ... } — USD per MILLION tokens
 ```
 
+**Capabilities (`model.capabilities`)** — `vision`, `tools`, `streaming`, `reasoning`,
+`structuredOutput`, `structuredOutputWithTools`; each optional, and absent means *unknown*, not
+false. `reasoning` means the model *can* think before answering (extended thinking) — whether a run
+does is the caller's choice. `extendedThinking` is a deprecated alias of `reasoning`, filled from it on
+every model the SDK returns; it was always `undefined` before 0.61.0, because the registry serves
+`reasoning`. If you parse responses yourself with the exported `modelSchema`, apply
+`normalizeCapabilities(model.capabilities)` to get the same alias.
+
 **Ids containing `/`** (every OpenRouter slug) are fetched with the registry's query-string lookup
 (`GET /models/lookup?provider=&modelId=`, registry API `2026-10-03`+). The path form cannot carry
 them: the registry's edge decodes `%2F` before routing. Ids without `/` use the path form as before.

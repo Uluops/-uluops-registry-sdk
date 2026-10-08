@@ -11,6 +11,16 @@ export interface ModelCapabilities {
   vision?: boolean;
   tools?: boolean;
   streaming?: boolean;
+  /**
+   * The model can think / reason before answering (extended thinking). The name the registry
+   * serves. A capability, not a setting: whether a run thinks is the caller's decision.
+   */
+  reasoning?: boolean;
+  /**
+   * @deprecated Alias of `reasoning`, filled from it on every model this SDK returns; removed once
+   * every known consumer reads `reasoning`. Before 0.61.0 this was the only declared name and was
+   * always `undefined`, because the registry serves `reasoning`.
+   */
   extendedThinking?: boolean;
   /** Supports structured (JSON-schema) output on its own. */
   structuredOutput?: boolean;

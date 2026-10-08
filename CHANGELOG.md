@@ -7,16 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.61.0] - 2026-10-08
+
+### Added
+
+- `capabilities.reasoning` on every model (`models.get`, `models.list` items, `models.resolveAlias`) — the name the registry serves. Exported `normalizeCapabilities(caps)` fills `reasoning` and `extendedThinking` from each other; the SDK applies it after parsing on all three operations, and callers that parse with the public `modelSchema` themselves can apply it too. An explicit value is never overwritten; a capability absent under both names stays absent.
+- `npm run typecheck:types`, chained into `prepublishOnly`: type-checks `test/types/` (the schema ↔ interface drift guard). Until now nothing ran it — `tsconfig.json` excludes `test/` and `expectTypeOf` is a no-op at vitest runtime — so every assertion in that file was inert. It now also covers `ModelCapabilities`.
+
+### Deprecated
+
+- `ModelCapabilities.extendedThinking` — an alias of `reasoning`, removed once every known consumer reads `reasoning`.
+
+### Fixed
+
+- **`capabilities.extendedThinking` was always `undefined`, and now carries a value — the type did not change, the meaning did.** The registry serves `reasoning`; this SDK declared only `extendedThinking`, and its default strip (ADR-002) dropped `reasoning`. Every consumer checking `extendedThinking` saw "cannot think" on every model, which is why `@uluops/core`'s thinking gates never fired on any route. From this release `extendedThinking` is `true` on reasoning-capable models where it was always missing — **a consumer that branches on it changes behaviour on upgrade without any compile error.** `modelCapabilitiesSchema` stays a plain `ZodObject` (normalisation runs after parsing, not as a `.transform`), so `.shape`/`.extend`/`.pick` keep working.
+- `createMockModel` builds capabilities from the wire name (`reasoning`), not from this SDK's own field list — the self-consistent fixture is how the defect above passed review.
+
+### Release order — read before upgrading
+
+`@uluops/core` ≤ 0.50.0 auto-enables provider thinking wherever `capabilities.extendedThinking` is true, with no opt-in. Those blocks never fired, because the field was always `undefined`. **A consumer that injects this SDK into core ≤ 0.50.0's public `ModelCatalog` re-arms them** — billed thinking on every reasoning-capable model, and a 400 on direct-Anthropic runs with structured output. Upgrade core to 0.51.0 (opt-in thinking) together with this SDK, or do not inject it into an older core. Core's own pin is exact, so a plain core install is unaffected.
+
+## [0.60.0] - 2026-10-06
+
 ### Added
 
 - `users.batch(ids, {format: 'envelope'})` preserves and validates producer metadata, returning `{data,foundIds,missingIds}` with lowercase UUIDs deduplicated in request order. Default map lookup remains available; unsupported or inconsistent response metadata fails response validation.
-- Literal exact-name and prefix search through `definitions.list({ name, match })`, with trimmed lowercase identifier normalization and local combination validation.
-- Per-operation `name-v1` capability negotiation for explicit search modes, and `UnsupportedDefinitionSearchContractError` when the server cannot support them.
-- Optional numeric `relevance` on list rows for FULLTEXT matches; existing responses remain valid.
 
 ### Fixed
 
 - Re-resolve the existing sdk-core 0.18.1 lockfile integrity against npmjs so cold installs use the published tarball.
+
+## [0.59.0] - 2026-10-04
+
+### Added
+
+- Literal exact-name and prefix search through `definitions.list({ name, match })`, with trimmed lowercase identifier normalization and local combination validation.
+- Per-operation `name-v1` capability negotiation for explicit search modes, and `UnsupportedDefinitionSearchContractError` when the server cannot support them.
+- Optional numeric `relevance` on list rows for FULLTEXT matches; existing responses remain valid.
 
 ## [0.58.0] - 2026-10-03
 
