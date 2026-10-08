@@ -28,9 +28,13 @@ import { parseResponse } from '../http/parse-response.js';
  * callers parsing with the public `modelSchema` themselves can do the same. An explicit value is
  * never overwritten, and a capability absent under both names stays absent (unknown, not false).
  */
-export function normalizeCapabilities<T extends { reasoning?: boolean; extendedThinking?: boolean }>(caps: T): T {
-  const reasoning = caps.reasoning ?? caps.extendedThinking;
-  const extendedThinking = caps.extendedThinking ?? caps.reasoning;
+export function normalizeCapabilities<T extends object>(caps: T): T & ReasoningCapabilityNames {
+  // `T extends object`, not `T extends ReasoningCapabilityNames`: an all-optional constraint is a
+  // TypeScript "weak type", which rejects any caps type declaring neither name (TS2559) — exactly the
+  // callers this helper exists for (code-auditor, 0.61.0 review).
+  const named = caps as ReasoningCapabilityNames;
+  const reasoning = named.reasoning ?? named.extendedThinking;
+  const extendedThinking = named.extendedThinking ?? named.reasoning;
   return {
     ...caps,
     ...(reasoning !== undefined ? { reasoning } : {}),
@@ -38,7 +42,13 @@ export function normalizeCapabilities<T extends { reasoning?: boolean; extendedT
   };
 }
 
-function normalizeModel<M extends { capabilities: { reasoning?: boolean; extendedThinking?: boolean } }>(model: M): M {
+/** The two names {@link normalizeCapabilities} fills from each other. */
+export interface ReasoningCapabilityNames {
+  reasoning?: boolean;
+  extendedThinking?: boolean;
+}
+
+function normalizeModel<M extends { capabilities: object }>(model: M): M {
   return { ...model, capabilities: normalizeCapabilities(model.capabilities) };
 }
 

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ReasoningCapabilityNames` type, the shape `normalizeCapabilities` fills. The helper accepts any capabilities object (`T extends object`), including one that declares neither name.
 - `capabilities.reasoning` on every model (`models.get`, `models.list` items, `models.resolveAlias`) — the name the registry serves. Exported `normalizeCapabilities(caps)` fills `reasoning` and `extendedThinking` from each other; the SDK applies it after parsing on all three operations, and callers that parse with the public `modelSchema` themselves can apply it too. An explicit value is never overwritten; a capability absent under both names stays absent.
 - `npm run typecheck:types`, chained into `prepublishOnly`: type-checks `test/types/` (the schema ↔ interface drift guard). Until now nothing ran it — `tsconfig.json` excludes `test/` and `expectTypeOf` is a no-op at vitest runtime — so every assertion in that file was inert. It now also covers `ModelCapabilities`.
 
@@ -20,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`capabilities.extendedThinking` was always `undefined`, and now carries a value — the type did not change, the meaning did.** The registry serves `reasoning`; this SDK declared only `extendedThinking`, and its default strip (ADR-002) dropped `reasoning`. Every consumer checking `extendedThinking` saw "cannot think" on every model, which is why `@uluops/core`'s thinking gates never fired on any route. From this release `extendedThinking` is `true` on reasoning-capable models where it was always missing — **a consumer that branches on it changes behaviour on upgrade without any compile error.** `modelCapabilitiesSchema` stays a plain `ZodObject` (normalisation runs after parsing, not as a `.transform`), so `.shape`/`.extend`/`.pick` keep working.
+- **`capabilities.extendedThinking` was always `undefined`, and now carries a value — the type did not change, the meaning did.** The registry serves `reasoning`; this SDK declared only `extendedThinking`, and its default strip (ADR-002) dropped `reasoning`. Every consumer checking `extendedThinking` saw "cannot think" on every model, which is why `@uluops/core`'s thinking gates never fired on any route. From this release `extendedThinking` is `true` on reasoning-capable models where it was always missing, **and `false` on every other model where it was `undefined`** — including models whose capability the registry does not actually know (it serves `false` for a missing or unparseable record). **A consumer that branches on it changes behaviour on upgrade without any compile error**, in both directions: `=== true` checks start passing, `=== false` checks start refusing. `modelCapabilitiesSchema` stays a plain `ZodObject` (normalisation runs after parsing, not as a `.transform`), so `.shape`/`.extend`/`.pick` keep working.
+- The alias is read-only: `models.list({ capability: 'extendedThinking' })` is still ignored by the registry and returns the unfiltered list (documented on `ListModelsQuery.capability`); filter with `'reasoning'`. The registry-side alias is a separate change.
 - `createMockModel` builds capabilities from the wire name (`reasoning`), not from this SDK's own field list — the self-consistent fixture is how the defect above passed review.
 
 ### Release order — read before upgrading

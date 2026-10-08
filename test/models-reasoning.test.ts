@@ -19,7 +19,12 @@ import { createMockModel } from './contract-helpers.js';
 import { TEST_API_KEY, MOCK_BASE_URL } from './setup.js';
 
 function wire(name: 'get' | 'list' | 'resolve'): { data: Record<string, unknown> } {
-  return JSON.parse(readFileSync(new URL(`./fixtures/wire/models-${name}.json`, import.meta.url), 'utf8'));
+  const file = new URL(`./fixtures/wire/models-${name}.json`, import.meta.url);
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch (err) {
+    throw new Error(`wire fixture ${file.pathname} unreadable — re-capture it from the live API`, { cause: err });
+  }
 }
 
 describe('reasoning capability (live wire payloads)', () => {

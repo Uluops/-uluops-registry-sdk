@@ -927,12 +927,17 @@ console.log(model.cost);   // { input: 3, output: 15, cacheRead: 0.3, ... } — 
 ```
 
 **Capabilities (`model.capabilities`)** — `vision`, `tools`, `streaming`, `reasoning`,
-`structuredOutput`, `structuredOutputWithTools`; each optional, and absent means *unknown*, not
-false. `reasoning` means the model *can* think before answering (extended thinking) — whether a run
-does is the caller's choice. `extendedThinking` is a deprecated alias of `reasoning`, filled from it on
-every model the SDK returns; it was always `undefined` before 0.61.0, because the registry serves
-`reasoning`. If you parse responses yourself with the exported `modelSchema`, apply
-`normalizeCapabilities(model.capabilities)` to get the same alias.
+`structuredOutput`, `structuredOutputWithTools`; each optional, and the SDK never invents one: absent
+means the response did not say. **`false` does not reliably mean "cannot"**: the registry serves
+`reasoning` (and `vision`/`tools`) as `false` when its own record is missing or unparseable, so treat
+`false` as "not known to", not "known not to". `reasoning` means the model *can* think before
+answering (extended thinking) — whether a run does is the caller's choice. `extendedThinking` is a
+deprecated alias of `reasoning`, filled from it on every model the SDK returns; it was always
+`undefined` before 0.61.0, because the registry serves `reasoning`. The alias is **read-only**: filter
+lists with `capability: 'reasoning'` — the registry ignores `capability: 'extendedThinking'` and
+returns the unfiltered list. If you parse responses yourself with the exported `modelSchema` (from
+`@uluops/registry-sdk/types`), apply `normalizeCapabilities(model.capabilities)` (from
+`@uluops/registry-sdk`) to get the same alias.
 
 **Ids containing `/`** (every OpenRouter slug) are fetched with the registry's query-string lookup
 (`GET /models/lookup?provider=&modelId=`, registry API `2026-10-03`+). The path form cannot carry

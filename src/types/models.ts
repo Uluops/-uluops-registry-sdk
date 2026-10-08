@@ -125,5 +125,11 @@ export interface ListModelsQuery {
   provider?: string;
   tier?: ModelTier;
   status?: ModelStatus;
+  /**
+   * Keep only models with this capability. **The registry filters on `reasoning`, `vision` and
+   * `tools` only**; any other key — including the deprecated `extendedThinking` alias, until the
+   * registry accepts it — is ignored server-side and the list comes back unfiltered, with no error.
+   * Use `'reasoning'`, not `'extendedThinking'`.
+   */
   capability?: keyof ModelCapabilities;
 }
