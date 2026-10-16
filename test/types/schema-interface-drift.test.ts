@@ -6,7 +6,9 @@ import {
   versionListItemSchema,
   retranslateResultSchema,
   modelCapabilitiesSchema,
+  renderResultSchema,
 } from '../../src/types/response-schemas.js';
+import type { RenderResult, RenderStack } from '../../src/index.js';
 import type { ForkLineage, ForkLineageHop } from '../../src/types/forks.js';
 import type { VersionListItem } from '../../src/types/versions.js';
 import type { RetranslateResult } from '../../src/operations/translation.js';
@@ -27,6 +29,14 @@ import type { ModelCapabilities } from '../../src/types/models.js';
  * response schema gets a hand-maintained public twin.
  */
 describe('response schema ↔ public type drift guard', () => {
+  it('RenderResult keys match renderResultSchema (0.62.0 renderer fields on both sides)', () => {
+    expectTypeOf<keyof z.infer<typeof renderResultSchema>>().toEqualTypeOf<keyof RenderResult>();
+  });
+
+  it('RenderStack is importable from the package root and matches the schema', () => {
+    expectTypeOf<NonNullable<z.infer<typeof renderResultSchema>['renderStack']>>().toEqualTypeOf<RenderStack>();
+  });
+
   it('ForkLineage keys match forkLineageSchema', () => {
     expectTypeOf<keyof z.infer<typeof forkLineageSchema>>().toEqualTypeOf<keyof ForkLineage>();
   });

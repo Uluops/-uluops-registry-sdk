@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`RenderResult` keeps the renderer fields registry-api returns** (definition-factory spec 25 D1; tracker `5de033b4`): `normalizedYaml`, `factoryVersion`, `renderStack` (`{ factory, nunjucks, yaml }`, new `RenderStack` type), and on ADL renders `resolvedProfile` (`core` | `uluops-full` | `custom`), `scaffolding` and `declaredOutputShape`. Before this release `renderResultSchema` (`z.object`) stripped every one of them with a 200, so an SDK consumer could not attribute a hash or tell a declared-only render apart. Live since registry-api `1bc0e82` (`factoryVersion` since `3e1245b`). The test asserts each surviving value and fails against the 0.61.0 schema.
+- **`RenderResult` keeps the renderer fields registry-api returns** (definition-factory spec 25 D1; tracker `5de033b4`): `normalizedYaml`, `factoryVersion`, `renderStack` (`{ factory, nunjucks, yaml }`, new `RenderStack` type), and on ADL renders `resolvedProfile` (`core` | `uluops-full` | `custom`), `scaffolding` and `declaredOutputShape`. Before this release `renderResultSchema` (`z.object`) stripped every one of them with a 200, so an SDK consumer could not attribute a hash or tell a declared-only render apart. Live since registry-api `1bc0e82` (`factoryVersion` since `3e1245b`). The test asserts each surviving value and fails against the 0.61.0 schema. `RenderStack` is exported from the package root. A key-set drift guard (`test/types/schema-interface-drift.test.ts`) now ties `RenderResult` to `renderResultSchema`, which it was not before; dropping a field on either side fails `typecheck:types`.
 
 ### Changed
 

@@ -219,6 +219,7 @@ export type {
   RenderResult,
   RenderPreviewBody,
   RenderProfile,
+  RenderStack,
   TargetWarning,
   TranslatorVersion,
   RetranslateOptions,
