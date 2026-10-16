@@ -83,9 +83,47 @@ export interface RenderResult {
   selectedModel?: string | null;
   /** Adapter warnings about lossy mappings (only present for target rendering) */
   warnings?: TargetWarning[];
+  /** The normalized YAML the server hashed. */
+  normalizedYaml?: string;
+  /** The installed `@uluops/definition-factory` version that produced `markdown`/`promptHash`. */
+  factoryVersion?: string;
+  /**
+   * The resolved versions the server rendered with. **Pin a `core` hash on
+   * `(definition version, renderStack)`**, not on `promptHash` or `factoryVersion` alone: the
+   * factory takes `nunjucks` and `yaml` on caret ranges, so a lockfile change can move bytes
+   * under an unchanged factory version. A mismatch under an unchanged stack is a regression; one
+   * under a changed stack is churn.
+   */
+  renderStack?: RenderStack;
+  /** ADL only: the profile the factory resolved (`custom` for a config object). */
+  resolvedProfile?: 'core' | 'uluops-full' | 'custom';
+  /** ADL only: whether the factory's role scaffolding rendered. `false` = a declared-only render. */
+  scaffolding?: boolean;
+  /**
+   * ADL only: whether the definition declares an output shape its role renders. Under `core`,
+   * `false` means a free-form agent with no output contract; the factory makes no runnability
+   * guarantee for `core`.
+   */
+  declaredOutputShape?: boolean;
 }
 
-/** Render profile preset for controlling UluOps-specific agent prompt content. */
+/** The renderer versions behind a render response (spec 25 D12). */
+export interface RenderStack {
+  factory: string;
+  nunjucks: string;
+  yaml: string;
+}
+
+/**
+ * Render profile preset.
+ *
+ * - `'core'`: the definition factory's own gloss (`CORE_PROFILE_GLOSS`, factory >= 0.81.0) reads
+ *   "'core' renders only what the definition declares — no factory-supplied output contract,
+ *   scoring instruction or tone; pass 'uluops-full' for the full prompt." Before factory 0.81.0
+ *   (registry-api before the 0.81.0 deploy) `core` was the full role prompt minus four UluOps
+ *   blocks.
+ * - `'uluops-full'`: the full prompt, and the profile the registry stores at publish.
+ */
 export type RenderProfile = 'core' | 'uluops-full';
 
 /**

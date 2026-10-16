@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.62.0] - 2026-10-16
+
+### Added
+
+- **`RenderResult` keeps the renderer fields registry-api returns** (definition-factory spec 25 D1; tracker `5de033b4`): `normalizedYaml`, `factoryVersion`, `renderStack` (`{ factory, nunjucks, yaml }`, new `RenderStack` type), and on ADL renders `resolvedProfile` (`core` | `uluops-full` | `custom`), `scaffolding` and `declaredOutputShape`. Before this release `renderResultSchema` (`z.object`) stripped every one of them with a 200, so an SDK consumer could not attribute a hash or tell a declared-only render apart. Live since registry-api `1bc0e82` (`factoryVersion` since `3e1245b`). The test asserts each surviving value and fails against the 0.61.0 schema.
+
+### Changed
+
+- **`RenderProfile` documents what `core` means now**, quoting the factory's `CORE_PROFILE_GLOSS`: declared-only since definition-factory 0.81.0 (registry-api `7f61242`, 2026-10-16). Before that it was the full role prompt minus four UluOps blocks. The type is unchanged.
+
 ## [0.61.0] - 2026-10-08
 
 ### Added

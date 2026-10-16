@@ -91,6 +91,28 @@ describe('renderResultSchema', () => {
     expect(renderResultSchema.safeParse(createMockRenderResult()).success).toBe(true);
   });
 
+  it('keeps the spec 25 renderer fields instead of stripping them (tracker 5de033b4)', () => {
+    // The live shape of GET …/render?renderProfile=core from registry-api 1bc0e82 (2026-10-16).
+    const live = {
+      markdown: '# Agent', normalizedYaml: 'agent: {}', renderProfile: 'core',
+      promptHash: 'sha256:abc', factoryVersion: '0.81.0', selectedModel: 'sonnet',
+      renderStack: { factory: '0.81.0', nunjucks: '3.2.4', yaml: '2.9.0' },
+      resolvedProfile: 'core', scaffolding: false, declaredOutputShape: true,
+    };
+    const parsed = renderResultSchema.parse(live);
+    // Assert the surviving VALUES: a z.object() strip returns success with the keys gone.
+    expect(parsed.factoryVersion).toBe('0.81.0');
+    expect(parsed.renderStack).toEqual({ factory: '0.81.0', nunjucks: '3.2.4', yaml: '2.9.0' });
+    expect(parsed.resolvedProfile).toBe('core');
+    expect(parsed.scaffolding).toBe(false);
+    expect(parsed.declaredOutputShape).toBe(true);
+    expect(parsed.normalizedYaml).toBe('agent: {}');
+  });
+
+  it('rejects a resolvedProfile outside the factory vocabulary', () => {
+    expect(renderResultSchema.safeParse({ markdown: '#', resolvedProfile: 'full' }).success).toBe(false);
+  });
+
   it('accepts result with all optional fields', () => {
     const result = renderResultSchema.safeParse({
       markdown: '# Test',

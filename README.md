@@ -1056,8 +1056,8 @@ Get the fully rendered/resolved definition. Pass `"latest"` as the version to re
 const rendered = await client.render.get('agent', 'code-validator', 'latest');
 console.log(rendered.markdown);
 
-// Select the portable profile explicitly; direct API/SDK calls that omit it
-// retain the Registry's stored-profile behavior.
+// Select the declared-only profile explicitly (registry on factory >= 0.81.0: only what the
+// definition declares). Calls that omit it get the registry's stored profile, 'uluops-full'.
 const core = await client.render.get('agent', 'code-validator', 'latest', {
   renderProfile: 'core',
 });
@@ -1082,6 +1082,25 @@ artifact envelope (including aliases). It is `null` when the artifact has no mod
 envelope and absent when an older API does not report selection. It does not assert
 provider resolution or that the requested override was honored. `target`,
 `renderProfile`, `promptHash` and adapter `warnings` retain their existing semantics.
+
+Since 0.62.0 the result also carries the renderer fields registry-api returns. Earlier SDKs
+stripped them silently.
+- `factoryVersion`: the factory version that produced the bytes.
+- `renderStack`: `{ factory, nunjucks, yaml }`.
+- On ADL renders, `resolvedProfile`, `scaffolding` and `declaredOutputShape`.
+
+**Pin a `core` hash on `(definition version, renderStack)`**, never on `promptHash` alone:
+a lockfile change in the factory's `nunjucks`/`yaml` moves bytes under an unchanged factory
+version. `scaffolding: false` means the render is declared-only. Under it,
+`declaredOutputShape: false` means the agent declares no output contract.
+
+```typescript
+const r = await client.render.get('agent', 'code-validator', 'latest', { renderProfile: 'core' });
+const pinKey = `${'1.5.0'}|${r.renderStack?.factory}|${r.renderStack?.nunjucks}|${r.renderStack?.yaml}`;
+if (r.scaffolding === false && r.declaredOutputShape === false) {
+  // free-form agent: supply your own output contract
+}
+```
 
 #### `preview(type, body)`
 

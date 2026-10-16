@@ -104,6 +104,14 @@ export const renderResultSchema = z.object({
   renderProfile: z.enum(['core', 'uluops-full']).optional(),
   selectedModel: z.string().nullable().optional(),
   warnings: z.array(targetWarningSchema).optional(),
+  // Spec 25 (registry-api >= 1bc0e82): which renderer produced these bytes, and the factory's
+  // render facts. Before this release z.object() stripped all of them silently (tracker 5de033b4).
+  normalizedYaml: z.string().optional(),
+  factoryVersion: z.string().optional(),
+  renderStack: z.object({ factory: z.string(), nunjucks: z.string(), yaml: z.string() }).optional(),
+  resolvedProfile: z.enum(['core', 'uluops-full', 'custom']).optional(),
+  scaffolding: z.boolean().optional(),
+  declaredOutputShape: z.boolean().optional(),
 });
 
 /** Non-fatal warning emitted during a publish operation. */
