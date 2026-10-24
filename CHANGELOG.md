@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SdkApiError.isRetryable()` honours a server's `details.retryable === false`;
   - `ServiceUnavailableError` (502/503/504) keeps the server's `details`.
 
+### Fixed
+- **Documentation, from the consumer-validate run before this release:** README: `ULUOPS_REGISTRY_URL` / `ULUOPS_AUTH_URL` and the `baseUrl` / `authBaseUrl` options are documented (the Quick Start pointed at the Environment Variables table for the base URL, which did not list it); where to create an API key; the `ServiceUnavailableError` row and Automatic Retries describe the sdk-core 0.19.0 retry opt-out and `details`; a stale "Version 0.56.2 pins sdk-core 0.18.1" sentence made version-independent; the table of contents gains the Quality metric contracts section.
+
 ## [0.62.0] - 2026-10-16
 
 ### Added

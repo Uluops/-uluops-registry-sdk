@@ -80,6 +80,9 @@ function createBrowserClient(sessionToken: string): RegistryClient {
   - [Server-Side Normalization](#server-side-normalization)
   - [Node.js Environment Discovery](#nodejs-environment-discovery)
   - [Browser Usage](#browser-usage)
+- [Quality metric contracts (F04)](#quality-metric-contracts-f04)
+  - [Combined unified version diffs](#combined-unified-version-diffs)
+  - [Batch user lookup metadata](#batch-user-lookup-metadata)
 - [License](#license)
 
 ## Features
@@ -141,8 +144,13 @@ import { RegistryClient } from '@uluops/registry-sdk';
 
 const client = new RegistryClient({
   apiKey: process.env.ULUOPS_API_KEY,
+  // Optional: point at a non-production registry (local dev, staging, a stub server).
+  // baseUrl: 'http://localhost:3001/api/v1',
+  // authBaseUrl: 'http://localhost:3100/api/v1', // where login()/refresh go (the ops API)
 });
 ```
+
+Create an API key in the UluOps dashboard at https://app.uluops.ai (Settings → API keys). `baseUrl` and `authBaseUrl` default to production (see [Environment Variables](#environment-variables) for the `NODE_ENV=development` defaults and the `ULUOPS_REGISTRY_URL` / `ULUOPS_AUTH_URL` overrides that `createClientFromEnvironment()` reads).
 
 ### Session-Based Authentication
 
@@ -1235,6 +1243,8 @@ These variables are read by `createClientFromEnvironment()` and `loadConfig()` f
 | `ULUOPS_EMAIL` | Email for session-based auth | - |
 | `ULUOPS_PASSWORD` | Password for session-based auth | - |
 | `ULUOPS_ORG_SLUG` | Org for writes (`X-Org-Slug` on non-GET requests only) | - |
+| `ULUOPS_REGISTRY_URL` | Registry API base URL (`baseUrl`) | `https://api.uluops.ai/api/v1/registry`; `http://localhost:3001/api/v1` when `NODE_ENV=development` |
+| `ULUOPS_AUTH_URL` | Ops API base URL for `login()` / token refresh (`authBaseUrl`); the registry has no auth endpoints of its own | `https://api.uluops.ai/api/v1`; `http://localhost:3100/api/v1` when `NODE_ENV=development` |
 | `ULUOPS_DEBUG` | Enable debug logging | `false` |
 
 <a id="orgslug-scopes-definition-writes"></a>
@@ -1325,12 +1335,12 @@ The SDK provides a typed error hierarchy so you can catch and recover from speci
 | `PayloadTooLargeError` | 413 | YAML exceeds 150KB limit |
 | `UnprocessableError` | 422 | Valid YAML syntax but invalid semantics (missing refs, cycles) |
 | `RateLimitError` | 429 | Too many requests (100 executions/min per definition) |
-| `ServiceUnavailableError` | 503 | Server temporarily down or overloaded |
+| `ServiceUnavailableError` | 502, 503, 504 | Server temporarily down or overloaded; keeps the server's `details` (since sdk-core 0.19.0) |
 | `NetworkError` | - | DNS failure, connection refused, network unreachable (auto-retried) |
 | `TimeoutError` | - | Request exceeded timeout (default: 30s) |
 | `ResponseValidationError` | 0 | API response did not match the SDK's expected Zod schema (contract drift). Extends `RegistryApiError`; original `ZodError` preserved on `.zodError`. Non-retryable. |
 
-Version 0.56.2 pins `@uluops/sdk-core` 0.18.1. HTTP 400, 404, 409 and 422 errors retain the
+The SDK pins an exact `@uluops/sdk-core` version (see `package.json`). HTTP 400, 404, 409 and 422 errors retain the
 server's structured `code` and `details`, including upgrade refusal metadata.
 `isInvalidTransitionError(error)` exposes `details.allowedTransitions`; `isDeleteBlockedError(error)` exposes blocker presence and a recovery action without revealing hidden references. A response-schema failure after a write may mean the write committed: read the current state before retrying.
 
@@ -1546,6 +1556,8 @@ const client = new RegistryClient({
   timeout: 30000,    // Request timeout in ms (default: 30000)
 });
 ```
+
+**A server can opt a failure out of retry (since @uluops/sdk-core 0.19.0).** When the error's `details.retryable === false`, `isRetryable()` returns `false` and the SDK does not retry, whatever the status code. Before 0.19.0, retryability followed the status alone, so a server refusing work it knew would fail again was retried anyway. Your own retry logic gets the same answer from `error.isRetryable()`. `ServiceUnavailableError` (502/503/504) also keeps the server's `details` now, so such a refusal (e.g. `{ retryable: false, reason: 'busy' }`) reaches your code.
 
 Retryable errors: `502 Bad Gateway`, `503 Service Unavailable`, `504 Gateway Timeout`, `429 Too Many Requests`, and `NetworkError` (DNS failures, connection resets, ECONNREFUSED).
 
