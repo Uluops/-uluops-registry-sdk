@@ -14,6 +14,7 @@ import type {
   Tier,
   Visibility,
 } from './enums.js';
+import type { RenderClosure } from './responses.js';
 
 // ── Definition Reference ─────────────────────────────────────
 
@@ -273,6 +274,11 @@ export interface Definition {
   deprecatedAt?: string | null;
   /** Safety analysis results — null when not yet analyzed */
   riskProfile?: RiskProfile | null;
+  /**
+   * The closure qualifier of this row's live render (`runtimeMd`), as stored (registry-api ADL
+   * v1.20 P0c). `null` when the row was rendered before P0c or has no render.
+   */
+  closure?: RenderClosure | null;
 }
 
 /**

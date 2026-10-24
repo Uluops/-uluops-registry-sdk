@@ -658,6 +658,18 @@ if (result.valid) {
 }
 ```
 
+Since 0.64.0 the result also keeps `warnings`, `schemaVersion`, `validatedAt` and, for agents,
+`closure: { mode, demoted }`. Earlier SDKs stripped them. Against a registry-api with ADL v1.20 P0c
+deployed, agent diagnostics carry the factory's codes (`UNKNOWN_KEY`, `UNKNOWN_FAILURE_MODE`,
+`UNRENDERED_KEY`, …) instead of a uniform `SCHEMA_ERROR`, a `path` that is a JSON pointer naming the
+offending key, and `key` / `demotedFrom` where they apply. `/validate` runs the publish gate's
+closure mode, so it predicts publish.
+
+`code`, `severity` and `closure.mode` are open strings: the factory owns those vocabularies and a
+release may add to them, so match the values you know and treat others as unknown rather than
+exhaustively switching. `path` is optional: whole-document errors (`PAYLOAD_TOO_LARGE`,
+`INVALID_ENCODING`) carry none.
+
 ---
 
 ### Dependencies (`client.dependencies`)
@@ -1099,6 +1111,23 @@ stripped them silently.
 - `renderStack`: `{ factory, nunjucks, yaml }`.
 - On ADL renders, `resolvedProfile`, `scaffolding` and `declaredOutputShape`.
 
+**ADL v1.20 closure fields** (0.64.0; served by registry-api with P0c deployed, absent before):
+- `validation`: the render's own validation, grouped by code, key, severity and demotion
+  (`{ mode, schemaVersion, valid, demoted, groups[] }`, each group with at most ten `paths` and a
+  full `count`). A stored agent re-renders under `legacy`, so `validation` is the verdict of record
+  for that row. It never appears in `warnings`.
+- `closure`: `{ mode, demoted, legacyWording }`. `legacyWording` is set (`unknown-keys` or
+  `some-errors`) exactly when the render carries the legacy stamp. To compare two renders, compare
+  `legacyWording`, not `mode` or `demoted`.
+- `/render` re-renders. Under `legacy`, a stored agent the current schema would reject renders
+  stamped, and its `promptHash` differs from the stored `runtimeMd`'s. That is expected, not
+  staleness. A definition read (`client.definitions.get…`) returns the stored render's `closure`
+  (`null` for rows rendered before P0c).
+- A `/render` that cannot render answers 422 with the same `validation` object in the error's
+  `details.validation`.
+
+All string vocabularies in these objects are open strings, for the reason given under `validate`.
+
 **Pin a `core` hash on `(definition version, renderStack)`**, never on `promptHash` alone:
 a lockfile change in the factory's `nunjucks`/`yaml` moves bytes under an unchanged factory
 version. `scaffolding: false` means the render is declared-only. Under it,
@@ -1120,7 +1149,18 @@ Preview render without saving.
 const preview = await client.render.preview('agent', {
   yaml: rawYaml,
 });
+if (preview.publish && !preview.publish.publishable) {
+  console.log(preview.publish.errors, preview.publish.dependencyBlockers);
+}
 ```
+
+Against a registry-api with ADL v1.20 P0c deployed, preview also returns `publish`: what publishing
+this YAML would decide — `publishable`, validation `errors`/`warnings`, `dependencyBlockers`/
+`dependencyWarnings` and any `translationError` — plus the verdict's `validation` and `closure` for
+agents. The preview render itself still skips validation, so a draft with incomplete fields
+renders. **That deploy also changes who may call preview:** it resolves the caller's org (personal
+unless one is named), checks membership and requires the `publisher` role, and answers 403
+otherwise.
 
 ### Analytics (`client.analytics`)
 

@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.64.0] - 2026-10-24
+
+The SDK half of ADL v1.20 build-plan unit P0d, released with registry-api's P0c. Against a
+registry-api without P0c the new fields are simply absent.
+
+### Added
+- **`RenderResult.validation`, `.closure` and `.publish`** (`/render` and preview). New types
+  `RenderValidation`, `RenderValidationGroup`, `RenderClosure`, `PreviewPublish`,
+  `DependencyFinding`, `ClosureModeName` and `LegacyWording`, exported from the package root. Each
+  schema has the same key set as registry-api's own Zod schema (`src/schemas/render/schema.ts`,
+  branch `feat/adl-v1_20-p0c` 8389b63), checked key for key on 2026-10-24 with a control that drops
+  one key.
+- **`Definition.closure`**: the stored live render's qualifier on every definition read, `null`
+  before P0c.
+- **`ValidationResult.warnings`, `.schemaVersion`, `.validatedAt` and `.closure`**
+  (`POST /validate`). The server has always sent `warnings`; until now `z.object()` stripped them
+  with a 200, so an SDK caller never saw one. `ValidationFieldError` gains `severity`, `suggestion`,
+  `line`, `column`, `source`, `key` and `demotedFrom`.
+- Drift guards (`typecheck:types`) tie `ValidationResult`, `ValidationFieldError` and `RenderClosure`
+  to their schemas.
+
+### Changed
+- **Vocabulary fields are open strings** (ADL v1.20 S1 C27, V50): `code`, `severity`, `mode`,
+  `legacyWording`, `source`, `demotedFrom` and the dependency finding's `code`/`reason`/`severity`/
+  `dependencyClass` are validated as strings. A factory or registry release that adds a value no
+  longer makes the parse throw. The TypeScript types list the known values (`ClosureModeName`,
+  `LegacyWording`) and accept any string. The test feeds unknown values to every one of them and
+  shows a closed enum throwing on the same payload. Note: registry-api serves no `legacyBasis`
+  field on any route, so the SDK has none to mirror; the build plan's `legacyBasis` item applies to
+  the fields above.
+- **`ValidationFieldError.path` is optional.** **Type-level breaking change** for code that reads
+  `err.path` as a `string`. The server omits `path` on whole-document errors (`PAYLOAD_TOO_LARGE`,
+  `INVALID_ENCODING`); until now the schema required it, so those responses threw
+  `ResponseValidationError` instead of returning the server's answer. Handle `undefined`.
+
+### Semantics without signature (registry-api P0c, for SDK callers)
+- `/validate` and the publish gate report the factory's diagnostic codes for agents instead of a
+  uniform `SCHEMA_ERROR`, and `path` becomes a JSON pointer naming the offending key.
+- `/render` of a stored agent runs under `legacy`: a row the current schema rejects renders stamped,
+  with a `promptHash` that differs from the stored `runtimeMd`'s.
+- Preview requires the `publisher` role in the caller's org (403 otherwise).
+
 ## [0.63.0] - 2026-10-24
 
 ### Changed

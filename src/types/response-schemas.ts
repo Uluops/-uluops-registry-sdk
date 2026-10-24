@@ -45,7 +45,7 @@ import {
   CHANGE_TYPES,
 } from './enums.js';
 import type { DefinitionType } from './enums.js';
-import { definitionSchema, provenanceSchema } from './schemas.js';
+import { definitionSchema, provenanceSchema, renderClosureSchema } from './schemas.js';
 
 // ============================================================================
 // Shared Primitives
@@ -74,17 +74,38 @@ const changeTypeResponseSchema = z.enum(CHANGE_TYPES);
 // Phase 1: Simple Response Schemas
 // ============================================================================
 
-/** Validation error detail */
-const validationErrorSchema = z.object({
-  path: z.string(),
+/**
+ * One validation diagnostic: POST /validate's `errors[]`/`warnings[]` and preview's
+ * `data.publish.errors[]`/`warnings[]` (registry-api `ValidationDiagnostic`).
+ *
+ * - `path` is optional because the server omits it on whole-document errors (`PAYLOAD_TOO_LARGE`,
+ *   `INVALID_ENCODING`). Until 0.64.0 it was required, so such a response threw
+ *   `ResponseValidationError` instead of returning the server's answer.
+ * - `code`, `severity`, `source` and `demotedFrom` are validated as strings, not enums (S1 C27,
+ *   V50). For agents `code` is the factory's `DiagnosticCode` (registry-api ADL v1.20 P0c), a set
+ *   each factory release may extend.
+ */
+const validationDiagnosticSchema = z.object({
+  path: z.string().optional(),
   message: z.string(),
   code: z.string().optional(),
+  severity: z.string().optional(),
+  suggestion: z.string().optional(),
+  line: z.number().int().optional(),
+  column: z.number().int().optional(),
+  source: z.string().optional(),
+  key: z.string().optional(),
+  demotedFrom: z.string().optional(),
 });
 
-/** POST /validate/{type} */
+/** POST /validate/{type}. `closure` is ADL only (registry-api ADL v1.20 P0c). */
 export const validationResultSchema = z.object({
   valid: z.boolean(),
-  errors: z.array(validationErrorSchema).optional(),
+  errors: z.array(validationDiagnosticSchema).optional(),
+  warnings: z.array(validationDiagnosticSchema).optional(),
+  schemaVersion: z.string().optional(),
+  validatedAt: z.string().optional(),
+  closure: z.object({ mode: z.string(), demoted: z.number().int() }).optional(),
 });
 
 /** Target adapter warning */
@@ -92,6 +113,64 @@ const targetWarningSchema = z.object({
   field: z.string(),
   reason: z.string(),
   level: z.enum(['info', 'warn', 'error']),
+});
+
+/**
+ * One group of a render's diagnostics (registry-api `RenderValidationGroup`, S1 L-12): grouped by
+ * `(code, key, severity, demotedFrom)`, with at most ten `paths` (`pathsTruncated` says more
+ * exist; `count` is the full number). Open strings as on {@link validationDiagnosticSchema}.
+ */
+export const renderValidationGroupSchema = z.object({
+  code: z.string(),
+  severity: z.string(),
+  key: z.string().nullable(),
+  count: z.number().int(),
+  paths: z.array(z.string()),
+  pathsTruncated: z.boolean(),
+  message: z.string(),
+  suggestion: z.string().optional(),
+  demotedFrom: z.string().optional(),
+});
+
+/**
+ * `data.validation` on GET /render and preview (ADL): the render's own validation, grouped. On
+ * `/render` of a stored agent it is the verdict of record for that row (S1 SV-5′), run under
+ * `legacy`; on preview it is the publish verdict's, run under the fresh mode.
+ */
+export const renderValidationSchema = z.object({
+  mode: z.string(),
+  schemaVersion: z.string(),
+  valid: z.boolean(),
+  demoted: z.number().int(),
+  groups: z.array(renderValidationGroupSchema),
+});
+
+/**
+ * One dependency finding in preview's `data.publish` (registry-api `DependencyFinding`). The
+ * registry owns these vocabularies and closes them on its side; the SDK validates shape only, for
+ * the reason {@link validationDiagnosticSchema} does — an added value must not make a preview throw.
+ */
+const dependencyFindingSchema = z.object({
+  code: z.string(),
+  reason: z.string(),
+  severity: z.string(),
+  dependencyClass: z.string(),
+  ref: z.object({ type: z.string(), name: z.string(), version: z.string() }).nullable(),
+  paths: z.array(z.string()),
+  context: z.string().nullable(),
+  target: z.object({ version: z.string(), status: z.string() }).optional(),
+  message: z.string(),
+});
+
+/** Preview's `data.publish`: what publishing this YAML would decide (registry-api S1-V14). */
+export const previewPublishSchema = z.object({
+  publishable: z.boolean(),
+  parseError: z.string().optional(),
+  errors: z.array(validationDiagnosticSchema),
+  warnings: z.array(validationDiagnosticSchema),
+  dependencyBlockers: z.array(dependencyFindingSchema),
+  dependencyWarnings: z.array(dependencyFindingSchema),
+  translationError: z.string().optional(),
 });
 
 /** GET /definitions/{type}/{name}/{version}/render, POST /render/{type}/preview */
@@ -112,6 +191,11 @@ export const renderResultSchema = z.object({
   resolvedProfile: z.enum(['core', 'uluops-full', 'custom']).optional(),
   scaffolding: z.boolean().optional(),
   declaredOutputShape: z.boolean().optional(),
+  // ADL v1.20 P0c (registry-api): the render's grouped validation, its closure qualifier, and on
+  // preview the publish verdict. Stripped by z.object() before 0.64.0.
+  validation: renderValidationSchema.optional(),
+  closure: renderClosureSchema.optional(),
+  publish: previewPublishSchema.optional(),
 });
 
 /** Non-fatal warning emitted during a publish operation. */
@@ -1122,3 +1206,16 @@ export const versionCombinedDiffSchema = z.discriminatedUnion('full', [
     sourceYaml: z.string(), targetYaml: z.string(),
   }),
 ]);
+
+// ============================================================================
+// ADL v1.20 P0c render/validation shapes — public types derived from the schemas
+// ============================================================================
+
+/** {@inheritDoc renderValidationGroupSchema} */
+export type RenderValidationGroup = z.infer<typeof renderValidationGroupSchema>;
+/** {@inheritDoc renderValidationSchema} */
+export type RenderValidation = z.infer<typeof renderValidationSchema>;
+/** {@inheritDoc previewPublishSchema} */
+export type PreviewPublish = z.infer<typeof previewPublishSchema>;
+/** One dependency finding in {@link PreviewPublish}. */
+export type DependencyFinding = z.infer<typeof dependencyFindingSchema>;

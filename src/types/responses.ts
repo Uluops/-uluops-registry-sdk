@@ -2,6 +2,8 @@
  * Common response types for the Registry SDK
  */
 
+import type { PreviewPublish, RenderValidation } from './response-schemas.js';
+
 /**
  * Single resource response wrapper
  */
@@ -39,6 +41,49 @@ export interface ErrorResponse {
 export interface ValidationResult {
   valid: boolean;
   errors?: ValidationFieldError[];
+  /**
+   * Warnings (0.64.0). The server always sent them; until 0.64.0 the SDK stripped them. For agents
+   * this includes the factory's `UNRENDERED_KEY`: a field the schema accepts that no template of
+   * the agent's type renders (registry-api ADL v1.20 P0c).
+   */
+  warnings?: ValidationFieldError[];
+  /** The schema version the definition was validated against. */
+  schemaVersion?: string;
+  /** When the server validated (ISO 8601). */
+  validatedAt?: string;
+  /**
+   * ADL only (registry-api ADL v1.20 P0c): the closure mode validation ran under — the registry's
+   * fresh mode, the same as the publish gate's, so `/validate` predicts publish — and how many
+   * diagnostics it demoted from an error.
+   */
+  closure?: { mode: ClosureModeName; demoted: number };
+}
+
+/**
+ * A closure mode (ADL v1.20 closure spec S1 §2.3). An open string: the factory owns the set and a
+ * release may extend it, so branch on the values you know and treat the rest as unknown.
+ * `legacy` is the registry's mode for stored rows; the CLI never runs it.
+ */
+export type ClosureModeName = 'error' | 'warn' | 'legacy' | (string & {});
+
+/**
+ * Which legacy stamp a render carries: `unknown-keys` (every demotion was an unknown key) or
+ * `some-errors`. An open string, as {@link ClosureModeName}. Not a severity: `unknown-keys` can
+ * hide more lost intent than `some-errors`.
+ */
+export type LegacyWording = 'unknown-keys' | 'some-errors' | (string & {});
+
+/**
+ * The closure qualifier of a render (registry-api ADL v1.20 P0c; RG-1). On `/render` and preview
+ * it describes the render just made; on a definition read, the row's STORED live render.
+ * Compare renders by `legacyWording` only: `mode` and `demoted` are reported, not compared.
+ */
+export interface RenderClosure {
+  mode: ClosureModeName;
+  /** Diagnostics the mode demoted from an error. */
+  demoted: number;
+  /** Set exactly when the render carries the legacy stamp; `null` otherwise. */
+  legacyWording: LegacyWording | null;
 }
 
 /**
@@ -56,9 +101,27 @@ export interface LoginResult {
  * `ValidationError` error class (thrown on invalid input).
  */
 export interface ValidationFieldError {
-  path: string;
+  /**
+   * Where the finding is. For agents, an RFC 6901 pointer that includes the offending key
+   * (registry-api ADL v1.20 P0c). **Optional since 0.64.0**: the server omits it on whole-document
+   * errors (`PAYLOAD_TOO_LARGE`, `INVALID_ENCODING`), which until then made the SDK throw.
+   */
+  path?: string;
   message: string;
+  /** Machine-readable code. For agents, the factory's `DiagnosticCode` (`UNKNOWN_KEY`,
+   *  `UNKNOWN_FAILURE_MODE`, …); an open set. */
   code?: string;
+  /** `error`, `warning` or `info` today; validated as a string so a new level cannot throw. */
+  severity?: string;
+  suggestion?: string;
+  line?: number;
+  column?: number;
+  /** Which layer wrote the message: `domain` (hand-written) or `schema` (JSON Schema). */
+  source?: string;
+  /** The offending key, where the factory names one (agents). */
+  key?: string;
+  /** Set when the closure mode lowered this finding from an error (agents). */
+  demotedFrom?: string;
 }
 
 /** Warning from a target adapter about lossy or unmappable fields. */
@@ -105,6 +168,20 @@ export interface RenderResult {
    * guarantee for `core`.
    */
   declaredOutputShape?: boolean;
+  /**
+   * ADL only (registry-api ADL v1.20 P0c): this render's validation, grouped by code, key, severity
+   * and demotion. On `/render` of a stored agent it runs under `legacy` and is the verdict of record
+   * for that row; it never travels in `warnings`. A `/render` 422 carries the same object in the
+   * error's `details.validation`.
+   */
+  validation?: RenderValidation;
+  /** ADL only (registry-api ADL v1.20 P0c): the closure qualifier of this render. */
+  closure?: RenderClosure;
+  /**
+   * Preview only (registry-api ADL v1.20 P0c): what publishing this YAML would decide —
+   * validation, the dependency verdict as the caller's org sees it, and translation.
+   */
+  publish?: PreviewPublish;
 }
 
 /** The renderer versions behind a render response (spec 25 D12). */

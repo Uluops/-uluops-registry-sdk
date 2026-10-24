@@ -30,6 +30,22 @@ const visibilitySchema = z.enum(VISIBILITIES);
 // ============================================================================
 
 /**
+ * The closure qualifier of a render (registry-api ADL v1.20 P0c; S1 B-D8, RG-1): the closure mode
+ * it ran under, how many diagnostics that mode demoted from an error, and which legacy stamp it
+ * carries. Served as `closure` on `/render` and preview (the render just made) and on every
+ * definition read (the row's STORED live render, `null` before P0c).
+ *
+ * `mode` and `legacyWording` are factory-owned vocabularies a factory release may extend, so they
+ * are validated as strings, not enums (S1 C27, V50): a closed enum would make every read throw the
+ * day the server sends a value this pin does not know. Known values live on the public types.
+ */
+export const renderClosureSchema = z.object({
+  mode: z.string(),
+  demoted: z.number().int(),
+  legacyWording: z.string().nullable(),
+});
+
+/**
  * Authorship provenance — who contributed to a definition (or a specific
  * version of one) and in what role. Shared by the definition schema and the
  * versions-list response (per-version authorship).
@@ -147,6 +163,8 @@ export const definitionSchema = z.object({
     scanStatus: z.enum(['complete', 'failed']).optional(),
     scanFailedReason: z.enum(['parse_error', 'timeout', 'internal']).optional(),
   }).nullish(),
+  /** The live render's closure qualifier (registry-api ADL v1.20 P0c); `null` before P0c. */
+  closure: renderClosureSchema.nullable().optional(),
 });
 
 // ============================================================================

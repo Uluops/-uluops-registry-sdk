@@ -220,6 +220,9 @@ export type {
   RenderPreviewBody,
   RenderProfile,
   RenderStack,
+  RenderClosure,
+  ClosureModeName,
+  LegacyWording,
   TargetWarning,
   TranslatorVersion,
   RetranslateOptions,
@@ -230,6 +233,14 @@ export type {
   ExecutionStats,
   StarResult,
 } from './types/responses.js';
+
+// ADL v1.20 P0c render/validation shapes (0.64.0), derived from their response schemas
+export type {
+  RenderValidation,
+  RenderValidationGroup,
+  PreviewPublish,
+  DependencyFinding,
+} from './types/response-schemas.js';
 
 // Re-export core types used in public config interfaces
 export type { RateLimitInfo } from '@uluops/sdk-core';

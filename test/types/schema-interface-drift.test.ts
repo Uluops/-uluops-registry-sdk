@@ -7,8 +7,10 @@ import {
   retranslateResultSchema,
   modelCapabilitiesSchema,
   renderResultSchema,
+  validationResultSchema,
 } from '../../src/types/response-schemas.js';
-import type { RenderResult, RenderStack } from '../../src/index.js';
+import { renderClosureSchema } from '../../src/types/schemas.js';
+import type { RenderResult, RenderStack, RenderClosure, ValidationResult, ValidationFieldError } from '../../src/index.js';
 import type { ForkLineage, ForkLineageHop } from '../../src/types/forks.js';
 import type { VersionListItem } from '../../src/types/versions.js';
 import type { RetranslateResult } from '../../src/operations/translation.js';
@@ -35,6 +37,15 @@ describe('response schema ↔ public type drift guard', () => {
 
   it('RenderStack is importable from the package root and matches the schema', () => {
     expectTypeOf<NonNullable<z.infer<typeof renderResultSchema>['renderStack']>>().toEqualTypeOf<RenderStack>();
+  });
+
+  it('ValidationResult and ValidationFieldError keys match validationResultSchema (0.64.0)', () => {
+    expectTypeOf<keyof z.infer<typeof validationResultSchema>>().toEqualTypeOf<keyof ValidationResult>();
+    expectTypeOf<keyof NonNullable<z.infer<typeof validationResultSchema>['errors']>[number]>().toEqualTypeOf<keyof ValidationFieldError>();
+  });
+
+  it('RenderClosure keys match renderClosureSchema (0.64.0)', () => {
+    expectTypeOf<keyof z.infer<typeof renderClosureSchema>>().toEqualTypeOf<keyof RenderClosure>();
   });
 
   it('ForkLineage keys match forkLineageSchema', () => {
