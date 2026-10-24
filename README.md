@@ -100,14 +100,16 @@ function createBrowserClient(sessionToken: string): RegistryClient {
 
 ```bash
 # npm
-npm install @uluops/registry-sdk
+npm install @uluops/registry-sdk zod
 
 # yarn
-yarn add @uluops/registry-sdk
+yarn add @uluops/registry-sdk zod
 
 # pnpm
-pnpm add @uluops/registry-sdk
+pnpm add @uluops/registry-sdk zod
 ```
+
+**zod** `^4.6.7` is a **peer dependency** since 0.63.0. Your app supplies one zod, and this SDK validates responses with it, so the app holds exactly one copy. npm 7+ and pnpm 8+ install a missing peer automatically, but yarn classic only warns, so the commands above name `zod` explicitly. An app still on zod 3 gets an `ERESOLVE` peer conflict until it moves to zod 4.
 
 **Requirements:**
 - Node.js 20.3.0 or higher (server-side — matches `engines`; required by `@uluops/sdk-core`)
