@@ -660,6 +660,8 @@ if (result.valid) {
 } else {
   console.log('Errors:', result.errors);
 }
+for (const w of result.warnings ?? []) console.log(`${w.code} ${w.path ?? '(document)'}: ${w.message}`);
+console.log(result.closure); // agents: { mode: 'warn', demoted: 0 }
 ```
 
 Since 0.64.0 the result also keeps `warnings`, `schemaVersion`, `validatedAt` and, for agents,
