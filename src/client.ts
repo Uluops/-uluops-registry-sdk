@@ -180,9 +180,9 @@ export class RegistryClient {
     /**
      * Publish a draft, making it discoverable.
      *
-     * Returns `{ definition, warnings }`. The most consequential warning is
-     * `TRANSLATION_FAILED` — the definition is published but `runtimeMd` was
-     * not stamped and rendering will not work until the YAML is corrected.
+     * Returns `{ definition, warnings }`; `warnings` are non-fatal notices (see
+     * `PublishWarning`). A translation failure refuses the publish with 422 — it is
+     * not a warning (registry-api 0.51.1+).
      *
      * **Breaking change in 0.29.0** — previously returned `Definition` directly.
      */

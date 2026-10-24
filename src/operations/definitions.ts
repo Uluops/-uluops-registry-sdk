@@ -173,14 +173,14 @@ export async function remove(
  * @param name - Definition name
  * @param version - Semver version of the draft to publish
  * @returns `{ definition, warnings }` — the published definition plus any
- *   non-fatal warnings emitted during the publish (translation failure,
- *   safety scan failure, etc.). `warnings` is always an array, possibly empty.
+ *   non-fatal notices emitted during the publish (unresolved `recommends`
+ *   references, safety-scan failures, etc.). `warnings` is always an array, possibly empty.
  *
  * @remarks
  * **Breaking change in 0.29.0**: previously returned `Definition` directly.
  * Consumers that don't care about warnings can destructure: `const { definition } = await ...`.
- * A `TRANSLATION_FAILED` warning is the most consequential — it indicates the
- * definition was published but cannot be rendered until the YAML is fixed.
+ * A translation failure is not a warning: the registry refuses the publish with 422
+ * (registry-api 0.51.1+), so a returned result is always a rendered, published row.
  */
 export async function publish(
   http: RegistryHttpClient,

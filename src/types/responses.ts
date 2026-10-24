@@ -53,8 +53,9 @@ export interface ValidationResult {
   validatedAt?: string;
   /**
    * ADL only (registry-api ADL v1.20 P0c): the closure mode validation ran under — the registry's
-   * fresh mode, the same as the publish gate's, so `/validate` predicts publish — and how many
-   * diagnostics it demoted from an error.
+   * fresh mode, the same as the publish gate's — and how many diagnostics it demoted from an error.
+   * `valid` therefore predicts publish's validation check only; publish also refuses on blocking
+   * dependencies and translation failure (preview's `publish.publishable` has the whole decision).
    */
   closure?: { mode: ClosureModeName; demoted: number };
 }
@@ -65,6 +66,8 @@ export interface ValidationResult {
  * `legacy` is the registry's mode for stored rows; the CLI never runs it.
  */
 export type ClosureModeName = 'error' | 'warn' | 'legacy' | (string & {});
+// `warn` gives the same verdict as `error` until the factory's P1a, which reports v1.20's new
+// closures as warnings under it; `error` becomes the fresh default at P2.
 
 /**
  * Which legacy stamp a render carries: `unknown-keys` (every demotion was an unknown key) or
@@ -74,9 +77,15 @@ export type ClosureModeName = 'error' | 'warn' | 'legacy' | (string & {});
 export type LegacyWording = 'unknown-keys' | 'some-errors' | (string & {});
 
 /**
- * The closure qualifier of a render (registry-api ADL v1.20 P0c; RG-1). On `/render` and preview
- * it describes the render just made; on a definition read, the row's STORED live render.
- * Compare renders by `legacyWording` only: `mode` and `demoted` are reported, not compared.
+ * The closure qualifier of a render (registry-api ADL v1.20 P0c; RG-1). Three referents:
+ * - `/render`: the legacy re-render returned beside it;
+ * - preview: the publish verdict's translation render, NOT the draft `markdown`/`promptHash` beside
+ *   it (absent when translation did not run or failed);
+ * - a definition read: the row's STORED live render (`runtimeMd`).
+ *
+ * `legacyWording` names the regime; the registry compares renders by it alone (`mode` and
+ * `demoted` are reported, not compared). Equal `legacyWording` is not equal bytes: compare
+ * `promptHash` under the same `renderStack` for that.
  */
 export interface RenderClosure {
   mode: ClosureModeName;
@@ -144,7 +153,9 @@ export interface RenderResult {
   /** Model value emitted in the artifact envelope; null means no model envelope.
    * Omitted when an older server does not report selection. This is not provider resolution. */
   selectedModel?: string | null;
-  /** Adapter warnings about lossy mappings (only present for target rendering) */
+  /** Adapter warnings about lossy mappings (target rendering), and on every command render
+   *  `[unresolved-agent]` (level `error`) when the invoked agent's sections are absent. Never
+   *  validation diagnostics: those are in `validation`. */
   warnings?: TargetWarning[];
   /** The normalized YAML the server hashed. */
   normalizedYaml?: string;
@@ -169,17 +180,20 @@ export interface RenderResult {
    */
   declaredOutputShape?: boolean;
   /**
-   * ADL only (registry-api ADL v1.20 P0c): this render's validation, grouped by code, key, severity
-   * and demotion. On `/render` of a stored agent it runs under `legacy` and is the verdict of record
-   * for that row; it never travels in `warnings`. A `/render` 422 carries the same object in the
-   * error's `details.validation`.
+   * ADL only (registry-api ADL v1.20 P0c): validation grouped by code, key, severity and demotion;
+   * never in `warnings`. On `/render` of a stored agent it runs under `legacy`: how the registry
+   * reads this stored row, not whether the YAML would publish today (`valid` can be true where
+   * `/validate` says false). On preview it is the publish verdict's, under the fresh mode. Tell them
+   * apart by `mode`. A `/render` 422 carries it as `details.validation` (and `details.closure`).
    */
   validation?: RenderValidation;
-  /** ADL only (registry-api ADL v1.20 P0c): the closure qualifier of this render. */
+  /** ADL only (registry-api ADL v1.20 P0c): the closure qualifier. On preview it qualifies the
+   *  verdict's translation render, not this object's `markdown` (see {@link RenderClosure}). */
   closure?: RenderClosure;
   /**
    * Preview only (registry-api ADL v1.20 P0c): what publishing this YAML would decide —
-   * validation, the dependency verdict as the caller's org sees it, and translation.
+   * validation, the dependency verdict as the caller's org sees it, and translation. Its `warnings`
+   * are validation diagnostics, not the notices a real publish returns in `PublishResult.warnings`.
    */
   publish?: PreviewPublish;
 }

@@ -17,8 +17,10 @@ registry-api without P0c the new fields are simply absent.
   `RenderValidation`, `RenderValidationGroup`, `RenderClosure`, `PreviewPublish`,
   `DependencyFinding`, `ClosureModeName` and `LegacyWording`, exported from the package root. Each
   schema has the same key set as registry-api's own Zod schema (`src/schemas/render/schema.ts`,
-  branch `feat/adl-v1_20-p0c` 8389b63), checked key for key on 2026-10-24 with a control that drops
-  one key.
+  branch `feat/adl-v1_20-p0c` 8389b63). That was a one-off cross-repo check on 2026-10-24 (a script
+  in the registry worktree, with a control that dropped one key and was caught), not a committed
+  test: this repo cannot import the registry's schemas. The committed guard is the in-repo drift
+  test below.
 - **`Definition.closure`**: the stored live render's qualifier on every definition read, `null`
   before P0c.
 - **`ValidationResult.warnings`, `.schemaVersion`, `.validatedAt` and `.closure`**
@@ -42,12 +44,36 @@ registry-api without P0c the new fields are simply absent.
   `INVALID_ENCODING`); until now the schema required it, so those responses threw
   `ResponseValidationError` instead of returning the server's answer. Handle `undefined`.
 
+### Fixed
+- **A publish translation failure is documented as what it is: a 422 refusal.** `PublishWarning`,
+  `client.definitions.publish`, `publish()` and the README said a `TRANSLATION_FAILED` warning
+  meant "published but unrendered". registry-api stopped emitting `TRANSLATION_FAILED`/
+  `TRANSLATION_ERROR` in 0.51.1 (2026-06-17, `54ce437`); since then a failed translation refuses
+  the publish with 422 and nothing is published. The known-codes list now names what the registry
+  emits (`DEPENDENCY_*`, `UNRESOLVED_AGENT`, `SAFETY_SCAN_FAILED`, `SAFETY_SCAN_INCOMPLETE`,
+  `SAFETY_PROFILE_PERSIST_FAILED`, `SAFETY_GATE_ENFORCEMENT`, `DEEP_ANALYSIS_ENQUEUE_FAILED`).
+  Found by the consumer-validate run on this release (wittgenstein-analyst CGC-3), once 0.64.0's
+  `publish.translationError` made the two documents contradict each other.
+- `RenderResult.warnings` said "only present for target rendering"; the registry also sends
+  `[unresolved-agent]` on every command render.
+
 ### Semantics without signature (registry-api P0c, for SDK callers)
 - `/validate` and the publish gate report the factory's diagnostic codes for agents instead of a
   uniform `SCHEMA_ERROR`, and `path` becomes a JSON pointer naming the offending key.
 - `/render` of a stored agent runs under `legacy`: a row the current schema rejects renders stamped,
   with a `promptHash` that differs from the stored `runtimeMd`'s.
 - Preview requires the `publisher` role in the caller's org (403 otherwise).
+- **Three things that share a name and differ** (documented on the types and in the README):
+  - `/validate`'s `valid` predicts publish's validation check only. Publish also refuses on blocking
+    dependencies and translation failure; preview's `publish.publishable` is the whole decision.
+  - `/render`'s `validation` runs under `legacy`. It says how the registry reads a stored row, and
+    can be `valid: true` where `/validate` says false for the same YAML. `validation.mode` tells the
+    two apart.
+  - On preview, `validation` and `closure` qualify the verdict's translation render, not the draft
+    `markdown` returned beside them. `publish.warnings` are validation diagnostics, not the notices
+    in a real publish's `PublishResult.warnings`.
+  - `legacyWording` compares regimes, not bytes; compare `promptHash` under one `renderStack` for
+    bytes.
 
 ## [0.63.0] - 2026-10-24
 

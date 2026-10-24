@@ -450,19 +450,23 @@ export interface DeprecateDefinitionBody {
 }
 
 /**
- * Non-fatal warning emitted during a publish operation.
+ * Non-fatal notice returned with a successful publish: the definition IS published.
  *
- * Translation and safety scans run as part of publishing but never block — they
- * log server-side and now surface as warnings on the response. Consumers
- * receiving a `TRANSLATION_FAILED` warning should treat the publish as partial:
- * the row is published but `runtimeMd` was not stamped and the definition will
- * not render until the YAML is corrected.
+ * **A translation failure is not a warning.** Since registry-api 0.51.1 (2026-06-17) a publish whose
+ * translation fails is refused with 422 and nothing is published; `TRANSLATION_FAILED` and
+ * `TRANSLATION_ERROR` are no longer emitted (corrected in 0.64.0; this doc said they were the most
+ * consequential warnings). Preview's `publish.translationError` reports that refusal in advance.
  *
- * @remarks Known codes (more may be added without bumping major):
- * - `TRANSLATION_FAILED` — YAML did not validate against the current schema.
- * - `TRANSLATION_ERROR` — translator threw an unexpected error.
- * - `SAFETY_SCAN_FAILED` — sync safety scan failed; version has no `riskProfile`.
- * - `SAFETY_PROFILE_PERSIST_FAILED` — scan succeeded but persisting it failed.
+ * These are NOT the same list as preview's `publish.warnings`, which are validation diagnostics.
+ * A publish never returns validation warnings here.
+ *
+ * @remarks Codes registry-api emits (more may be added without bumping major):
+ * - a dependency code (`DEPENDENCY_*`) — a `recommends` reference did not resolve; the message
+ *   reads "Definition published, but …".
+ * - `UNRESOLVED_AGENT` — a command's invoked agent did not resolve; its sections are absent.
+ * - `SAFETY_SCAN_FAILED` / `SAFETY_SCAN_INCOMPLETE` — the sync safety scan failed or did not finish.
+ * - `SAFETY_PROFILE_PERSIST_FAILED` — the scan succeeded but persisting it failed.
+ * - `SAFETY_GATE_ENFORCEMENT` — a safety-gate notice.
  * - `DEEP_ANALYSIS_ENQUEUE_FAILED` — background deep-safety queue unavailable.
  */
 export interface PublishWarning {

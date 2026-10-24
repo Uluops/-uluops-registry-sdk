@@ -495,8 +495,12 @@ await client.definitions.delete('agent', 'my-agent', '1.0.0');
 Publish a draft definition to make it available.
 
 **Returns `PublishResult` (`{ definition, warnings }`) since 0.29.0** — not a bare
-`Definition`. `warnings` is always an array (possibly empty) of non-fatal publish
-warnings (e.g. `TRANSLATION_FAILED`, safety-scan failures).
+`Definition`. `warnings` is always an array (possibly empty) of non-fatal notices: the
+definition is published. Examples: a `recommends` reference that did not resolve, a command's
+`UNRESOLVED_AGENT`, safety-scan failures. **A translation failure is not one of them**: since
+registry-api 0.51.1 it refuses the publish with 422 (`UnprocessableError`). SDKs before 0.64.0
+documented a `TRANSLATION_FAILED` warning that the registry no longer emits. These notices are
+not preview's `publish.warnings`, which are validation diagnostics.
 
 ```typescript
 const result = await client.definitions.publish('agent', 'my-agent', '1.0.0');
@@ -663,7 +667,9 @@ Since 0.64.0 the result also keeps `warnings`, `schemaVersion`, `validatedAt` an
 deployed, agent diagnostics carry the factory's codes (`UNKNOWN_KEY`, `UNKNOWN_FAILURE_MODE`,
 `UNRENDERED_KEY`, …) instead of a uniform `SCHEMA_ERROR`, a `path` that is a JSON pointer naming the
 offending key, and `key` / `demotedFrom` where they apply. `/validate` runs the publish gate's
-closure mode, so it predicts publish.
+validation under the same closure mode, so its `valid` predicts that **one** of publish's checks.
+Publish also refuses on blocking dependency references and on a translation failure; for the whole
+decision, read preview's `publish.publishable` (below).
 
 `code`, `severity` and `closure.mode` are open strings: the factory owns those vocabularies and a
 release may add to them, so match the values you know and treat others as unknown rather than
@@ -1114,17 +1120,24 @@ stripped them silently.
 **ADL v1.20 closure fields** (0.64.0; served by registry-api with P0c deployed, absent before):
 - `validation`: the render's own validation, grouped by code, key, severity and demotion
   (`{ mode, schemaVersion, valid, demoted, groups[] }`, each group with at most ten `paths` and a
-  full `count`). A stored agent re-renders under `legacy`, so `validation` is the verdict of record
-  for that row. It never appears in `warnings`.
+  full `count`). It never appears in `warnings`. On `/render` a stored agent re-renders under
+  `legacy`, so `validation` is the registry's verdict on how it **reads this stored row**, not on
+  whether the same YAML would publish today. `validation.valid: true` here is compatible with
+  `/validate` returning `valid: false` for that YAML: `legacy` demotes some errors the fresh gate
+  keeps (schema conditions the pre-v1.20 baseline did not raise, and failure-mode labels outside the
+  taxonomy); rule-layer errors stay errors in both. Check `validation.mode` to tell which grammar you hold.
 - `closure`: `{ mode, demoted, legacyWording }`. `legacyWording` is set (`unknown-keys` or
-  `some-errors`) exactly when the render carries the legacy stamp. To compare two renders, compare
-  `legacyWording`, not `mode` or `demoted`.
+  `some-errors`) exactly when the render carries the legacy stamp. It says which **regime** a render
+  ran in. To ask whether two renders are the same, compare `legacyWording` (the registry compares
+  only this field; `mode` and `demoted` are reported, not compared). To ask whether the **bytes** are
+  the same, compare `promptHash` under the same `renderStack`: equal `legacyWording` does not mean
+  equal bytes, because the stamp's text carries counts.
 - `/render` re-renders. Under `legacy`, a stored agent the current schema would reject renders
   stamped, and its `promptHash` differs from the stored `runtimeMd`'s. That is expected, not
   staleness. A definition read (`client.definitions.get…`) returns the stored render's `closure`
   (`null` for rows rendered before P0c).
-- A `/render` that cannot render answers 422 with the same `validation` object in the error's
-  `details.validation`.
+- A `/render` that cannot render answers 422 with the same `validation` and `closure` objects in the
+  error's `details.validation` and `details.closure`.
 
 All string vocabularies in these objects are open strings, for the reason given under `validate`.
 
@@ -1156,9 +1169,22 @@ if (preview.publish && !preview.publish.publishable) {
 
 Against a registry-api with ADL v1.20 P0c deployed, preview also returns `publish`: what publishing
 this YAML would decide — `publishable`, validation `errors`/`warnings`, `dependencyBlockers`/
-`dependencyWarnings` and any `translationError` — plus the verdict's `validation` and `closure` for
-agents. The preview render itself still skips validation, so a draft with incomplete fields
-renders. **That deploy also changes who may call preview:** it resolves the caller's org (personal
+`dependencyWarnings` and any `translationError` — plus, for agents, the `validation` and `closure` of
+the verdict's publish-time translation. Those two describe **that** render, not the returned
+`markdown`/`promptHash`: the preview render itself skips validation (so a draft with incomplete
+fields renders) and carries no qualifier. They are absent when translation did not run or failed.
+
+`publish.warnings` are validation diagnostics (an `UNRENDERED_KEY`, for example). They are not what
+the real publish returns in `PublishResult.warnings`, which holds non-fatal notices such as an
+unresolved `recommends` reference; the dependency side of that is previewed in
+`dependencyWarnings`.
+
+Each entry of `dependencyBlockers` / `dependencyWarnings` is a `DependencyFinding`: `code`
+(`DEPENDENCY_UNRESOLVED`, `DEPENDENCY_NOT_PUBLISHED`, `DEPENDENCY_MALFORMED`,
+`DEPENDENCY_LIMIT_EXCEEDED`), `reason`, `severity`, `dependencyClass` (`requires` blocks,
+`recommends` warns), `ref` (`{ type, name, version }`, `null` when the reference could not be
+parsed), `paths` (where the YAML names it), `context`, `target` (the referenced version's
+`{ version, status }`, when found) and `message`. **That deploy also changes who may call preview:** it resolves the caller's org (personal
 unless one is named), checks membership and requires the `publisher` role, and answers 403
 otherwise.
 

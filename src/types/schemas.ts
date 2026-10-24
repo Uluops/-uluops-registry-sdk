@@ -32,8 +32,9 @@ const visibilitySchema = z.enum(VISIBILITIES);
 /**
  * The closure qualifier of a render (registry-api ADL v1.20 P0c; S1 B-D8, RG-1): the closure mode
  * it ran under, how many diagnostics that mode demoted from an error, and which legacy stamp it
- * carries. Served as `closure` on `/render` and preview (the render just made) and on every
- * definition read (the row's STORED live render, `null` before P0c).
+ * carries. Served as `closure` on `/render` (the re-render), on preview (the publish verdict's
+ * translation render, not the draft markdown) and on every definition read (the row's STORED live
+ * render, `null` before P0c).
  *
  * `mode` and `legacyWording` are factory-owned vocabularies a factory release may extend, so they
  * are validated as strings, not enums (S1 C27, V50): a closed enum would make every read throw the

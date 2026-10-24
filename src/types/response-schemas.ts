@@ -133,9 +133,10 @@ export const renderValidationGroupSchema = z.object({
 });
 
 /**
- * `data.validation` on GET /render and preview (ADL): the render's own validation, grouped. On
- * `/render` of a stored agent it is the verdict of record for that row (S1 SV-5′), run under
- * `legacy`; on preview it is the publish verdict's, run under the fresh mode.
+ * `data.validation` on GET /render and preview (ADL): validation, grouped. On `/render` of a stored
+ * agent it runs under `legacy` (S1 SV-5′): how the registry reads that row, not whether its YAML
+ * would publish today. On preview it is the publish verdict's, run under the fresh mode. `mode`
+ * tells the two apart.
  */
 export const renderValidationSchema = z.object({
   mode: z.string(),
@@ -1211,11 +1212,11 @@ export const versionCombinedDiffSchema = z.discriminatedUnion('full', [
 // ADL v1.20 P0c render/validation shapes — public types derived from the schemas
 // ============================================================================
 
-/** {@inheritDoc renderValidationGroupSchema} */
+/** One group of a render's diagnostics: same `(code, key, severity, demotedFrom)`, at most ten `paths`, full `count`. */
 export type RenderValidationGroup = z.infer<typeof renderValidationGroupSchema>;
-/** {@inheritDoc renderValidationSchema} */
+/** `RenderResult.validation`: a render's validation, grouped. Under `legacy` on `/render`, under the fresh mode on preview; read `mode`. */
 export type RenderValidation = z.infer<typeof renderValidationSchema>;
-/** {@inheritDoc previewPublishSchema} */
+/** Preview's `publish`: what publishing the YAML would decide. `warnings` here are validation diagnostics, not `PublishResult.warnings`. */
 export type PreviewPublish = z.infer<typeof previewPublishSchema>;
 /** One dependency finding in {@link PreviewPublish}. */
 export type DependencyFinding = z.infer<typeof dependencyFindingSchema>;
