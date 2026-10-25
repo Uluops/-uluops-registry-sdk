@@ -304,7 +304,7 @@ export const providersListResponseSchema = z.object({
 /** Lightweight definition for list responses */
 export const definitionListItemSchema = z.object({
   relevance: z.number().optional(),
-  id: z.string().uuid(),
+  id: z.guid(),
   type: definitionTypeResponseSchema,
   name: z.string(),
   version: z.string(),
@@ -360,7 +360,7 @@ export const definitionListResponseSchema = z.object({
 
 /** Version list item */
 export const versionListItemSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   version: z.string(),
   hash: z.string(),
   promptHash: z.string().nullable().optional(),
@@ -488,9 +488,9 @@ export const aliasResolutionSchema = z.object({
  * `.nullable()` would reject the absent key and throw on every parse (new-SDK/old-API).
  */
 export const forkSchema = z.object({
-  id: z.string().uuid(),
-  definitionId: z.string().uuid(),
-  sourceDefinitionId: z.string().uuid().nullable(),
+  id: z.guid(),
+  definitionId: z.guid(),
+  sourceDefinitionId: z.guid().nullable(),
   sourceType: z.string().nullish(),
   sourceName: z.string().nullish(),
   sourceVersion: z.string().nullish(),
@@ -503,11 +503,11 @@ export const forkSchema = z.object({
  * the full DefinitionListItem — this schema mirrors that contract.
  */
 export const forkSummarySchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   type: z.string(),
   name: z.string(),
   version: z.string(),
-  authorId: z.string().uuid(),
+  authorId: z.guid(),
   orgId: z.string().nullable(),
 });
 
@@ -617,7 +617,7 @@ type DependencyNodeShape = {
  */
 export const dependencyNodeSchema: z.ZodType<DependencyNodeShape> = z.lazy(() =>
   z.object({
-    id: z.string().uuid(),
+    id: z.guid(),
     type: definitionTypeResponseSchema,
     name: z.string().max(MAX_DEFINITION_NAME),
     version: z.string().max(MAX_DEFINITION_VERSION),
@@ -628,7 +628,7 @@ export const dependencyNodeSchema: z.ZodType<DependencyNodeShape> = z.lazy(() =>
 
 /** A flat row in the dependency graph's pre-flattened view. */
 export const flatDepSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   type: definitionTypeResponseSchema,
   name: z.string().max(MAX_DEFINITION_NAME),
   version: z.string().max(MAX_DEFINITION_VERSION),
@@ -640,7 +640,7 @@ export const flatDepSchema = z.object({
  * Mirrors `Dependent` in uluops-registry-api/services/dependency/index.ts.
  */
 export const dependentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   type: definitionTypeResponseSchema,
   name: z.string().max(MAX_DEFINITION_NAME),
   version: z.string().max(MAX_DEFINITION_VERSION),

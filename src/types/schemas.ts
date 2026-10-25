@@ -66,7 +66,7 @@ export const provenanceSchema = z.object({
 });
 
 export const definitionSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   type: definitionTypeSchema,
   name: z.string(),
   version: z.string(),
@@ -98,7 +98,7 @@ export const definitionSchema = z.object({
   uniqueExecutionCount: z.number().int().nonnegative(),
   forkCount: z.number().int().nonnegative(),
   starCount: z.number().int().nonnegative(),
-  forkedFromId: z.string().uuid().nullish(),
+  forkedFromId: z.guid().nullish(),
   createdAt: z.string(),
   updatedAt: z.string(),
   publishedAt: z.string().nullish(),
@@ -187,7 +187,7 @@ export const recordExecutionResultSchema = z.object({
   recorded: z.boolean(),
   duplicate: z.boolean(),
   definition: z.object({
-    id: z.string().uuid(),
+    id: z.guid(),
     type: z.string(),
     name: z.string(),
     version: z.string(),

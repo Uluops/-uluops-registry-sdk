@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.64.1] - 2026-10-25
+
+### Fixed
+
+- **Ids the server stores no longer fail to parse.** All 13 `z.string().uuid()` sites are `z.guid()`: `definitionSchema` (`id`, `forkedFromId`), `definitionListItemSchema`, `versionListItemSchema`, `forkSchema`, `forkSummarySchema` (`id`, `authorId`), the dependency node, flat-dependency and dependent schemas, and `recordExecutionResultSchema`. zod 4's `.uuid()` requires an RFC version nibble (1-8) and variant; zod 3's, and zod 4's `z.guid()`, accept any 8-4-4-4-12 hex. The production census of 2026-10-25 found stored ids that fail the strict check, including two users and 1,313 of 2,767 definition lineage ids. registry-api, `@uluops/platform` 2.0.0 and the MCP servers already use `z.guid()` (zod-4 release train); `@uluops/ops-sdk` 7.0.1 makes the same change.
+  - **What changes for you:** schemas accept a superset of what 0.64.0 accepted; inferred types are unchanged (`string`). A malformed id is still refused.
+  - `test/stored-ids.test.ts` reads a definition, list items, a fork and a fork summary with a version-0 id and a non-RFC seed id, and a source census fails on any `.uuid(` in `src/`. Control: all of it fails on 0.64.0.
+
 ## [0.64.0] - 2026-10-24
 
 The SDK half of ADL v1.20 build-plan unit P0d, released with registry-api's P0c. Against a
