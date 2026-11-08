@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.64.2] - 2026-11-08
+
+### Changed
+
+- **`@uluops/sdk-core` 0.19.0 → 0.20.0** (exact pin). No registry-sdk surface changes: the package re-exports only the `RateLimitInfo` type from sdk-core, and none of the 0.20.0 deltas (the `invalid` decision category in `/decisions`, `retry({ maxRetries: 0 })`, the longer `Invalid baseUrl` message) is reached from registry-sdk's source (census 2026-11-08: `grep -rnE "\bretry\(|maxRetries|Invalid baseUrl" src` → no hits). The `Invalid baseUrl` text a caller can see when constructing a client with a malformed URL now ends `(expected an absolute URL such as …)`; `/Invalid baseUrl/` still matches.
+- **Why:** `@uluops/core`, `@uluops/registry-mcp` and `@uluops/cli` move to sdk-core 0.20.0. While registry-sdk pinned 0.19.0 exactly, npm nested a second sdk-core under it in each consumer: two `SdkApiError` class identities in one process, so an `instanceof` guard misses errors raised inside registry-sdk. This release exists so those consumers resolve one copy.
+
 ## [0.64.1] - 2026-10-25
 
 ### Fixed
